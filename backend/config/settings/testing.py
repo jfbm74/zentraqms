@@ -4,7 +4,7 @@ Testing settings for ZentraQMS project.
 This file contains settings specific to the testing environment.
 """
 
-from .base import *
+from .base import *  # noqa: F403
 import tempfile
 
 # Override for testing
@@ -21,12 +21,15 @@ DATABASES = {
 }
 
 # Disable migrations during tests for faster execution
+
+
 class DisableMigrations:
     def __contains__(self, item):
         return True
 
     def __getitem__(self, item):
         return None
+
 
 MIGRATION_MODULES = DisableMigrations()
 
@@ -71,9 +74,15 @@ CSRF_COOKIE_SECURE = False
 # CORS settings for testing
 CORS_ALLOW_ALL_ORIGINS = True
 
-# REST Framework settings for testing
-REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] = [
+# REST Framework settings for testing - keep JWT authentication
+REST_FRAMEWORK['DEFAULT_AUTHENTICATION_CLASSES'] = [  # noqa: F405
+    'rest_framework_simplejwt.authentication.JWTAuthentication',
     'rest_framework.authentication.SessionAuthentication',
+]
+
+# Allow unauthenticated access in tests when needed
+REST_FRAMEWORK['DEFAULT_PERMISSION_CLASSES'] = [  # noqa: F405
+    'rest_framework.permissions.AllowAny',
 ]
 
 # Celery settings for testing (always eager)
