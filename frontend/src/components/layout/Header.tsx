@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'react-toastify';
+import { useAuth } from '../../hooks/useAuth';
 
 // Import images from Velzon template
 import avatar1 from '../../assets/images/users/avatar-1.jpg';
@@ -14,9 +16,28 @@ const Header: React.FC<HeaderProps> = ({ headerClass, onToggleSidebar }) => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  
+  // Authentication hook
+  const { user, logout, getUserDisplayName, getUserInitials, isLoading } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const toggleDropdown = (dropdown: string) => {
     setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
+  };
+
+  // Handle logout functionality
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      setActiveDropdown(null); // Close dropdown
+      await logout();
+      toast.success('Sesión cerrada correctamente. ¡Hasta luego!');
+    } catch (error) {
+      console.error('Error durante logout:', error);
+      toast.error('Error al cerrar sesión. Intenta nuevamente.');
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   // Close dropdown when clicking outside
@@ -156,7 +177,7 @@ const Header: React.FC<HeaderProps> = ({ headerClass, onToggleSidebar }) => {
           </div>
 
           {/* Notifications */}
-          <div className="dropdown ms-1 topbar-head-dropdown ms-1 header-item position-relative">
+          <div className="dropdown ms-1 topbar-head-dropdown header-item position-relative">
             <button
               type="button"
               className="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle position-relative"
@@ -240,13 +261,17 @@ const Header: React.FC<HeaderProps> = ({ headerClass, onToggleSidebar }) => {
                 src={avatar1}
                 alt="Header Avatar"
               />
-              <span className="d-none d-xl-inline-block ms-2 fw-medium">Admin</span>
+              <span className="d-none d-xl-inline-block ms-2 fw-medium">
+                {user ? getUserDisplayName() : 'Usuario'}
+              </span>
               <i className="ri-arrow-down-s-line d-none d-xl-inline-block ms-1"></i>
             </button>
             
             {activeDropdown === 'user' && (
               <div className="dropdown-menu dropdown-menu-end show">
-                <h6 className="dropdown-header">¡Bienvenido, Admin!</h6>
+                <h6 className="dropdown-header">
+                  ¡Bienvenido, {user ? getUserDisplayName() : 'Usuario'}!
+                </h6>
                 <a className="dropdown-item" href="#profile">
                   <i className="ri-user-line text-muted fs-16 align-middle me-2"></i>
                   <span className="align-middle">Mi Perfil</span>
@@ -265,10 +290,25 @@ const Header: React.FC<HeaderProps> = ({ headerClass, onToggleSidebar }) => {
                   <span className="align-middle">Bloquear Pantalla</span>
                 </a>
                 <div className="dropdown-divider"></div>
-                <a className="dropdown-item" href="#logout">
-                  <i className="ri-logout-circle-line text-muted fs-16 align-middle me-2"></i>
-                  <span className="align-middle">Cerrar Sesión</span>
-                </a>
+                <button 
+                  className="dropdown-item border-0 bg-transparent w-100 text-start"
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                >
+                  {isLoggingOut ? (
+                    <div className="d-flex align-items-center">
+                      <div className="spinner-border spinner-border-sm text-muted me-2" role="status">
+                        <span className="visually-hidden">Cerrando sesión...</span>
+                      </div>
+                      <span className="align-middle">Cerrando Sesión...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <i className="ri-logout-circle-line text-muted fs-16 align-middle me-2"></i>
+                      <span className="align-middle">Cerrar Sesión</span>
+                    </>
+                  )}
+                </button>
               </div>
             )}
           </div>

@@ -6,8 +6,7 @@
  */
 
 import type { AxiosResponse } from 'axios';
-import axiosInstance from '../api/axios.config';
-import { AUTH_ENDPOINTS } from '../api/endpoints';
+import { apiClient, AUTH_ENDPOINTS } from '../api/endpoints';
 import {
   LoginRequest,
   LoginResponse,
@@ -36,7 +35,7 @@ class AuthService {
    */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     try {
-      const response: AxiosResponse<LoginResponse> = await axiosInstance.post(
+      const response: AxiosResponse<LoginResponse> = await apiClient.post(
         AUTH_ENDPOINTS.LOGIN,
         credentials
       );
@@ -70,7 +69,7 @@ class AuthService {
 
         // Attempt to logout on server (invalidate refresh token)
         try {
-          await axiosInstance.post(AUTH_ENDPOINTS.LOGOUT, logoutData);
+          await apiClient.post(AUTH_ENDPOINTS.LOGOUT, logoutData);
         } catch (error) {
           // Log error but don't throw - we still want to clear local data
           console.warn('[AuthService] Server logout failed:', error);
@@ -108,7 +107,7 @@ class AuthService {
         refresh: refreshToken,
       };
 
-      const response: AxiosResponse<RefreshTokenResponse> = await axiosInstance.post(
+      const response: AxiosResponse<RefreshTokenResponse> = await apiClient.post(
         AUTH_ENDPOINTS.REFRESH,
         refreshData
       );
@@ -139,7 +138,7 @@ class AuthService {
    */
   async getCurrentUser(): Promise<CurrentUserResponse> {
     try {
-      const response: AxiosResponse<CurrentUserResponse> = await axiosInstance.get(
+      const response: AxiosResponse<CurrentUserResponse> = await apiClient.get(
         AUTH_ENDPOINTS.CURRENT_USER
       );
 
@@ -174,7 +173,7 @@ class AuthService {
         token: tokenToVerify,
       };
 
-      const response = await axiosInstance.post(AUTH_ENDPOINTS.VERIFY_TOKEN, verifyData);
+      const response = await apiClient.post(AUTH_ENDPOINTS.VERIFY_TOKEN, verifyData);
       return response.status === 200;
     } catch (error) {
       console.warn('[AuthService] Token verification failed:', error);

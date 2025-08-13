@@ -12,10 +12,21 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - Configuración de branch protection rules
 - Scripts de validación local pre-commit
 - Documentación completa del proceso CI/CD
+- **Funcionalidad de Logout**: Implementación completa en el menú del usuario
+- **UI Dinámica**: Nombre de usuario dinámico en header y dropdown
+- **Toast Notifications**: Feedback visual para operaciones de logout
 
 ### 🔧 Modificado
 - Configuración de testing para frontend y backend
 - Estructura de directorios para mejor organización
+- **Unificación de Axios**: Consolidada una sola instancia de axios cliente
+- **Interceptores mejorados**: Mejor manejo de errores 401 para endpoints de login/refresh
+- **Rutas de autenticación**: Corregida redirección de logout de `/auth/login` a `/login`
+
+### 🐛 Corregido
+- **Login 401 Error**: Solucionado conflicto entre interceptores de axios que causaba errores 401
+- **Redirección de logout**: Corregida URL inexistente `/auth/login` por `/login` correcta
+- **Duplicación de instancias axios**: Eliminado `axios.config.ts` y unificado en `endpoints.ts`
 
 ## [0.1.0] - 2025-08-13
 

@@ -137,8 +137,10 @@ apiClient.interceptors.response.use(
       });
     }
     
-    // Handle 401 (Unauthorized) errors
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Handle 401 (Unauthorized) errors - but not for login/refresh endpoints
+    if (error.response?.status === 401 && !originalRequest._retry && 
+        !originalRequest.url?.includes(AUTH_ENDPOINTS.LOGIN) &&
+        !originalRequest.url?.includes(AUTH_ENDPOINTS.REFRESH)) {
       originalRequest._retry = true;
       
       try {

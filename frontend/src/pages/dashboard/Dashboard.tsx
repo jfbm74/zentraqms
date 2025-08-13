@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import axiosInstance from '../../api/axios.config';
+import { apiClient } from '../../api/endpoints';
 
 interface DashboardStats {
   totalUsers?: number;
@@ -58,7 +58,7 @@ const Dashboard: React.FC = () => {
   // Test de endpoint protegido
   const testProtectedEndpoint = async () => {
     try {
-      const response = await axiosInstance.get('/api/auth/user/');
+      const response = await apiClient.get('/api/auth/user/');
       console.log('Protected endpoint response:', response.data);
       toast.success('Endpoint protegido accedido correctamente');
     } catch (error) {
