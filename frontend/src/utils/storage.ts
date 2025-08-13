@@ -220,7 +220,7 @@ class StorageService {
  */
 export const storage = new StorageService();
 export const secureStorage = new StorageService({ encrypt: true });
-export const sessionStorage = new StorageService({ useSessionStorage: true });
+export const sessionStorageService = new StorageService({ useSessionStorage: true });
 
 /**
  * Authentication-specific storage utilities
@@ -309,56 +309,56 @@ export class AuthStorage {
    * Store user permissions (Phase 5 - RBAC)
    */
   static setUserPermissions(permissions: string[]): boolean {
-    return sessionStorage.setItem(StorageKeys.USER_PERMISSIONS, permissions);
+    return sessionStorageService.setItem(StorageKeys.USER_PERMISSIONS, permissions);
   }
 
   /**
    * Get user permissions (Phase 5 - RBAC)
    */
   static getUserPermissions(): string[] {
-    return sessionStorage.getItem<string[]>(StorageKeys.USER_PERMISSIONS) || [];
+    return sessionStorageService.getItem<string[]>(StorageKeys.USER_PERMISSIONS) || [];
   }
 
   /**
    * Store user roles (Phase 5 - RBAC)
    */
   static setUserRoles(roles: string[]): boolean {
-    return sessionStorage.setItem(StorageKeys.USER_ROLES, roles);
+    return sessionStorageService.setItem(StorageKeys.USER_ROLES, roles);
   }
 
   /**
    * Get user roles (Phase 5 - RBAC)
    */
   static getUserRoles(): string[] {
-    return sessionStorage.getItem<string[]>(StorageKeys.USER_ROLES) || [];
+    return sessionStorageService.getItem<string[]>(StorageKeys.USER_ROLES) || [];
   }
 
   /**
    * Store permissions by resource (Phase 5 - RBAC)
    */
   static setPermissionsByResource(permissionsByResource: Record<string, string[]>): boolean {
-    return sessionStorage.setItem(StorageKeys.PERMISSIONS_BY_RESOURCE, permissionsByResource);
+    return sessionStorageService.setItem(StorageKeys.PERMISSIONS_BY_RESOURCE, permissionsByResource);
   }
 
   /**
    * Get permissions by resource (Phase 5 - RBAC)
    */
   static getPermissionsByResource(): Record<string, string[]> {
-    return sessionStorage.getItem<Record<string, string[]>>(StorageKeys.PERMISSIONS_BY_RESOURCE) || {};
+    return sessionStorageService.getItem<Record<string, string[]>>(StorageKeys.PERMISSIONS_BY_RESOURCE) || {};
   }
 
   /**
    * Store RBAC cache timestamp (Phase 5 - RBAC)
    */
   static setRBACCacheTimestamp(timestamp: Date): boolean {
-    return sessionStorage.setItem(StorageKeys.RBAC_CACHE_TIMESTAMP, timestamp.toISOString());
+    return sessionStorageService.setItem(StorageKeys.RBAC_CACHE_TIMESTAMP, timestamp.toISOString());
   }
 
   /**
    * Get RBAC cache timestamp (Phase 5 - RBAC)
    */
   static getRBACCacheTimestamp(): Date | null {
-    const timestamp = sessionStorage.getItem<string>(StorageKeys.RBAC_CACHE_TIMESTAMP);
+    const timestamp = sessionStorageService.getItem<string>(StorageKeys.RBAC_CACHE_TIMESTAMP);
     return timestamp ? new Date(timestamp) : null;
   }
 
@@ -399,10 +399,10 @@ export class AuthStorage {
    * Clear RBAC data (Phase 5)
    */
   static clearRBACData(): void {
-    sessionStorage.removeItem(StorageKeys.USER_PERMISSIONS);
-    sessionStorage.removeItem(StorageKeys.USER_ROLES);
-    sessionStorage.removeItem(StorageKeys.PERMISSIONS_BY_RESOURCE);
-    sessionStorage.removeItem(StorageKeys.RBAC_CACHE_TIMESTAMP);
+    sessionStorageService.removeItem(StorageKeys.USER_PERMISSIONS);
+    sessionStorageService.removeItem(StorageKeys.USER_ROLES);
+    sessionStorageService.removeItem(StorageKeys.PERMISSIONS_BY_RESOURCE);
+    sessionStorageService.removeItem(StorageKeys.RBAC_CACHE_TIMESTAMP);
   }
 
   /**

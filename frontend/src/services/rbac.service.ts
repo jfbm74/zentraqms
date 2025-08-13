@@ -9,7 +9,6 @@ import { apiClient, AUTH_ENDPOINTS } from '../api/endpoints';
 import type {
   UserPermissionsResponse,
   UserRolesResponse,
-  PermissionUtils,
 } from '../types/rbac.types';
 
 /**
@@ -84,7 +83,7 @@ export class RBACService {
     }
 
     // Check for wildcard permissions
-    const resource = PermissionUtils.getResource(permission);
+    const resource = permission.split('.')[0];
     const wildcardPermission = `${resource}.*`;
     
     return userPermissions.includes(wildcardPermission);
@@ -203,7 +202,7 @@ export class RBACService {
     }
 
     // Check for wildcard permissions
-    const resource = PermissionUtils.getResource(permission);
+    const resource = permission.split('.')[0];
     const wildcardPermission = `${resource}.*`;
     
     if (userPermissions.includes(wildcardPermission)) {

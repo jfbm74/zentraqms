@@ -8,7 +8,6 @@
 import { useMemo, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { RBACService } from '../services/rbac.service';
-import { PermissionUtils } from '../types/rbac.types';
 
 /**
  * Permission check options interface
@@ -247,7 +246,7 @@ export const usePermissions = (): UsePermissionsReturn => {
   const getResourcePermissions = useCallback(
     (resource: string): ResourcePermissions => {
       const resourcePerms = permissionsByResource[resource] || [];
-      const actions = resourcePerms.map(perm => PermissionUtils.getAction(perm));
+      const actions = resourcePerms.map(perm => perm.split('.')[1] || '');
       
       return {
         resource,
