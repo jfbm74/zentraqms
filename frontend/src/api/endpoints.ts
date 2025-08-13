@@ -206,13 +206,13 @@ apiClient.interceptors.response.use(
 /**
  * Helper function to create query string from params
  */
-export const createQueryString = (params: Record<string, any>): string => {
+export const createQueryString = (params: Record<string, unknown>): string => {
   const searchParams = new URLSearchParams();
   
   Object.entries(params).forEach(([key, value]) => {
     if (value !== null && value !== undefined && value !== '') {
       if (Array.isArray(value)) {
-        value.forEach((item: any) => searchParams.append(key, String(item)));
+        value.forEach((item: unknown) => searchParams.append(key, String(item)));
       } else {
         searchParams.set(key, String(value));
       }
@@ -226,7 +226,7 @@ export const createQueryString = (params: Record<string, any>): string => {
 /**
  * Helper function to build URLs with parameters
  */
-export const buildUrl = (endpoint: string, params?: Record<string, any>): string => {
+export const buildUrl = (endpoint: string, params?: Record<string, unknown>): string => {
   const queryString = params ? createQueryString(params) : '';
   return `${endpoint}${queryString}`;
 };

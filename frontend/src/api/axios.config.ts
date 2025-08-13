@@ -16,12 +16,18 @@ const axiosInstance: AxiosInstance = axios.create({
   },
 });
 
+// Types for failed queue
+interface QueuedRequest {
+  resolve: (value: string | null) => void;
+  reject: (reason: unknown) => void;
+}
+
 // Flag para prevenir loops infinitos de refresh
 let isRefreshing = false;
-let failedQueue: any[] = [];
+let failedQueue: QueuedRequest[] = [];
 
 // Procesar cola de requests fallidos
-const processQueue = (error: any, token: string | null = null) => {
+const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue.forEach(prom => {
     if (error) {
       prom.reject(error);
@@ -72,7 +78,7 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
-    const originalRequest: any = error.config;
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     
     // Log de error en desarrollo
     if (import.meta.env.DEV) {
