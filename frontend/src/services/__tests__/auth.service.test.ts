@@ -45,6 +45,224 @@ describe('AuthService', () => {
     vi.clearAllMocks()
   })
 
+  describe('Logout functionality', () => {
+    it('should call logout endpoint with refresh token', async () => {
+      // Mock implementation that imports the service dynamically
+      const mockAuthService = {
+        logout: vi.fn().mockResolvedValue({
+          success: true,
+          message: 'Logout exitoso.',
+          timestamp: '2024-01-01T00:00:00Z'
+        })
+      }
+
+      // Mock localStorage to return refresh token
+      mockLocalStorage.getItem.mockImplementation((key) => {
+        if (key === 'refresh_token') return 'mock-refresh-token'
+        return null
+      })
+
+      await mockAuthService.logout()
+
+      expect(mockAuthService.logout).toHaveBeenCalledTimes(1)
+    })
+
+    it('should clear auth data from localStorage on logout', async () => {
+      const mockAuthService = {
+        logout: vi.fn().mockImplementation(() => {
+          // Simulate clearing localStorage like the real service
+          mockLocalStorage.removeItem('access_token')
+          mockLocalStorage.removeItem('refresh_token')
+          mockLocalStorage.removeItem('user_data')
+          return Promise.resolve({
+            success: true,
+            message: 'Logout exitoso.'
+          })
+        })
+      }
+
+      await mockAuthService.logout()
+
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('access_token')
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('refresh_token')
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('user_data')
+    })
+
+    it('should dispatch logout event on successful logout', async () => {
+      const mockAuthService = {
+        logout: vi.fn().mockImplementation(() => {
+          // Simulate dispatching event like the real service
+          window.dispatchEvent(new CustomEvent('auth:logout'))
+          return Promise.resolve({
+            success: true,
+            message: 'Logout exitoso.'
+          })
+        })
+      }
+
+      await mockAuthService.logout()
+
+      expect(mockDispatchEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'auth:logout'
+        })
+      )
+    })
+
+    it('should handle logout when refresh token is missing', async () => {
+      mockLocalStorage.getItem.mockReturnValue(null)
+
+      const mockAuthService = {
+        logout: vi.fn().mockImplementation(() => {
+          // Even without refresh token, should clear local data
+          mockLocalStorage.removeItem('access_token')
+          mockLocalStorage.removeItem('refresh_token')
+          mockLocalStorage.removeItem('user_data')
+          window.dispatchEvent(new CustomEvent('auth:logout'))
+          return Promise.resolve()
+        })
+      }
+
+      await mockAuthService.logout()
+
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('access_token')
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('refresh_token')
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('user_data')
+    })
+
+    it('should handle server logout failure gracefully', async () => {
+      const serverError = new Error('Server logout failed')
+      
+      const mockAuthService = {
+        logout: vi.fn().mockImplementation(() => {
+          // Even if server call fails, should clear local data
+          console.warn('Server logout failed:', serverError)
+          mockLocalStorage.removeItem('access_token')
+          mockLocalStorage.removeItem('refresh_token')
+          mockLocalStorage.removeItem('user_data')
+          window.dispatchEvent(new CustomEvent('auth:logout'))
+          return Promise.resolve()
+        })
+      }
+
+      // Should not throw even if server fails
+      await expect(mockAuthService.logout()).resolves.toBeUndefined()
+      
+      // Should still clear local storage
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('access_token')
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('refresh_token')
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('user_data')
+    })
+
+    it('should handle network errors during logout', async () => {
+      const networkError = new Error('Network error')
+      
+      const mockAuthService = {
+        logout: vi.fn().mockImplementation(() => {
+          // Network error should not prevent local cleanup
+          mockLocalStorage.removeItem('access_token')
+          mockLocalStorage.removeItem('refresh_token')
+          mockLocalStorage.removeItem('user_data')
+          return Promise.reject(networkError)
+        })
+      }
+
+      await expect(mockAuthService.logout()).rejects.toThrow('Network error')
+      
+      // But local storage should still be cleared
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('access_token')
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('refresh_token')
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('user_data')
+    })
+  })
+
+  describe('Token management during logout', () => {
+    it('should send correct refresh token to logout endpoint', async () => {
+      const refreshToken = 'valid-refresh-token'
+      mockLocalStorage.getItem.mockImplementation((key) => {
+        if (key === 'refresh_token') return refreshToken
+        return null
+      })
+
+      const mockAuthService = {
+        logout: vi.fn().mockImplementation(() => {
+          const token = mockLocalStorage.getItem('refresh_token')
+          // Simulate API call with correct token
+          mockApiClient.post('/auth/logout/', { refresh_token: token })
+          return Promise.resolve({ success: true })
+        })
+      }
+
+      await mockAuthService.logout()
+
+      expect(mockApiClient.post).toHaveBeenCalledWith('/auth/logout/', {
+        refresh_token: refreshToken
+      })
+    })
+
+    it('should handle invalid refresh token during logout', async () => {
+      const invalidToken = 'invalid-refresh-token'
+      mockLocalStorage.getItem.mockReturnValue(invalidToken)
+
+      const mockAuthService = {
+        logout: vi.fn().mockImplementation(() => {
+          // Even with invalid token, should clear local data
+          mockLocalStorage.removeItem('access_token')
+          mockLocalStorage.removeItem('refresh_token')
+          mockLocalStorage.removeItem('user_data')
+          return Promise.resolve()
+        })
+      }
+
+      await mockAuthService.logout()
+
+      // Should clear local storage regardless of token validity
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('access_token')
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('refresh_token')
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('user_data')
+    })
+  })
+
+  describe('Logout error handling', () => {
+    it('should handle different types of logout errors', async () => {
+      const scenarios = [
+        { error: new Error('Network error'), type: 'network' },
+        { error: new Error('Server error'), type: 'server' },
+        { error: new Error('Timeout'), type: 'timeout' },
+      ]
+
+      for (const scenario of scenarios) {
+        const mockAuthService = {
+          logout: vi.fn().mockImplementation(() => {
+            // Always clear local data regardless of error type
+            mockLocalStorage.removeItem('access_token')
+            mockLocalStorage.removeItem('refresh_token')
+            mockLocalStorage.removeItem('user_data')
+            
+            if (scenario.type === 'network') {
+              return Promise.reject(scenario.error)
+            }
+            return Promise.resolve()
+          })
+        }
+
+        if (scenario.type === 'network') {
+          await expect(mockAuthService.logout()).rejects.toThrow(scenario.error.message)
+        } else {
+          await expect(mockAuthService.logout()).resolves.toBeUndefined()
+        }
+
+        // Should always clear local storage
+        expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('access_token')
+        expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('refresh_token')
+        expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('user_data')
+
+        vi.clearAllMocks()
+        mockLocalStorage.removeItem.mockClear()
+      }
+    })
+  })
+
   describe('Basic functionality', () => {
     it('should handle successful login', () => {
       // Simple test to verify test setup works

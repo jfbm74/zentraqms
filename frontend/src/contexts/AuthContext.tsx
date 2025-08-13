@@ -13,7 +13,6 @@ import {
   AuthContextType,
   LoginRequest,
   AuthError,
-  AuthErrorType,
   AuthEventType,
 } from '../types/auth.types';
 import { User } from '../types/user.types';
@@ -166,7 +165,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 });
               }
             }
-          } catch (refreshError) {
+          } catch {
             // Refresh failed, clear auth data
             AuthStorage.clearAuth();
             dispatch({ type: 'LOGOUT' });

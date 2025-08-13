@@ -18,7 +18,7 @@ const Header: React.FC<HeaderProps> = ({ headerClass, onToggleSidebar }) => {
   const headerRef = useRef<HTMLElement>(null);
   
   // Authentication hook
-  const { user, logout, getUserDisplayName, getUserInitials, isLoading } = useAuth();
+  const { user, logout, getUserDisplayName } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const toggleDropdown = (dropdown: string) => {
