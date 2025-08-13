@@ -336,8 +336,8 @@ class AuthenticationEventMiddleware(MiddlewareMixin):
     def process_response(self, request, response):
         """Process the response and log authentication events."""
         # Log successful login
-        if (request.path == '/api/auth/login/' and 
-            request.method == 'POST' and 
+        if (request.path == '/api/auth/login/' and
+            request.method == 'POST' and
             response.status_code == 200):
 
             ip_address = get_client_ip(request)
@@ -355,8 +355,8 @@ class AuthenticationEventMiddleware(MiddlewareMixin):
                 logger.error(f"Error logging login event: {e}")
 
         # Log logout
-        elif (request.path == '/api/auth/logout/' and 
-              request.method == 'POST' and 
+        elif (request.path == '/api/auth/logout/' and
+              request.method == 'POST' and
               response.status_code == 200):
 
             ip_address = get_client_ip(request)

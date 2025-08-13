@@ -102,6 +102,6 @@ def user_login_failed_handler(sender, credentials, request, **kwargs):
 
 # TODO: Add more signals in future phases
 # - Password change signals
-# - Account verification signals  
+# - Account verification signals
 # - Permission change signals
 # - Profile update signals

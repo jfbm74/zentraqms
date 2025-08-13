@@ -305,7 +305,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description='Test ZentraQMS Authentication API')
-    parser.add_argument('--url', default='http://localhost:8000', 
+    parser.add_argument('--url', default='http://localhost:8000',
                        help='Base URL for the API (default: http://localhost:8000)')
     parser.add_argument('--email', help='Test email for authentication')
     parser.add_argument('--password', help='Test password for authentication')

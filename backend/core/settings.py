@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     # Local apps
     "authentication",
     "procesos",
-    "normograma", 
+    "normograma",
     "auditorias",
     "indicadores",
 ]

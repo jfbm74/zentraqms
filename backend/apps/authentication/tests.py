@@ -379,7 +379,7 @@ class ValidatorTests(TestCase):
         # Invalid phone numbers
         invalid_phones = [
             '123',  # Too short
-            '+1234567890',  # Wrong country code  
+            '+1234567890',  # Wrong country code
             'abc1234567',  # Non-numeric characters
         ]
 
