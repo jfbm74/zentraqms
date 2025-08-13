@@ -1,0 +1,464 @@
+# 🔐 Implementación Backend - JWT Básico y Endpoints de Autenticación
+
+## 📋 Contexto del Proyecto
+
+Continuando con el desarrollo del sistema de gestión de calidad, ya tengo implementado el modelo User personalizado y la configuración base de Django/DRF (Fase 1.1). Ahora necesito implementar la autenticación JWT con los endpoints básicos para que el frontend pueda conectarse.
+
+## 🎯 Objetivo de esta Fase
+
+Implementar autenticación basada en JWT (JSON Web Tokens) usando `djangorestframework-simplejwt` con los endpoints esenciales para login, refresh de tokens, logout básico y obtención de datos del usuario autenticado. Esta es la Fase 1.2 del desarrollo.
+
+## 📦 Requerimientos de Implementación
+
+### 1. Instalación y Configuración de SimpleJWT
+
+**Instalación:**
+```bash
+# Agregar a requirements/base.txt
+djangorestframework-simplejwt==5.3.1
+PyJWT==2.8.0
+```
+
+**Configuración en settings/base.py:**
+```python
+from datetime import timedelta
+
+# Agregar a INSTALLED_APPS
+INSTALLED_APPS = [
+    # ... apps existentes ...
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',  # Preparar para futuro
+]
+
+# Configuración de SimpleJWT
+SIMPLE_JWT = {
+    # Configuración de tokens
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,  # Generar nuevo refresh token en cada refresh
+    'BLACKLIST_AFTER_ROTATION': False,  # Por ahora False, activar en Fase 2
+    'UPDATE_LAST_LOGIN': True,
+    
+    # Algoritmo y claves
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    
+    # Configuración de claims
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    
+    # Claims personalizados en el token
+    'TOKEN_OBTAIN_SERIALIZER': 'apps.authentication.serializers.CustomTokenObtainPairSerializer',
+    
+    # Validación
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+    
+    # Claims adicionales
+    'JTI_CLAIM': 'jti',
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=30),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=7),
+}
+
+# Actualizar DEFAULT_AUTHENTICATION_CLASSES en REST_FRAMEWORK
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',  # Mantener para admin
+    ],
+    # ... resto de configuración existente ...
+}
+```
+
+### 2. Serializers para JWT
+
+**Crear en apps/authentication/serializers.py:**
+
+```python
+# CustomTokenObtainPairSerializer
+# - Heredar de TokenObtainPairSerializer
+# - Agregar claims personalizados al token:
+#   - email
+#   - first_name
+#   - last_name
+#   - is_verified
+#   - roles (array vacío por ahora, preparación para RBAC)
+# - Validar que el usuario puede hacer login (is_active, not locked)
+# - Actualizar last_login_ip si es posible
+
+# LoginSerializer
+# - Campos: email, password
+# - Validación de email (normalizar, verificar formato)
+# - No revelar si el email existe o no en mensajes de error
+# - Método validate() que verifique credenciales
+# - Retornar tokens + user data
+
+# UserSerializer (actualizar el existente)
+# - Campos para mostrar:
+#   - id, email, first_name, last_name
+#   - is_verified, is_active
+#   - date_joined, last_login
+#   - full_name (property)
+#   - department, position
+# - Excluir campos sensibles: password, failed_login_attempts, etc.
+
+# TokenRefreshSerializer (opcional, personalizar si necesario)
+# - Heredar de TokenRefreshSerializer
+# - Agregar validaciones adicionales si se requiere
+
+# LogoutSerializer
+# - Campo: refresh_token (requerido)
+# - Validar que el token es válido
+# - Por ahora solo validar, no blacklist
+```
+
+### 3. Views para Autenticación
+
+**Crear en apps/authentication/views.py:**
+
+```python
+# LoginView (POST /api/auth/login/)
+# - Heredar de GenericAPIView o APIView
+# - permission_classes = [AllowAny]
+# - Usar CustomTokenObtainPairSerializer
+# - Manejar intentos fallidos:
+#   - Incrementar failed_login_attempts
+#   - Bloquear después de 5 intentos (locked_until)
+# - En login exitoso:
+#   - Resetear failed_login_attempts a 0
+#   - Actualizar last_login
+#   - Guardar last_login_ip
+# - Response exitosa debe incluir:
+#   {
+#     "access": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+#     "refresh": "eyJ0eXAiOiJKV1QiLCJhbGc...",
+#     "user": {
+#       "id": "uuid",
+#       "email": "user@example.com",
+#       "first_name": "John",
+#       "last_name": "Doe",
+#       "is_verified": true
+#     }
+#   }
+# - Manejar excepciones y retornar errores consistentes
+
+# TokenRefreshView (POST /api/auth/refresh/)
+# - Usar TokenRefreshView de SimpleJWT o personalizar
+# - permission_classes = [AllowAny]
+# - Validar refresh token
+# - Retornar nuevo access token (y refresh si ROTATE_REFRESH_TOKENS=True)
+# - Response:
+#   {
+#     "access": "new_access_token",
+#     "refresh": "new_refresh_token"  // Si rotation está activo
+#   }
+
+# LogoutView (POST /api/auth/logout/)
+# - permission_classes = [IsAuthenticated]
+# - Recibir refresh_token en body
+# - Por ahora solo validar el token y retornar success
+# - TODO en Fase 2: Agregar token a blacklist
+# - Response: {"detail": "Successfully logged out"}
+# - Manejar caso donde token ya expiró o es inválido
+
+# CurrentUserView (GET /api/auth/user/)
+# - permission_classes = [IsAuthenticated]
+# - Retornar datos del usuario autenticado
+# - Usar UserSerializer
+# - Agregar campos adicionales si necesario:
+#   - permissions: [] (vacío por ahora)
+#   - roles: [] (vacío por ahora)
+# - Response:
+#   {
+#     "id": "uuid",
+#     "email": "user@example.com",
+#     "first_name": "John",
+#     "last_name": "Doe",
+#     "full_name": "John Doe",
+#     "is_verified": true,
+#     "department": "Quality",
+#     "position": "Coordinator",
+#     "roles": [],
+#     "permissions": []
+#   }
+
+# ChangePasswordView (Preparar estructura, implementar en Fase 2)
+# - permission_classes = [IsAuthenticated]
+# - Validar contraseña actual
+# - Validar nueva contraseña (fuerza)
+# - Actualizar y retornar success
+```
+
+### 4. URLs Configuration
+
+**Crear apps/authentication/urls.py:**
+```python
+from django.urls import path
+from .views import (
+    LoginView,
+    TokenRefreshView,
+    LogoutView,
+    CurrentUserView,
+)
+
+app_name = 'authentication'
+
+urlpatterns = [
+    # Auth endpoints
+    path('login/', LoginView.as_view(), name='login'),
+    path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('logout/', LogoutView.as_view(), name='logout'),
+    path('user/', CurrentUserView.as_view(), name='current_user'),
+    
+    # Preparar para futuras rutas
+    # path('register/', RegisterView.as_view(), name='register'),
+    # path('password/change/', ChangePasswordView.as_view(), name='change_password'),
+    # path('password/reset/', PasswordResetView.as_view(), name='password_reset'),
+]
+```
+
+**Actualizar config/urls.py principal:**
+```python
+from django.contrib import admin
+from django.urls import path, include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('api/auth/', include('apps.authentication.urls')),
+    # Preparar para futuros endpoints
+    # path('api/users/', include('apps.users.urls')),
+    # path('api/roles/', include('apps.rbac.urls')),
+]
+```
+
+### 5. Utilidades y Helpers
+
+**Crear apps/authentication/utils.py:**
+```python
+# get_client_ip(request)
+# - Obtener IP real del cliente considerando proxies
+# - Verificar headers: HTTP_X_FORWARDED_FOR, HTTP_X_REAL_IP
+# - Fallback a REMOTE_ADDR
+
+# is_account_locked(user)
+# - Verificar si locked_until > timezone.now()
+# - Retornar True/False
+
+# lock_account(user, minutes=30)
+# - Establecer locked_until
+# - Guardar usuario
+
+# unlock_account(user)
+# - Limpiar locked_until
+# - Resetear failed_login_attempts
+# - Guardar usuario
+
+# increment_failed_attempts(user)
+# - Incrementar failed_login_attempts
+# - Si llega a 5, llamar lock_account()
+# - Guardar usuario
+```
+
+### 6. Middleware de Seguridad
+
+**Crear apps/authentication/middleware.py:**
+```python
+# JWTAuthenticationMiddleware (opcional pero recomendado)
+# - Verificar token en cada request
+# - Agregar user al request si token válido
+# - Manejar tokens expirados gracefully
+# - Log de actividad si necesario
+
+# SecurityHeadersMiddleware
+# - Agregar headers de seguridad
+# - X-Content-Type-Options: nosniff
+# - X-Frame-Options: DENY
+# - X-XSS-Protection: 1; mode=block
+```
+
+### 7. Tests para JWT
+
+**Crear apps/authentication/tests/test_jwt_auth.py:**
+```python
+# TestLogin
+# - test_login_success: Credenciales válidas retornan tokens
+# - test_login_invalid_password: Error genérico
+# - test_login_invalid_email: Error genérico
+# - test_login_inactive_user: No puede loguearse
+# - test_login_locked_account: Cuenta bloqueada
+# - test_login_increments_failed_attempts: Contador aumenta
+# - test_login_locks_after_5_attempts: Se bloquea
+
+# TestTokenRefresh
+# - test_refresh_valid_token: Retorna nuevo access token
+# - test_refresh_invalid_token: Error 401
+# - test_refresh_expired_token: Error apropiado
+# - test_refresh_rotates_token: Si está configurado
+
+# TestLogout
+# - test_logout_authenticated: Success
+# - test_logout_unauthenticated: Error 401
+# - test_logout_invalid_refresh: Manejo de error
+
+# TestCurrentUser
+# - test_get_current_user_authenticated: Retorna datos
+# - test_get_current_user_unauthenticated: Error 401
+# - test_user_data_excludes_sensitive: No incluye password, etc.
+```
+
+### 8. Documentación de API
+
+**Agregar documentación con docstrings:**
+```python
+"""
+Documentar cada endpoint con:
+- Descripción
+- Parámetros esperados
+- Posibles respuestas (200, 400, 401, 403)
+- Ejemplos de request/response
+"""
+
+# Considerar agregar drf-spectacular para OpenAPI/Swagger automático
+```
+
+### 9. Logging y Auditoría
+
+**Configurar logging en settings:**
+```python
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': 'logs/authentication.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'authentication': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
+```
+
+**Agregar logs en puntos críticos:**
+- Login exitoso/fallido
+- Cuenta bloqueada
+- Token refresh
+- Logout
+- Cambios de contraseña (futuro)
+
+### 10. Manejo de Errores Consistente
+
+**Crear apps/common/exceptions.py:**
+```python
+# CustomAuthenticationFailed
+# - Mensaje genérico para no revelar información
+# - Status code 401
+
+# AccountLockedException
+# - Incluir tiempo restante de bloqueo
+# - Status code 403
+
+# InvalidTokenException
+# - Para tokens malformados o expirados
+# - Status code 401
+```
+
+## 📝 Criterios de Aceptación
+
+1. ✅ SimpleJWT instalado y configurado correctamente
+2. ✅ Endpoint `/api/auth/login/` funcional con tokens válidos
+3. ✅ Endpoint `/api/auth/refresh/` renueva access token
+4. ✅ Endpoint `/api/auth/logout/` valida y responde (sin blacklist)
+5. ✅ Endpoint `/api/auth/user/` retorna datos del usuario autenticado
+6. ✅ Bloqueo de cuenta después de 5 intentos fallidos
+7. ✅ Tokens incluyen claims personalizados
+8. ✅ Tests con cobertura mínima del 80%
+9. ✅ Logs de auditoría funcionando
+10. ✅ Manejo de errores consistente
+
+## 🚨 Consideraciones Importantes
+
+1. **NO implementar blacklist completo todavía** - solo preparar estructura
+2. **NO implementar registro de usuarios** - viene en Fase 2
+3. **NO implementar roles/permisos** - solo preparar campos vacíos
+4. **Seguridad desde el inicio** - validaciones, rate limiting básico
+5. **Tokens con información mínima** - evitar data sensible
+6. **Preparar para HTTPS** - será requerido en producción
+7. **Tiempos de expiración apropiados** - 30 min access, 7 días refresh
+
+## 🔧 Comandos de Verificación
+
+```bash
+# Test manual con curl
+curl -X POST http://localhost:8000/api/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","password":"Test1234!"}'
+
+# Verificar token refresh
+curl -X POST http://localhost:8000/api/auth/refresh/ \
+  -H "Content-Type: application/json" \
+  -d '{"refresh":"<refresh_token>"}'
+
+# Obtener usuario actual
+curl -X GET http://localhost:8000/api/auth/user/ \
+  -H "Authorization: Bearer <access_token>"
+
+# Logout
+curl -X POST http://localhost:8000/api/auth/logout/ \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"refresh":"<refresh_token>"}'
+
+# Correr tests
+python manage.py test apps.authentication.tests.test_jwt_auth -v 2
+
+# Verificar que las migraciones están al día
+python manage.py makemigrations --check
+```
+
+## 📚 Recursos y Referencias
+
+- [SimpleJWT Documentation](https://django-rest-framework-simplejwt.readthedocs.io/)
+- [DRF Authentication](https://www.django-rest-framework.org/api-guide/authentication/)
+- [JWT Best Practices](https://tools.ietf.org/html/rfc8725)
+- [OWASP Authentication Cheatsheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
+
+## 🎯 Entregables Esperados
+
+1. **Endpoints funcionales** según especificación
+2. **Tests automatizados** pasando
+3. **Logs de auditoría** capturando eventos
+4. **Documentación actualizada** con ejemplos de uso
+5. **Postman/Insomnia collection** para testing manual (opcional)
+
+## 📊 Métricas de Éxito
+
+- Tiempo de respuesta login < 200ms
+- Tokens válidos y verificables
+- Cero vulnerabilidades de seguridad obvias
+- Tests cubriendo casos edge
+- Errores manejados gracefully
+
+---
+
+**Nota**: Esta fase establece la base de autenticación JWT que será utilizada por el frontend. Es crucial que los endpoints sean estables y sigan las convenciones REST. El frontend dependerá de estos contratos de API, así que cambios posteriores deben ser retrocompatibles.

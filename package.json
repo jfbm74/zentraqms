@@ -1,0 +1,53 @@
+{
+  "name": "zentraqms",
+  "version": "0.1.0",
+  "description": "Sistema de Gestión de Calidad (QMS) - ZentraQMS",
+  "private": true,
+  "scripts": {
+    "version:patch": "npm version patch --no-git-tag-version",
+    "version:minor": "npm version minor --no-git-tag-version", 
+    "version:major": "npm version major --no-git-tag-version",
+    "version:sync": "node scripts/sync-versions.js",
+    "changelog:generate": "conventional-changelog -p angular -i CHANGELOG.md -s",
+    "release:patch": "npm run version:patch && npm run version:sync && npm run changelog:generate",
+    "release:minor": "npm run version:minor && npm run version:sync && npm run changelog:generate", 
+    "release:major": "npm run version:major && npm run version:sync && npm run changelog:generate",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && pip install -r requirements/development.txt",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && source venv/bin/activate && python manage.py runserver",
+    "test:frontend": "cd frontend && npm run test",
+    "test:backend": "cd backend && source venv/bin/activate && python manage.py test",
+    "test:all": "npm run test:frontend && npm run test:backend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && flake8 .",
+    "lint:all": "npm run lint:frontend && npm run lint:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:all": "npm run build:frontend",
+    "clean": "rm -rf frontend/dist frontend/node_modules backend/.coverage backend/htmlcov"
+  },
+  "keywords": [
+    "qms",
+    "quality-management",
+    "django",
+    "react",
+    "typescript",
+    "quality-system"
+  ],
+  "author": "Juan Bustamante",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jfbm74/zentraqms.git"
+  },
+  "workspaces": [
+    "frontend"
+  ],
+  "devDependencies": {
+    "conventional-changelog-cli": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0",
+    "python": ">=3.11.0"
+  }
+}

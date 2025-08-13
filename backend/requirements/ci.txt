@@ -1,0 +1,34 @@
+# Minimal CI requirements for ZentraQMS Backend
+# Focused on essential packages for testing
+
+# Django and core dependencies
+Django==5.0.0
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.1
+django-cors-headers==4.3.1
+
+# Database for testing
+psycopg2-binary==2.9.9
+
+# Configuration management
+python-decouple==3.8
+python-dotenv==1.0.0
+
+# JWT and Authentication
+PyJWT==2.8.0
+
+# Utilities
+requests==2.31.0
+
+# Testing frameworks
+pytest==7.4.3
+pytest-django==4.7.0
+pytest-cov==4.1.0
+
+# Coverage tools
+coverage==7.3.2
+
+# Code quality
+flake8==6.1.0
+black==23.11.0
+bandit==1.7.5

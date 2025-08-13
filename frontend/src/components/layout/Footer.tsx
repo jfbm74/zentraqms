@@ -14,7 +14,7 @@ const Footer: React.FC = () => {
           </div>
           <div className="col-sm-6">
             <div className="text-sm-end d-none d-sm-block">
-              Desarrollado con ❤️ para la Excelencia Organizacional
+              Desarrollado por Zentratek.com con ❤️ para la Excelencia Organizacional
             </div>
           </div>
         </div>

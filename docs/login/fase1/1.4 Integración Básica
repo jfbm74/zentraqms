@@ -1,0 +1,1169 @@
+# 🔗 Integración Frontend-Backend y Validación Funcional
+
+## 📋 Contexto del Proyecto
+
+Ya tengo implementados:
+- **Backend (Fase 1.1-1.2)**: Modelo User, JWT con endpoints funcionando
+- **Frontend (Fase 1.3)**: Setup inicial con React, AuthContext, servicios y LoginPage
+
+Ahora necesito conectar ambas partes, validar que la integración funciona correctamente y tener un flujo completo de autenticación end-to-end.
+
+## 🎯 Objetivo de esta Fase
+
+Integrar el frontend con el backend, implementar los interceptores de Axios correctamente, validar el flujo completo de login/logout, asegurar que las rutas protegidas funcionan y crear un dashboard placeholder. Esta es la Fase 1.4 del desarrollo.
+
+## 📦 Requerimientos de Implementación
+
+### 1. Actualizar Interceptores de Axios
+
+**Actualizar src/api/axios.config.ts:**
+```typescript
+import axios, { 
+  AxiosInstance, 
+  AxiosError, 
+  InternalAxiosRequestConfig,
+  AxiosResponse 
+} from 'axios';
+import { StorageService } from '../utils/storage';
+import { AUTH_ENDPOINTS } from './endpoints';
+
+// Crear instancia de Axios
+const axiosInstance: AxiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+});
+
+// Flag para prevenir loops infinitos de refresh
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+// Procesar cola de requests fallidos
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
+// REQUEST INTERCEPTOR
+axiosInstance.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    // Obtener token del storage
+    const token = StorageService.getAccessToken();
+    
+    // Agregar token al header si existe
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
+    // Log en desarrollo
+    if (import.meta.env.DEV) {
+      console.log(`🚀 ${config.method?.toUpperCase()} ${config.url}`, {
+        data: config.data,
+        params: config.params,
+        headers: config.headers,
+      });
+    }
+    
+    return config;
+  },
+  (error: AxiosError) => {
+    console.error('❌ Request error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// RESPONSE INTERCEPTOR
+axiosInstance.interceptors.response.use(
+  (response: AxiosResponse) => {
+    // Log exitoso en desarrollo
+    if (import.meta.env.DEV) {
+      console.log(`✅ Response from ${response.config.url}:`, response.data);
+    }
+    
+    return response;
+  },
+  async (error: AxiosError) => {
+    const originalRequest: any = error.config;
+    
+    // Log de error en desarrollo
+    if (import.meta.env.DEV) {
+      console.error(`❌ Response error from ${originalRequest?.url}:`, {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
+    }
+    
+    // Si el error es 401 y no es del endpoint de login o refresh
+    if (
+      error.response?.status === 401 && 
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes(AUTH_ENDPOINTS.LOGIN) &&
+      !originalRequest.url?.includes(AUTH_ENDPOINTS.REFRESH)
+    ) {
+      // Si ya estamos refreshing, agregar a la cola
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return axiosInstance(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+      
+      originalRequest._retry = true;
+      isRefreshing = true;
+      
+      const refreshToken = StorageService.getRefreshToken();
+      
+      if (!refreshToken) {
+        // No hay refresh token, limpiar y redirigir
+        StorageService.clearTokens();
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+      
+      try {
+        // Intentar refresh
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_URL}${AUTH_ENDPOINTS.REFRESH}`,
+          { refresh: refreshToken }
+        );
+        
+        const { access, refresh: newRefresh } = response.data;
+        
+        // Actualizar tokens
+        StorageService.setAccessToken(access);
+        if (newRefresh) {
+          StorageService.setRefreshToken(newRefresh);
+        }
+        
+        // Procesar cola con nuevo token
+        processQueue(null, access);
+        
+        // Reintentar request original
+        originalRequest.headers.Authorization = `Bearer ${access}`;
+        return axiosInstance(originalRequest);
+        
+      } catch (refreshError) {
+        // Refresh falló, limpiar todo
+        processQueue(refreshError, null);
+        StorageService.clearTokens();
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+    
+    // Para otros errores, rechazar normalmente
+    return Promise.reject(error);
+  }
+);
+
+export default axiosInstance;
+```
+
+### 2. Actualizar LoginPage con Integración Real
+
+**Actualizar src/pages/auth/LoginPage.tsx:**
+```typescript
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { toast } from 'react-toastify';
+import { useAuth } from '../../hooks/useAuth';
+import { LoginCredentials } from '../../types/auth.types';
+
+// Componente adaptado de Velzon
+const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login, isAuthenticated } = useAuth();
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+  const [isAccountLocked, setIsAccountLocked] = useState(false);
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setError,
+    clearErrors,
+    setFocus,
+  } = useForm<LoginCredentials>({
+    defaultValues: {
+      email: import.meta.env.DEV ? 'admin@example.com' : '', // Pre-fill en dev
+      password: import.meta.env.DEV ? 'Test1234!' : '',
+      rememberMe: false,
+    },
+  });
+
+  // Redirect si ya está autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      const from = location.state?.from?.pathname || '/dashboard';
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, location]);
+
+  // Focus en email al montar
+  useEffect(() => {
+    setFocus('email');
+  }, [setFocus]);
+
+  // Reset lock después de 30 segundos (demo)
+  useEffect(() => {
+    if (isAccountLocked) {
+      const timer = setTimeout(() => {
+        setIsAccountLocked(false);
+        setLoginAttempts(0);
+        toast.info('Tu cuenta ha sido desbloqueada. Puedes intentar nuevamente.');
+      }, 30000); // 30 segundos para demo, en producción sería más
+
+      return () => clearTimeout(timer);
+    }
+  }, [isAccountLocked]);
+
+  const onSubmit = async (data: LoginCredentials) => {
+    // Verificar si cuenta está bloqueada
+    if (isAccountLocked) {
+      setError('root', {
+        type: 'manual',
+        message: 'Tu cuenta está temporalmente bloqueada. Intenta más tarde.',
+      });
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      clearErrors();
+      
+      // Intentar login
+      await login(data);
+      
+      // Login exitoso
+      toast.success('¡Bienvenido! Has iniciado sesión correctamente.');
+      setLoginAttempts(0);
+      
+      // La navegación es manejada por el AuthContext
+      
+    } catch (error: any) {
+      setIsLoading(false);
+      
+      // Incrementar intentos fallidos
+      const newAttempts = loginAttempts + 1;
+      setLoginAttempts(newAttempts);
+      
+      // Manejar diferentes tipos de error
+      if (error.response?.status === 401) {
+        // Credenciales inválidas
+        setError('root', {
+          type: 'manual',
+          message: `Credenciales inválidas. Intentos restantes: ${5 - newAttempts}`,
+        });
+        
+        // Bloquear después de 5 intentos
+        if (newAttempts >= 5) {
+          setIsAccountLocked(true);
+          setError('root', {
+            type: 'manual',
+            message: 'Demasiados intentos fallidos. Cuenta bloqueada temporalmente.',
+          });
+          toast.error('Tu cuenta ha sido bloqueada por 30 segundos.');
+        }
+      } else if (error.response?.status === 403) {
+        // Cuenta ya bloqueada en el backend
+        setIsAccountLocked(true);
+        setError('root', {
+          type: 'manual',
+          message: error.response.data?.detail || 'Tu cuenta está bloqueada.',
+        });
+      } else if (error.response?.status === 400) {
+        // Error de validación
+        const validationErrors = error.response.data?.errors;
+        if (validationErrors) {
+          Object.keys(validationErrors).forEach((field: any) => {
+            setError(field, {
+              type: 'manual',
+              message: validationErrors[field][0],
+            });
+          });
+        } else {
+          setError('root', {
+            type: 'manual',
+            message: error.response.data?.detail || 'Error en los datos enviados.',
+          });
+        }
+      } else if (!error.response) {
+        // Error de red
+        setError('root', {
+          type: 'manual',
+          message: 'Error de conexión. Verifica tu conexión a internet.',
+        });
+        toast.error('No se pudo conectar con el servidor.');
+      } else {
+        // Error genérico
+        setError('root', {
+          type: 'manual',
+          message: 'Error al iniciar sesión. Por favor intenta nuevamente.',
+        });
+      }
+    }
+  };
+
+  return (
+    <div className="auth-page-wrapper auth-bg-cover py-5 d-flex justify-content-center align-items-center min-vh-100">
+      <div className="bg-overlay"></div>
+      
+      <div className="auth-page-content overflow-hidden pt-lg-5">
+        <div className="container">
+          <div className="row">
+            <div className="col-lg-12">
+              <div className="card overflow-hidden">
+                <div className="row g-0">
+                  {/* Lado izquierdo - Imagen/Info */}
+                  <div className="col-lg-6">
+                    <div className="p-lg-5 p-4 auth-one-bg h-100">
+                      <div className="bg-overlay"></div>
+                      <div className="position-relative h-100 d-flex flex-column">
+                        <div className="mb-4">
+                          <Link to="/" className="d-block">
+                            <img src="/logo-light.png" alt="logo" height="18" />
+                          </Link>
+                        </div>
+                        <div className="mt-auto">
+                          <div className="mb-3">
+                            <i className="ri-double-quotes-l display-4 text-success"></i>
+                          </div>
+                          <div id="qoutescarouselIndicators" className="carousel slide">
+                            <div className="carousel-inner text-center text-white pb-5">
+                              <div className="carousel-item active">
+                                <p className="fs-15 fst-italic">
+                                  "Sistema de Gestión de Calidad"
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Lado derecho - Formulario */}
+                  <div className="col-lg-6">
+                    <div className="p-lg-5 p-4">
+                      <div>
+                        <h5 className="text-primary">Bienvenido</h5>
+                        <p className="text-muted">Inicia sesión para continuar.</p>
+                      </div>
+
+                      <div className="mt-4">
+                        <form onSubmit={handleSubmit(onSubmit)}>
+                          {/* Alert de error global */}
+                          {errors.root && (
+                            <div className="alert alert-danger alert-dismissible fade show" role="alert">
+                              <strong>Error:</strong> {errors.root.message}
+                              <button 
+                                type="button" 
+                                className="btn-close" 
+                                onClick={() => clearErrors('root')}
+                              ></button>
+                            </div>
+                          )}
+
+                          {/* Alert de cuenta bloqueada */}
+                          {isAccountLocked && (
+                            <div className="alert alert-warning" role="alert">
+                              <i className="ri-alert-line me-2"></i>
+                              Cuenta bloqueada temporalmente. Espera 30 segundos.
+                            </div>
+                          )}
+
+                          {/* Campo Email */}
+                          <div className="mb-3">
+                            <label htmlFor="email" className="form-label">
+                              Email <span className="text-danger">*</span>
+                            </label>
+                            <input
+                              {...register('email', {
+                                required: 'El email es requerido',
+                                pattern: {
+                                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                                  message: 'Formato de email inválido',
+                                },
+                              })}
+                              type="email"
+                              className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                              id="email"
+                              placeholder="nombre@empresa.com"
+                              autoComplete="email"
+                              disabled={isAccountLocked}
+                            />
+                            {errors.email && (
+                              <div className="invalid-feedback">
+                                {errors.email.message}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Campo Password */}
+                          <div className="mb-3">
+                            <div className="float-end">
+                              <Link to="/forgot-password" className="text-muted">
+                                ¿Olvidaste tu contraseña?
+                              </Link>
+                            </div>
+                            <label className="form-label" htmlFor="password">
+                              Contraseña <span className="text-danger">*</span>
+                            </label>
+                            <div className="position-relative auth-pass-inputgroup mb-3">
+                              <input
+                                {...register('password', {
+                                  required: 'La contraseña es requerida',
+                                  minLength: {
+                                    value: 8,
+                                    message: 'Mínimo 8 caracteres',
+                                  },
+                                })}
+                                type={showPassword ? 'text' : 'password'}
+                                className={`form-control pe-5 password-input ${
+                                  errors.password ? 'is-invalid' : ''
+                                }`}
+                                placeholder="Ingresa tu contraseña"
+                                id="password"
+                                autoComplete="current-password"
+                                disabled={isAccountLocked}
+                              />
+                              <button
+                                className="btn btn-link position-absolute end-0 top-0 text-decoration-none text-muted password-addon"
+                                type="button"
+                                id="password-addon"
+                                onClick={() => setShowPassword(!showPassword)}
+                              >
+                                <i className={`ri-eye${showPassword ? '-off' : ''}-fill align-middle`}></i>
+                              </button>
+                              {errors.password && (
+                                <div className="invalid-feedback">
+                                  {errors.password.message}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Remember Me */}
+                          <div className="form-check">
+                            <input
+                              {...register('rememberMe')}
+                              className="form-check-input"
+                              type="checkbox"
+                              id="auth-remember-check"
+                              disabled={isAccountLocked}
+                            />
+                            <label className="form-check-label" htmlFor="auth-remember-check">
+                              Recordarme
+                            </label>
+                          </div>
+
+                          {/* Submit Button */}
+                          <div className="mt-4">
+                            <button
+                              className="btn btn-success w-100"
+                              type="submit"
+                              disabled={isLoading || isAccountLocked}
+                            >
+                              {isLoading ? (
+                                <>
+                                  <span 
+                                    className="spinner-border spinner-border-sm me-2" 
+                                    role="status" 
+                                    aria-hidden="true"
+                                  ></span>
+                                  Iniciando sesión...
+                                </>
+                              ) : (
+                                'Iniciar Sesión'
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Dev Mode Info */}
+                          {import.meta.env.DEV && (
+                            <div className="mt-3">
+                              <div className="alert alert-info small">
+                                <strong>Modo Desarrollo:</strong><br />
+                                Email: admin@example.com<br />
+                                Pass: Test1234!
+                              </div>
+                            </div>
+                          )}
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LoginPage;
+```
+
+### 3. Dashboard Placeholder
+
+**Crear src/pages/dashboard/Dashboard.tsx:**
+```typescript
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import axiosInstance from '../../api/axios.config';
+
+interface DashboardStats {
+  totalUsers?: number;
+  activeUsers?: number;
+  pendingTasks?: number;
+  completedTasks?: number;
+}
+
+const Dashboard: React.FC = () => {
+  const { user, logout, isLoading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [stats, setStats] = useState<DashboardStats>({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Cargar datos del dashboard (simulado por ahora)
+  useEffect(() => {
+    const loadDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Simular carga de datos
+        // En el futuro, esto será una llamada real a la API
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        setStats({
+          totalUsers: 150,
+          activeUsers: 89,
+          pendingTasks: 23,
+          completedTasks: 67,
+        });
+        
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+        toast.error('Error al cargar los datos del dashboard');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadDashboardData();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success('Sesión cerrada correctamente');
+      navigate('/login');
+    } catch (error) {
+      toast.error('Error al cerrar sesión');
+    }
+  };
+
+  // Test de endpoint protegido
+  const testProtectedEndpoint = async () => {
+    try {
+      const response = await axiosInstance.get('/auth/user/');
+      console.log('Protected endpoint response:', response.data);
+      toast.success('Endpoint protegido accedido correctamente');
+    } catch (error) {
+      console.error('Error accessing protected endpoint:', error);
+      toast.error('Error al acceder al endpoint protegido');
+    }
+  };
+
+  if (authLoading || isLoading) {
+    return (
+      <div className="page-content">
+        <div className="container-fluid">
+          <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Cargando...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-content">
+      <div className="container-fluid">
+        {/* Page Title */}
+        <div className="row">
+          <div className="col-12">
+            <div className="page-title-box d-sm-flex align-items-center justify-content-between">
+              <h4 className="mb-sm-0">Dashboard</h4>
+              <div className="page-title-right">
+                <ol className="breadcrumb m-0">
+                  <li className="breadcrumb-item"><a href="#">Home</a></li>
+                  <li className="breadcrumb-item active">Dashboard</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Welcome Card */}
+        <div className="row">
+          <div className="col-12">
+            <div className="card">
+              <div className="card-body">
+                <div className="d-flex align-items-center justify-content-between">
+                  <div>
+                    <h5 className="card-title">
+                      ¡Bienvenido, {user?.firstName || 'Usuario'}! 👋
+                    </h5>
+                    <p className="text-muted mb-0">
+                      Has iniciado sesión como: <strong>{user?.email}</strong>
+                    </p>
+                    {user?.department && (
+                      <p className="text-muted mb-0">
+                        Departamento: <strong>{user.department}</strong>
+                      </p>
+                    )}
+                    {user?.position && (
+                      <p className="text-muted mb-0">
+                        Cargo: <strong>{user.position}</strong>
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <button 
+                      onClick={handleLogout}
+                      className="btn btn-soft-danger"
+                    >
+                      <i className="ri-logout-box-line align-middle me-1"></i>
+                      Cerrar Sesión
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="row">
+          <div className="col-xl-3 col-md-6">
+            <div className="card card-animate">
+              <div className="card-body">
+                <div className="d-flex align-items-center">
+                  <div className="flex-grow-1 overflow-hidden">
+                    <p className="text-uppercase fw-medium text-muted text-truncate mb-0">
+                      Total Usuarios
+                    </p>
+                  </div>
+                </div>
+                <div className="d-flex align-items-end justify-content-between mt-4">
+                  <div>
+                    <h4 className="fs-22 fw-semibold ff-secondary mb-4">
+                      <span className="counter-value" data-target={stats.totalUsers}>
+                        {stats.totalUsers || 0}
+                      </span>
+                    </h4>
+                  </div>
+                  <div className="avatar-sm flex-shrink-0">
+                    <span className="avatar-title bg-primary-subtle rounded fs-3">
+                      <i className="bx bx-user text-primary"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-xl-3 col-md-6">
+            <div className="card card-animate">
+              <div className="card-body">
+                <div className="d-flex align-items-center">
+                  <div className="flex-grow-1 overflow-hidden">
+                    <p className="text-uppercase fw-medium text-muted text-truncate mb-0">
+                      Usuarios Activos
+                    </p>
+                  </div>
+                </div>
+                <div className="d-flex align-items-end justify-content-between mt-4">
+                  <div>
+                    <h4 className="fs-22 fw-semibold ff-secondary mb-4">
+                      <span className="counter-value" data-target={stats.activeUsers}>
+                        {stats.activeUsers || 0}
+                      </span>
+                    </h4>
+                  </div>
+                  <div className="avatar-sm flex-shrink-0">
+                    <span className="avatar-title bg-success-subtle rounded fs-3">
+                      <i className="bx bx-user-check text-success"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-xl-3 col-md-6">
+            <div className="card card-animate">
+              <div className="card-body">
+                <div className="d-flex align-items-center">
+                  <div className="flex-grow-1 overflow-hidden">
+                    <p className="text-uppercase fw-medium text-muted text-truncate mb-0">
+                      Tareas Pendientes
+                    </p>
+                  </div>
+                </div>
+                <div className="d-flex align-items-end justify-content-between mt-4">
+                  <div>
+                    <h4 className="fs-22 fw-semibold ff-secondary mb-4">
+                      <span className="counter-value" data-target={stats.pendingTasks}>
+                        {stats.pendingTasks || 0}
+                      </span>
+                    </h4>
+                  </div>
+                  <div className="avatar-sm flex-shrink-0">
+                    <span className="avatar-title bg-warning-subtle rounded fs-3">
+                      <i className="bx bx-task text-warning"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-xl-3 col-md-6">
+            <div className="card card-animate">
+              <div className="card-body">
+                <div className="d-flex align-items-center">
+                  <div className="flex-grow-1 overflow-hidden">
+                    <p className="text-uppercase fw-medium text-muted text-truncate mb-0">
+                      Tareas Completadas
+                    </p>
+                  </div>
+                </div>
+                <div className="d-flex align-items-end justify-content-between mt-4">
+                  <div>
+                    <h4 className="fs-22 fw-semibold ff-secondary mb-4">
+                      <span className="counter-value" data-target={stats.completedTasks}>
+                        {stats.completedTasks || 0}
+                      </span>
+                    </h4>
+                  </div>
+                  <div className="avatar-sm flex-shrink-0">
+                    <span className="avatar-title bg-info-subtle rounded fs-3">
+                      <i className="bx bx-check-circle text-info"></i>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Test Section (Solo en desarrollo) */}
+        {import.meta.env.DEV && (
+          <div className="row mt-4">
+            <div className="col-12">
+              <div className="card">
+                <div className="card-header">
+                  <h5 className="card-title mb-0">Área de Pruebas (Solo Desarrollo)</h5>
+                </div>
+                <div className="card-body">
+                  <div className="d-flex gap-2">
+                    <button 
+                      onClick={testProtectedEndpoint}
+                      className="btn btn-primary"
+                    >
+                      Test Endpoint Protegido
+                    </button>
+                    <button 
+                      onClick={() => {
+                        console.log('Current user:', user);
+                        console.log('Access token:', localStorage.getItem('access_token'));
+                        console.log('Refresh token:', localStorage.getItem('refresh_token'));
+                      }}
+                      className="btn btn-info"
+                    >
+                      Ver Info de Sesión
+                    </button>
+                    <button 
+                      onClick={() => {
+                        localStorage.removeItem('access_token');
+                        toast.info('Access token eliminado. Intenta navegar.');
+                      }}
+                      className="btn btn-warning"
+                    >
+                      Simular Token Expirado
+                    </button>
+                  </div>
+                  
+                  {/* User Info Display */}
+                  <div className="mt-3">
+                    <h6>Información del Usuario:</h6>
+                    <pre className="bg-light p-3 rounded">
+                      {JSON.stringify(user, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Placeholder para futuras secciones */}
+        <div className="row">
+          <div className="col-12">
+            <div className="card">
+              <div className="card-body">
+                <h5 className="card-title">Sistema de Gestión de Calidad</h5>
+                <p className="card-text">
+                  Este es el dashboard principal. Aquí se mostrarán métricas y accesos rápidos
+                  a las funcionalidades principales del sistema.
+                </p>
+                <div className="alert alert-info" role="alert">
+                  <strong>Próximamente:</strong> Módulos de gestión de procesos, auditorías,
+                  no conformidades, indicadores y más.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
+```
+
+### 4. Testing Manual y Scripts de Validación
+
+**Crear src/utils/test-auth.ts:**
+```typescript
+// Utilidades para testing manual de autenticación
+
+export const testAuthFlow = {
+  // Test 1: Login exitoso
+  async testSuccessfulLogin() {
+    console.log('🧪 Test 1: Login exitoso');
+    try {
+      // Simular login con credenciales válidas
+      const response = await fetch('http://localhost:8000/api/auth/login/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'admin@example.com',
+          password: 'Test1234!'
+        })
+      });
+      
+      const data = await response.json();
+      console.log('✅ Login response:', data);
+      
+      // Verificar tokens
+      if (data.access && data.refresh) {
+        console.log('✅ Tokens recibidos correctamente');
+        return data;
+      } else {
+        console.error('❌ Tokens no recibidos');
+      }
+    } catch (error) {
+      console.error('❌ Error en login:', error);
+    }
+  },
+
+  // Test 2: Acceso a endpoint protegido
+  async testProtectedEndpoint(accessToken: string) {
+    console.log('🧪 Test 2: Endpoint protegido');
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/user/', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Usuario obtenido:', data);
+      } else {
+        console.error('❌ Error al acceder:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Error:', error);
+    }
+  },
+
+  // Test 3: Refresh token
+  async testRefreshToken(refreshToken: string) {
+    console.log('🧪 Test 3: Refresh token');
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/refresh/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh: refreshToken })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Nuevo access token:', data.access);
+        return data.access;
+      } else {
+        console.error('❌ Error en refresh:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Error:', error);
+    }
+  },
+
+  // Test 4: Logout
+  async testLogout(refreshToken: string, accessToken: string) {
+    console.log('🧪 Test 4: Logout');
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/logout/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ refresh: refreshToken })
+      });
+      
+      if (response.ok) {
+        console.log('✅ Logout exitoso');
+      } else {
+        console.error('❌ Error en logout:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Error:', error);
+    }
+  },
+
+  // Ejecutar todos los tests
+  async runAllTests() {
+    console.log('🚀 Iniciando suite de tests de autenticación...\n');
+    
+    // Test 1: Login
+    const loginData = await this.testSuccessfulLogin();
+    if (!loginData) return;
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Test 2: Protected endpoint
+    await this.testProtectedEndpoint(loginData.access);
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Test 3: Refresh
+    const newToken = await this.testRefreshToken(loginData.refresh);
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Test 4: Logout
+    await this.testLogout(loginData.refresh, newToken || loginData.access);
+    
+    console.log('\n✅ Suite de tests completada');
+  }
+};
+
+// Exponer en window para testing en consola
+if (import.meta.env.DEV) {
+  (window as any).testAuth = testAuthFlow;
+  console.log('💡 Tip: Usa window.testAuth.runAllTests() en la consola para probar');
+}
+```
+
+### 5. Configuración de Notificaciones Toast
+
+**Actualizar src/App.tsx:**
+```typescript
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import PublicRoute from './components/PublicRoute';
+
+// Pages
+import LoginPage from './pages/auth/LoginPage';
+import Dashboard from './pages/dashboard/Dashboard';
+
+// Styles
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './assets/scss/app.scss'; // Si tienes estilos de Velzon
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          {/* Public Routes */}
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <LoginPage />
+              </PublicRoute>
+            }
+          />
+
+          {/* Protected Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Default Redirect */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          
+          {/* 404 Page */}
+          <Route 
+            path="*" 
+            element={
+              <div className="page-content">
+                <div className="container-fluid">
+                  <div className="row">
+                    <div className="col-12 text-center">
+                      <h1>404</h1>
+                      <p>Página no encontrada</p>
+                      <a href="/dashboard" className="btn btn-primary">
+                        Volver al Dashboard
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            } 
+          />
+        </Routes>
+
+        {/* Toast Container */}
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
+      </AuthProvider>
+    </BrowserRouter>
+  );
+}
+
+export default App;
+```
+
+## 📝 Criterios de Aceptación
+
+1. ✅ Login funciona con credenciales reales del backend
+2. ✅ Tokens se guardan correctamente en localStorage
+3. ✅ Interceptor agrega token automáticamente a requests
+4. ✅ Auto-refresh funciona cuando token está por expirar
+5. ✅ Logout limpia tokens y redirige a login
+6. ✅ Dashboard muestra información del usuario
+7. ✅ Rutas protegidas redirigen a login si no autenticado
+8. ✅ Manejo de errores con mensajes claros
+9. ✅ Bloqueo de cuenta después de 5 intentos
+10. ✅ Tests manuales funcionando en consola
+
+## 🧪 Plan de Testing Manual
+
+### Test 1: Login Exitoso
+1. Ir a http://localhost:5173/login
+2. Ingresar credenciales válidas
+3. Verificar redirección a dashboard
+4. Verificar tokens en localStorage (F12 > Application)
+
+### Test 2: Login Fallido
+1. Intentar con credenciales incorrectas
+2. Verificar mensaje de error
+3. Intentar 5 veces para bloqueo
+4. Verificar bloqueo temporal
+
+### Test 3: Protección de Rutas
+1. Cerrar sesión
+2. Intentar acceder a /dashboard directamente
+3. Verificar redirección a /login
+
+### Test 4: Auto-Refresh
+1. Login exitoso
+2. Eliminar access_token de localStorage
+3. Hacer cualquier acción
+4. Verificar que se hace refresh automático
+
+### Test 5: Logout
+1. Desde dashboard, click en logout
+2. Verificar limpieza de tokens
+3. Verificar redirección a login
+
+## 🚀 Scripts de Desarrollo
+
+```bash
+# Terminal 1 - Backend
+cd backend
+python manage.py runserver
+
+# Terminal 2 - Frontend
+cd frontend
+npm run dev
+
+# Terminal 3 - Logs
+tail -f backend/logs/authentication.log
+
+# Testing en consola del navegador
+window.testAuth.runAllTests()
+```
+
+## 📊 Checklist de Integración
+
+- [ ] Backend corriendo en puerto 8000
+- [ ] Frontend corriendo en puerto 5173
+- [ ] CORS configurado correctamente
+- [ ] Login funcional end-to-end
+- [ ] Tokens almacenándose correctamente
+- [ ] Interceptores funcionando
+- [ ] Dashboard accesible solo con auth
+- [ ] Logout funcional
+- [ ] Manejo de errores implementado
+- [ ] Tests manuales pasando
+
+---
+
+**Nota**: Esta fase valida que la integración frontend-backend funciona correctamente. Es el checkpoint crítico antes de continuar con funcionalidades más avanzadas. Todos los tests deben pasar antes de proceder a la Fase 2.

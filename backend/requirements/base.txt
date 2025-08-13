@@ -1,0 +1,41 @@
+# Base requirements for ZentraQMS Backend
+# These packages are required for all environments
+
+# Django and core dependencies
+Django==5.0.0
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.1
+django-cors-headers==4.3.1
+django-filter==23.5
+
+# Database
+psycopg2-binary==2.9.9
+
+# Configuration management
+python-decouple==3.8
+python-dotenv==1.0.0
+
+# Timezone handling
+pytz==2023.3
+
+# Password validation and security
+argon2-cffi==23.1.0
+
+# File handling and validation
+Pillow==10.1.0
+
+# Email and messaging
+celery==5.3.4
+redis==5.0.1
+
+# Logging and monitoring
+structlog==23.2.0
+
+# JWT and Authentication
+PyJWT==2.8.0
+
+# Utilities  
+requests==2.31.0
+
+# Static files handling (for production)
+whitenoise==6.6.0

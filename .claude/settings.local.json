@@ -16,7 +16,11 @@
       "Bash(docker-compose stop:*)",
       "Bash(docker-compose up:*)",
       "Bash(docker-compose logs:*)",
-      "Bash(docker-compose restart:*)"
+      "Bash(docker-compose restart:*)",
+      "Bash(python manage.py:*)",
+      "Bash(python:*)",
+      "Bash(cp:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

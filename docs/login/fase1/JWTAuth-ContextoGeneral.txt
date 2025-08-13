@@ -1,0 +1,461 @@
+# 🔐 Sistema de Autenticación JWT - Especificación Funcional
+
+## 📋 Resumen Ejecutivo
+
+Necesito implementar un sistema de autenticación robusto y moderno para una aplicación web con arquitectura separada (frontend/backend). El sistema debe proporcionar una experiencia de usuario fluida mientras mantiene altos estándares de seguridad.
+
+## 🎯 Objetivos del Sistema
+
+### Objetivos Principales:
+- Autenticación segura basada en tokens JWT (JSON Web Tokens)
+- Sistema de autorización RBAC (Role-Based Access Control) flexible y escalable
+- Experiencia de usuario sin fricciones con sesiones persistentes
+- Escalabilidad horizontal sin estado de sesión en servidor
+- Protección contra ataques comunes (fuerza bruta, XSS, CSRF)
+- Soporte para futura expansión a aplicaciones móviles
+
+### Objetivos Secundarios:
+- Capacidad de revocar sesiones activas
+- Gestión dinámica de roles y permisos sin cambios de código
+- Auditoría completa de cambios en roles y permisos
+- Preparación para autenticación multi-factor (2FA)
+- Integración con proveedores OAuth2 (Google, GitHub)
+- Soporte para delegación temporal de permisos
+
+## 🏗️ Arquitectura del Sistema
+
+### Stack Tecnológico:
+- **Backend**: Django 5.0 + Django REST Framework
+- **Frontend**: React 19 + TypeScript + Vite
+- **Base de Datos**: PostgreSQL
+- **Cache/Mensajería**: Redis
+- **Procesamiento Asíncrono**: Celery
+- **UI Framework**: Bootstrap 5.3
+
+## 🔄 Flujo de Autenticación
+
+### 1. **Proceso de Login**
+
+**Flujo Principal:**
+1. Usuario ingresa credenciales (email/username + contraseña)
+2. Frontend envía petición POST a `/api/auth/login/`
+3. Backend valida credenciales contra base de datos
+4. Si son válidas, genera par de tokens:
+   - **Access Token**: JWT con duración corta (15-30 minutos)
+     - Incluye: user_id, email, roles básicos
+   - **Refresh Token**: JWT con duración larga (7-30 días)
+5. Backend carga roles y permisos del usuario
+6. Backend retorna tokens + información básica del usuario con roles
+7. Frontend almacena tokens y datos de usuario de forma segura
+8. Usuario es redirigido según su rol principal
+
+**Manejo de Errores:**
+- Credenciales inválidas: Retornar error genérico (no revelar si usuario existe)
+- Cuenta bloqueada: Informar tiempo restante de bloqueo
+- Límite de intentos: Bloquear después de 5 intentos fallidos
+- Sin roles asignados: Redirigir a página de "Pendiente de Asignación"
+
+### 2. **Proceso de Refresh Token**
+
+**Flujo Automático:**
+1. Frontend detecta que access token está por expirar (5 minutos antes)
+2. Envía refresh token a `/api/auth/refresh/`
+3. Backend valida refresh token
+4. Genera nuevo access token (y opcionalmente nuevo refresh token)
+5. Frontend actualiza tokens almacenados
+6. Proceso transparente para el usuario
+
+### 3. **Proceso de Logout**
+
+**Flujo de Cierre de Sesión:**
+1. Usuario hace clic en "Cerrar Sesión"
+2. Frontend envía refresh token a `/api/auth/logout/`
+3. Backend añade token a blacklist
+4. Frontend limpia tokens almacenados
+5. Redirección a página de login
+6. Opcional: Notificar otras pestañas abiertas
+
+## 🛡️ Sistema RBAC (Role-Based Access Control)
+
+### Arquitectura de Autorización:
+
+1. **Estructura de Permisos**
+   - Formato: `recurso.acción` (ej: `users.create`, `reports.view`)
+   - Acciones estándar: create, read, update, delete, list, approve, export
+   - Permisos especiales: admin.*, *.all
+   - Agrupación lógica por módulos/recursos
+
+2. **Jerarquía de Roles**
+   - Roles con nivel de prioridad/peso
+   - Capacidad de heredar permisos de roles inferiores
+   - Roles mutuamente excluyentes opcionales
+   - Roles temporales con fecha de expiración
+
+3. **Evaluación de Permisos**
+   ```
+   Orden de evaluación:
+   1. ¿Usuario está activo?
+   2. ¿Tiene permiso de superadmin? (*.all)
+   3. ¿Tiene el permiso específico?
+   4. ¿Algún rol tiene el permiso?
+   5. ¿Tiene permiso wildcard? (resource.*)
+   6. Denegar acceso
+   ```
+
+4. **Cache de Permisos**
+   - Cache en Redis con TTL de 5 minutos
+   - Invalidación automática al cambiar roles
+   - Cache por usuario + recurso
+   - Precarga de permisos frecuentes
+
+5. **Middleware de Autorización (Django)**
+   ```python
+   # Decoradores para views
+   @require_permission('users.create')
+   @require_any_role(['admin', 'coordinator'])
+   @require_all_permissions(['reports.view', 'reports.export'])
+   ```
+
+6. **Guards en Frontend (React)**
+   ```typescript
+   // Componentes protegidos
+   <PermissionGate permission="users.create">
+     <CreateUserButton />
+   </PermissionGate>
+   
+   // Renderizado condicional
+   {can('reports.export') && <ExportButton />}
+   ```
+
+### Gestión de Roles:
+
+1. **Asignación de Roles**
+   - Por defecto: rol básico al registrarse
+   - Asignación manual por administrador
+   - Asignación automática por reglas (ej: por departamento)
+   - Solicitud y aprobación de roles
+
+2. **Auditoría de Roles**
+   - Log de todos los cambios de roles/permisos
+   - Quién asignó, cuándo, por qué
+   - Historial completo por usuario
+   - Reportes de usuarios por rol
+
+3. **Preparación para Escalabilidad**
+   - Estructura lista para cientos de permisos
+   - Soporte para roles dinámicos futuros
+   - API extensible para integraciones
+   - Migración sencilla a ABAC si necesario
+
+## 🛡️ Características de Seguridad
+
+### Medidas Implementadas:
+
+1. **Rate Limiting**
+   - Máximo 5 intentos de login por IP cada 15 minutos
+   - Máximo 3 intentos por cuenta cada 10 minutos
+   - Implementado con Redis para rendimiento
+
+2. **Validación de Contraseñas**
+   - Mínimo 8 caracteres
+   - Debe contener: mayúsculas, minúsculas, números
+   - Verificación contra contraseñas comunes
+   - No puede ser similar a información del usuario
+
+3. **Protección de Tokens**
+   - Access tokens de corta duración
+   - Refresh tokens rotatorios (nuevo token en cada refresh)
+   - Blacklist de tokens revocados
+   - Tokens firmados con SECRET_KEY segura
+
+4. **Protección contra Ataques**
+   - CORS configurado estrictamente
+   - HTTPS obligatorio en producción
+   - Protección CSRF para cookies
+   - Sanitización de inputs
+
+## 💻 Funcionalidades del Frontend
+
+### Componentes Principales:
+
+1. **LoginPage**
+   - Formulario con validación en tiempo real
+   - Indicador de fuerza de contraseña
+   - Opción "Recordarme" (extiende duración refresh token)
+   - Link a recuperación de contraseña
+   - Mensajes de error contextuales
+
+2. **AuthProvider (Context)**
+   - Gestión centralizada del estado de autenticación
+   - Auto-refresh de tokens
+   - Métodos: login(), logout(), refresh(), hasPermission(), hasRole()
+   - Estado: user, roles, permissions, isAuthenticated, isLoading
+
+3. **ProtectedRoute**
+   - HOC para rutas que requieren autenticación
+   - Verificación de roles/permisos requeridos
+   - Redirección automática a login si no autenticado
+   - Página de "Acceso Denegado" si autenticado pero sin permisos
+   - Preservación de ruta intentada para redirect post-login
+
+4. **PermissionGate**
+   - Componente para renderizado condicional basado en permisos
+   - Props: permission, role, fallback, children
+   - Evaluación en cascada: permiso específico > rol > denegado
+
+5. **useAuth Hook**
+   - Acceso simple al contexto de autenticación
+   - Helpers: canAccess(), hasAnyRole(), hasAllRoles()
+   - Gestión de estado de carga
+   - Cache de evaluaciones de permisos
+
+6. **usePermissions Hook**
+   - Evaluación eficiente de permisos
+   - Cache con TTL configurable
+   - Soporte para permisos dinámicos
+   - Validación de recursos específicos
+
+7. **Interceptor Axios**
+   - Adjunta automáticamente access token a requests
+   - Maneja errores 401 (token expirado) y 403 (sin permisos)
+   - Reintenta request después de refresh automático
+   - Gestión centralizada de errores de auth/authz
+
+## 🔧 Endpoints de API
+
+### Endpoints Públicos:
+- `POST /api/auth/login/` - Iniciar sesión
+- `POST /api/auth/register/` - Registro de usuario
+- `POST /api/auth/password/reset/` - Solicitar reset de contraseña
+- `POST /api/auth/password/reset/confirm/` - Confirmar reset
+
+### Endpoints Protegidos (Autenticación):
+- `POST /api/auth/refresh/` - Renovar access token
+- `POST /api/auth/logout/` - Cerrar sesión
+- `GET /api/auth/user/` - Obtener datos del usuario actual
+- `PUT /api/auth/user/` - Actualizar perfil
+- `POST /api/auth/password/change/` - Cambiar contraseña
+- `GET /api/auth/permissions/` - Obtener permisos del usuario actual
+- `GET /api/auth/roles/` - Obtener roles del usuario actual
+
+### Endpoints de Administración (Requieren Permisos):
+- `GET /api/admin/users/` - Listar usuarios
+- `POST /api/admin/users/{id}/roles/` - Asignar roles a usuario
+- `DELETE /api/admin/users/{id}/roles/{roleId}/` - Revocar rol
+- `GET /api/admin/roles/` - Listar todos los roles
+- `POST /api/admin/roles/` - Crear nuevo rol
+- `PUT /api/admin/roles/{id}/` - Actualizar rol
+- `GET /api/admin/permissions/` - Listar todos los permisos
+- `POST /api/admin/roles/{id}/permissions/` - Asignar permisos a rol
+- `GET /api/admin/audit/roles/` - Auditoría de cambios en roles
+
+## 📊 Modelos de Datos
+
+### User Model (Extendido):
+```
+- id (UUID)
+- email (único, requerido)
+- username (único, opcional)
+- password (hash bcrypt)
+- first_name
+- last_name
+- is_active
+- is_verified
+- date_joined
+- last_login
+- failed_login_attempts
+- locked_until
+```
+
+### RefreshToken Model:
+```
+- id
+- user (FK)
+- token (único)
+- created_at
+- expires_at
+- is_blacklisted
+- ip_address
+- user_agent
+```
+
+### Role Model (RBAC):
+```
+- id (UUID)
+- name (único, requerido)
+- display_name
+- description
+- is_active
+- created_at
+- updated_at
+- priority (para jerarquía)
+```
+
+### Permission Model:
+```
+- id (UUID)
+- name (único, formato: app.model.action)
+- display_name
+- description
+- resource (modelo/recurso)
+- action (crear, leer, actualizar, eliminar, aprobar, etc.)
+- created_at
+```
+
+### UserRole Model:
+```
+- id
+- user (FK)
+- role (FK)
+- assigned_by (FK User)
+- assigned_at
+- expires_at (opcional, para roles temporales)
+- is_active
+- scope (opcional, para roles contextuales)
+```
+
+### RolePermission Model:
+```
+- id
+- role (FK)
+- permission (FK)
+- granted_at
+- granted_by (FK User)
+```
+
+## 🚀 Funcionalidades Adicionales
+
+### Fase 1 (MVP):
+- Login/Logout básico
+- Refresh automático de tokens
+- Protección de rutas
+- Recuperación de contraseña por email
+- RBAC básico con roles predefinidos
+- Asignación simple de roles únicos por usuario
+
+### Fase 2 (Mejoras):
+- Autenticación de dos factores (2FA) con TOTP
+- Login con OAuth2 (Google, GitHub)
+- Múltiples roles por usuario
+- Permisos granulares por recurso
+- Delegación temporal de permisos
+- Interfaz de gestión de roles y permisos
+- Historial de cambios de roles
+
+### Fase 3 (Avanzado):
+- Biometría para apps móviles
+- Login sin contraseña (magic links)
+- Roles contextuales (por proyecto, departamento, etc.)
+- Políticas de acceso basadas en atributos (ABAC)
+- Herencia de roles y permisos
+- Workflows de aprobación para cambios de roles
+- Análisis de comportamiento anómalo en permisos
+
+## 📈 Métricas y Monitoreo
+
+### KPIs a Rastrear:
+- Tiempo promedio de login
+- Tasa de fallos de autenticación
+- Número de refresh tokens activos
+- Intentos de acceso no autorizado
+- Tiempo de vida promedio de sesión
+- **RBAC Metrics:**
+  - Permisos más utilizados
+  - Roles con mayor actividad
+  - Intentos de acceso denegados por falta de permisos
+  - Tiempo promedio de asignación de roles
+  - Usuarios sin roles asignados
+
+### Logs y Auditoría:
+- Todos los intentos de login (exitosos y fallidos)
+- Cambios de contraseña
+- Activación/desactivación de 2FA
+- Accesos desde nuevas IPs/dispositivos
+- **Auditoría RBAC:**
+  - Cambios en asignación de roles
+  - Modificaciones de permisos en roles
+  - Accesos denegados con contexto (usuario, recurso, permiso faltante)
+  - Uso de permisos críticos (delete, approve, export)
+  - Escalación de privilegios
+
+## 🎨 Experiencia de Usuario
+
+### Características UX:
+- Login persistente entre sesiones del navegador
+- Indicador visual de sesión próxima a expirar
+- Auto-logout por inactividad (configurable)
+- Sincronización de logout entre pestañas
+- Mensajes claros y accionables de error
+- Transiciones suaves entre estados
+
+### Accesibilidad:
+- Navegación completa por teclado
+- Compatibilidad con lectores de pantalla
+- Mensajes de error asociados a campos
+- Contraste adecuado en todos los elementos
+- Textos alternativos descriptivos
+
+## ⚡ Optimizaciones de Rendimiento
+
+### Backend:
+- Cache de permisos de usuario en Redis (5 minutos)
+- Cache de estructura roles-permisos (30 minutos)
+- Consultas optimizadas con `select_related()` y `prefetch_related()`
+- Índices en campos de búsqueda frecuente
+- Paginación en listados de sesiones y auditoría
+- Bulk loading de permisos al login
+- Evaluación lazy de permisos complejos
+
+### Frontend:
+- Lazy loading de componentes de auth
+- Precarga de datos de usuario y permisos tras login
+- Cache local de evaluaciones de permisos (sessionStorage)
+- Debounce en validaciones de formulario
+- Memoización de cálculos de permisos
+- Prefetch de permisos para rutas próximas
+
+## 🧪 Testing
+
+### Casos de Prueba Críticos:
+
+**Autenticación:**
+- Login con credenciales válidas/inválidas
+- Expiración y refresh de tokens
+- Logout y blacklist de tokens
+- Rate limiting funcionando correctamente
+- Protección de rutas privadas
+- Recuperación de contraseña end-to-end
+- Concurrencia en refresh de tokens
+- Comportamiento con múltiples pestañas
+
+**Autorización (RBAC):**
+- Asignación y revocación de roles
+- Herencia de permisos entre roles
+- Evaluación correcta de permisos wildcards
+- Cache e invalidación de permisos
+- Acceso denegado sin permisos apropiados
+- Roles temporales expiran correctamente
+- Múltiples roles por usuario funcionan
+- Auditoría registra todos los cambios
+- Performance con miles de permisos
+
+## 📝 Consideraciones Finales
+
+Este sistema de autenticación y autorización debe balancear seguridad con experiencia de usuario, siendo transparente cuando funciona correctamente pero robusto ante intentos de abuso. 
+
+### Puntos Clave de la Implementación:
+
+1. **Arquitectura JWT + RBAC** permite escalabilidad horizontal mientras mantiene control granular de accesos
+2. **Sistema de roles flexible** que soporta desde configuraciones simples (un rol por usuario) hasta complejas (múltiples roles, permisos contextuales)
+3. **Cache inteligente** con Redis optimiza las evaluaciones de permisos sin sacrificar seguridad
+4. **Auditoría completa** proporciona trazabilidad total de cambios en seguridad
+5. **Preparado para el futuro** con estructura que soporta fácilmente nuevos roles, permisos y módulos sin cambios en el core
+
+### Ventajas del Diseño RBAC:
+- **Mantenibilidad**: Cambios en permisos sin tocar código
+- **Escalabilidad**: Soporta crecimiento de usuarios y complejidad
+- **Compliance**: Auditoría completa para cumplimiento normativo
+- **Flexibilidad**: Fácil adaptación a cambios organizacionales
+- **Performance**: Cache multicapa minimiza latencia
+
+La integración con Redis y Celery optimiza el rendimiento mientras que la arquitectura modular permite agregar o modificar roles y permisos según evolucionen las necesidades del sistema de gestión de calidad.
