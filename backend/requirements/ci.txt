@@ -12,7 +12,7 @@ psycopg2-binary==2.9.9
 
 # Configuration management
 python-decouple==3.8
-python-dotenv==1.0.0
+python-dotenv==1.1.1
 
 # JWT and Authentication
 PyJWT==2.8.0
