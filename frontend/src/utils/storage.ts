@@ -53,7 +53,7 @@ class StorageService {
   /**
    * Safely stringify data
    */
-  private stringify(data: any): string {
+  private stringify(data: unknown): string {
     try {
       return JSON.stringify(data);
     } catch (error) {
@@ -396,7 +396,7 @@ export class StorageEvents {
   /**
    * Dispatch custom storage event
    */
-  static dispatchStorageEvent(key: string, oldValue: any, newValue: any): void {
+  static dispatchStorageEvent(key: string, oldValue: unknown, newValue: unknown): void {
     const event = new StorageEvent('storage', {
       key: DEFAULT_CONFIG.prefix + key,
       oldValue: oldValue ? JSON.stringify(oldValue) : null,
@@ -423,7 +423,7 @@ export class StorageQuota {
       storage.setItem(testKey, 'test');
       storage.removeItem(testKey);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -439,8 +439,8 @@ export class StorageQuota {
     try {
       // Estimate storage usage
       let used = 0;
-      for (let key in localStorage) {
-        if (localStorage.hasOwnProperty(key)) {
+      for (const key in localStorage) {
+        if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
           used += localStorage[key].length + key.length;
         }
       }

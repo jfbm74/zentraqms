@@ -428,7 +428,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 };
 
 /**
- * Hook to use authentication context
+ * Hook to use authentication context (internal use only)
+ * Use useAuth from ../hooks/useAuth instead for external usage
  */
 export const useAuthContext = (): AuthContextType => {
   const context = useContext(AuthContext);
@@ -438,35 +439,6 @@ export const useAuthContext = (): AuthContextType => {
   }
   
   return context;
-};
-
-/**
- * Higher-order component for auth protection
- */
-export const withAuth = <P extends object>(
-  Component: React.ComponentType<P>
-): React.FC<P> => {
-  return function AuthProtectedComponent(props: P) {
-    const { isAuthenticated, isLoading } = useAuthContext();
-
-    if (isLoading) {
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Cargando...</p>
-          </div>
-        </div>
-      );
-    }
-
-    if (!isAuthenticated) {
-      // Redirect to login will be handled by route protection
-      return null;
-    }
-
-    return <Component {...props} />;
-  };
 };
 
 export default AuthContext;

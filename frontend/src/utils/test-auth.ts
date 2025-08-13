@@ -125,6 +125,6 @@ export const testAuthFlow = {
 
 // Exponer en window para testing en consola
 if (import.meta.env.DEV) {
-  (window as any).testAuth = testAuthFlow;
+  (window as { testAuth?: typeof testAuthFlow }).testAuth = testAuthFlow;
   console.log('💡 Tip: Usa window.testAuth.runAllTests() en la consola para probar');
 }
