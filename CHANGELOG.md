@@ -9,6 +9,40 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### 🚀 Agregado
 
+#### Fase 5: Sistema RBAC Frontend (2025-08-13)
+
+- **Control de Acceso Basado en Roles (RBAC)**:
+  - Integración completa de roles y permisos en el contexto de autenticación
+  - Sistema de cache de permisos en sessionStorage con TTL de 1 hora
+  - Soporte para permisos con wildcards (ej: `documents.*`, `*.all`)
+  - Jerarquía de roles: `super_admin` > `admin` > `coordinador` > `auditor` > `consulta` > `guest`
+
+- **Componentes de Autorización**:
+  - `PermissionGate`: Componente para renderizado condicional basado en permisos
+  - `usePermissions`: Hook avanzado para verificación de permisos
+  - `useResourcePermissions`: Hook especializado para permisos de recursos
+  - `useRoleBasedUI`: Hook para adaptación de UI según roles
+  - HOC `withPermissions` para envolver componentes con verificación de permisos
+
+- **UI Adaptativa según Permisos**:
+  - Botones que se muestran/ocultan según permisos del usuario
+  - Menú dinámico que se adapta al rol del usuario
+  - Dashboard diferenciado por rol (Admin, Coordinador, Auditor, Consulta)
+  - Redirección post-login basada en el rol principal del usuario
+  - Página de "Acceso Denegado" para intentos no autorizados
+
+- **Componentes de Utilidad RBAC**:
+  - `AdminOnly`, `SuperAdminOnly`, `StaffOnly`: Componentes de acceso restringido
+  - `CanManageUsers`, `CanManageProcesses`, `CanViewReports`: Componentes basados en capacidades
+  - `ProtectedRoute` actualizado con verificación de roles y permisos
+
+- **Servicios y Tipos**:
+  - `RBACService`: Servicio completo para operaciones RBAC
+  - Tipos TypeScript completos para Permission, Role, UserRole
+  - Utilidades para evaluación de permisos con wildcards
+
+#### Otras Mejoras
+
 - Pipeline CI/CD completo con GitHub Actions
 - Configuración de branch protection rules
 - Scripts de validación local pre-commit
@@ -19,6 +53,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### 🔧 Modificado
 
+- **AuthContext mejorado**: Ahora incluye gestión completa de RBAC con métodos para verificación de permisos
+- **useAuth hook**: Extendido con todas las funciones RBAC necesarias
+- **LoginPage**: Actualizada con redirección basada en roles después del login
+- **Tests actualizados**: Todos los tests del hook useAuth ahora incluyen mocks completos de RBAC
 - Configuración de testing para frontend y backend
 - Estructura de directorios para mejor organización
 - **Unificación de Axios**: Consolidada una sola instancia de axios cliente
@@ -27,6 +65,9 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### 🐛 Corregido
 
+- **ESLint Fast Refresh**: Resueltos todos los warnings de React Fast Refresh
+- **React Hooks Order**: Corregido el orden de llamada de hooks en PermissionGate
+- **Test Mocks**: Agregados todos los métodos RBAC faltantes en los mocks de tests
 - **Login 401 Error**: Solucionado conflicto entre interceptores de axios que causaba errores 401
 - **Redirección de logout**: Corregida URL inexistente `/auth/login` por `/login` correcta
 - **Duplicación de instancias axios**: Eliminado `axios.config.ts` y unificado en `endpoints.ts`

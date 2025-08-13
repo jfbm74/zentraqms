@@ -22,6 +22,27 @@ ZentraQMS es un Sistema de Gestión de Calidad (QMS) completo y moderno diseñad
 - **📈 Indicadores KPI**: Monitoreo y análisis de indicadores de gestión
 - **⚙️ Configuración**: Gestión de usuarios, roles y configuración del sistema
 
+### 🔐 Sistema de Control de Acceso (RBAC)
+
+- **Roles Jerárquicos**: Sistema completo de roles con jerarquía definida
+  - `super_admin`: Acceso total al sistema
+  - `admin`: Administración general
+  - `coordinador`: Gestión de procesos y auditorías
+  - `auditor`: Ejecución de auditorías
+  - `consulta`: Solo lectura
+  - `guest`: Acceso limitado
+
+- **Permisos Granulares**: Control detallado de acceso a recursos
+  - Permisos por recurso (ej: `documents.create`, `users.read`)
+  - Soporte para wildcards (ej: `documents.*`, `*.all`)
+  - Permisos heredados según jerarquía de roles
+
+- **UI Adaptativa**: Interfaz que se adapta según permisos
+  - Componentes que se muestran/ocultan automáticamente
+  - Menús dinámicos según rol del usuario
+  - Dashboards personalizados por tipo de usuario
+  - Redirección automática post-login según rol principal
+
 ## 🛠️ Stack Tecnológico
 
 ### Backend
@@ -192,7 +213,116 @@ docker-compose exec django python manage.py test
 ### Frontend
 ```bash
 cd frontend
-npm run test
+npm run test              # Ejecutar tests
+npm run test:coverage      # Ejecutar tests con cobertura
+npm run test:ui           # UI interactiva de tests
+```
+
+## 🔒 Uso del Sistema RBAC (Para Desarrolladores)
+
+### Componentes de Autorización
+
+#### PermissionGate
+Componente para renderizado condicional basado en permisos:
+
+```tsx
+import { PermissionGate } from '@/components/common/PermissionGate';
+
+// Verificar un permiso específico
+<PermissionGate permission="documents.create">
+  <button>Crear Documento</button>
+</PermissionGate>
+
+// Verificar múltiples permisos (OR)
+<PermissionGate permissions={['documents.create', 'documents.update']}>
+  <button>Gestionar Documentos</button>
+</PermissionGate>
+
+// Verificar rol específico
+<PermissionGate role="admin">
+  <AdminPanel />
+</PermissionGate>
+
+// Con fallback personalizado
+<PermissionGate 
+  permission="reports.export" 
+  fallback={<p>No tienes permisos para exportar</p>}
+>
+  <ExportButton />
+</PermissionGate>
+```
+
+#### usePermissions Hook
+Hook avanzado para verificación de permisos:
+
+```tsx
+import { usePermissions } from '@/hooks/usePermissions';
+
+function MyComponent() {
+  const { 
+    hasPermission, 
+    hasRole, 
+    canCreate, 
+    canUpdate,
+    getUserCapabilities 
+  } = usePermissions();
+
+  // Verificar permisos individuales
+  if (hasPermission('documents.delete')) {
+    // Mostrar botón de eliminar
+  }
+
+  // Verificar capacidades de recurso
+  const canManageDocs = canCreate('documents') && canUpdate('documents');
+
+  // Obtener todas las capacidades del usuario
+  const capabilities = getUserCapabilities();
+  if (capabilities.canManageUsers) {
+    // Mostrar gestión de usuarios
+  }
+}
+```
+
+#### Componentes de Utilidad
+```tsx
+import { AdminOnly, CanManageProcesses } from '@/utils/rbac.utils';
+
+// Solo para administradores
+<AdminOnly>
+  <AdminSettings />
+</AdminOnly>
+
+// Para usuarios que pueden gestionar procesos
+<CanManageProcesses>
+  <ProcessManager />
+</CanManageProcesses>
+```
+
+### Rutas Protegidas
+
+```tsx
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+
+// Ruta que requiere autenticación y rol específico
+<ProtectedRoute 
+  requiredRoles={['admin', 'coordinador']}
+  requiredPermissions={['processes.manage']}
+>
+  <ProcessManagementPage />
+</ProtectedRoute>
+```
+
+### Cache de Permisos
+
+El sistema implementa cache automático de permisos en sessionStorage con TTL de 1 hora. Los permisos se actualizan automáticamente en:
+- Login inicial
+- Refresh de token
+- Cambios de permisos en el backend
+
+Para refrescar manualmente los permisos:
+```tsx
+const { refreshPermissions } = useAuth();
+await refreshPermissions();
 ```
 
 ## 📝 Makefile - Comandos Disponibles
