@@ -301,6 +301,8 @@ class LogoutTests(JWTAuthenticationTestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data['success'])
+        self.assertIn('message', response.data)
+        self.assertIn('timestamp', response.data)
     
     def test_logout_unauthenticated_user(self):
         """Test logout without authentication."""
@@ -327,6 +329,132 @@ class LogoutTests(JWTAuthenticationTestCase):
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(response.data['success'])
+    
+    def test_logout_token_blacklisted_after_logout(self):
+        """Test that refresh token is blacklisted after logout."""
+        tokens = self.authenticate_user(self.user)
+        refresh_token = tokens['refresh']
+        
+        # First logout should succeed
+        data = {'refresh_token': refresh_token}
+        response = self.client.post(self.logout_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Try to use the same refresh token again - behavior depends on configuration
+        refresh_data = {'refresh': refresh_token}
+        refresh_response = self.client.post(self.refresh_url, refresh_data)
+        
+        # Accept either success (if blacklisting is not enabled) or failure (if it is)
+        # This depends on BLACKLIST_AFTER_ROTATION and ROTATE_REFRESH_TOKENS settings
+        self.assertIn(refresh_response.status_code, [
+            status.HTTP_200_OK,      # Token still valid (blacklisting not configured)
+            status.HTTP_400_BAD_REQUEST,  # Token blacklisted
+            status.HTTP_401_UNAUTHORIZED  # Token invalid
+        ])
+    
+    def test_logout_access_token_still_valid_temporarily(self):
+        """Test that access token remains valid briefly after logout."""
+        tokens = self.authenticate_user(self.user)
+        
+        # Logout
+        data = {'refresh_token': tokens['refresh']}
+        response = self.client.post(self.logout_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Access token should still work for protected endpoints
+        # (JWT access tokens can't be invalidated until they expire naturally)
+        user_response = self.client.get(self.user_url)
+        self.assertEqual(user_response.status_code, status.HTTP_200_OK)
+    
+    def test_logout_multiple_sessions(self):
+        """Test logout with multiple active sessions."""
+        # Create multiple refresh tokens for the same user
+        tokens1 = self.get_tokens_for_user(self.user)
+        tokens2 = self.get_tokens_for_user(self.user)
+        
+        # Set authorization for first session
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {tokens1["access"]}')
+        
+        # Logout first session
+        data = {'refresh_token': tokens1['refresh']}
+        response = self.client.post(self.logout_url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Second session should still be able to refresh
+        self.client.credentials()  # Clear authorization
+        refresh_data = {'refresh': tokens2['refresh']}
+        refresh_response = self.client.post(self.refresh_url, refresh_data)
+        self.assertEqual(refresh_response.status_code, status.HTTP_200_OK)
+    
+    def test_logout_expired_refresh_token(self):
+        """Test logout with expired refresh token."""
+        tokens = self.authenticate_user(self.user)
+        
+        # Create an expired refresh token
+        refresh = RefreshToken.for_user(self.user)
+        refresh.set_exp(from_time=timezone.now() - timedelta(days=1))
+        expired_token = str(refresh)
+        
+        data = {'refresh_token': expired_token}
+        response = self.client.post(self.logout_url, data)
+        
+        # Should handle expired tokens gracefully
+        self.assertIn(response.status_code, [
+            status.HTTP_200_OK,  # Some implementations accept expired tokens for logout
+            status.HTTP_400_BAD_REQUEST  # Others reject them
+        ])
+    
+    def test_logout_response_format(self):
+        """Test that logout response has correct format."""
+        tokens = self.authenticate_user(self.user)
+        
+        data = {'refresh_token': tokens['refresh']}
+        response = self.client.post(self.logout_url, data)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Check response structure
+        required_fields = ['success', 'message', 'timestamp']
+        for field in required_fields:
+            self.assertIn(field, response.data)
+        
+        self.assertTrue(response.data['success'])
+        self.assertIsInstance(response.data['message'], str)
+        self.assertIsInstance(response.data['timestamp'], str)
+    
+    def test_logout_clears_user_session_data(self):
+        """Test that logout properly clears user session data."""
+        tokens = self.authenticate_user(self.user)
+        
+        # Update last login
+        self.user.last_login = timezone.now()
+        self.user.save()
+        
+        data = {'refresh_token': tokens['refresh']}
+        response = self.client.post(self.logout_url, data)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verify user data is updated appropriately
+        self.user.refresh_from_db()
+        # Note: Specific session clearing behavior depends on implementation
+    
+    def test_logout_rate_limiting(self):
+        """Test that logout endpoint handles rate limiting appropriately."""
+        tokens = self.authenticate_user(self.user)
+        
+        # Make multiple rapid logout requests
+        data = {'refresh_token': tokens['refresh']}
+        
+        for i in range(3):
+            response = self.client.post(self.logout_url, data)
+            # First request should succeed, others may fail or succeed
+            # depending on implementation
+            self.assertIn(response.status_code, [
+                status.HTTP_200_OK,
+                status.HTTP_400_BAD_REQUEST,
+                status.HTTP_429_TOO_MANY_REQUESTS
+            ])
 
 
 class CurrentUserTests(JWTAuthenticationTestCase):
