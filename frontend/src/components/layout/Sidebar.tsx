@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { useAuth } from '../../hooks/useAuth';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PermissionGate } from '../common/PermissionGate';
 import logoSm from '../../assets/images/logo-sm.png';

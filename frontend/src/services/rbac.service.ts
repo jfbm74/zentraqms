@@ -161,7 +161,7 @@ export class RBACService {
    */
   static transformRolesData(response: UserRolesResponse): {
     roles: string[];
-    roleDetails: any[];
+    roleDetails: unknown[];
   } {
     return {
       roles: response.data.role_codes,

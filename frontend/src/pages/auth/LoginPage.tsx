@@ -10,7 +10,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../hooks/useAuth';
-import { usePermissions } from '../../hooks/usePermissions';
 import { LoginFormData } from '../../types/auth.types';
 import { RBACService } from '../../services/rbac.service';
 import logoLight from '../../assets/images/logo-light.png';
@@ -151,7 +150,7 @@ const LoginPage: React.FC = () => {
         navigate(redirectUrl, { replace: true });
       }, 100);
     }
-  }, [isAuthenticated, navigate, roles]);
+  }, [isAuthenticated, navigate, roles, getRedirectUrl]);
 
   /**
    * Clear error when component unmounts or email changes

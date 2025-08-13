@@ -17,7 +17,6 @@ import {
 } from '../types/auth.types';
 import { User } from '../types/user.types';
 import { RBACService } from '../services/rbac.service';
-import { PermissionUtils } from '../types/rbac.types';
 
 /**
  * Authentication actions for reducer
@@ -310,7 +309,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       AuthStorage.clearAuth();
       dispatch({ type: 'LOGOUT' });
     }
-  }, []);
+  }, [loadCachedRBACData]);
 
   /**
    * Login user with credentials
@@ -359,7 +358,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       throw error;
     }
-  }, []);
+  }, [internalRefreshPermissions]);
 
   /**
    * Logout user

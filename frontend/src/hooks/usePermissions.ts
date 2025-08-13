@@ -201,7 +201,7 @@ export const usePermissions = (): UsePermissionsReturn => {
    * Enhanced role check with options
    */
   const hasRole = useCallback(
-    (role: string, options: RoleCheckOptions = {}): boolean => {
+    (role: string, _options: RoleCheckOptions = {}): boolean => {
       return authHasRole(role);
     },
     [authHasRole]
@@ -225,7 +225,7 @@ export const usePermissions = (): UsePermissionsReturn => {
    * Enhanced all roles check with options
    */
   const hasAllRoles = useCallback(
-    (checkRoles: string[], options: RoleCheckOptions = {}): boolean => {
+    (checkRoles: string[], _options: RoleCheckOptions = {}): boolean => {
       return authHasAllRoles(checkRoles);
     },
     [authHasAllRoles]

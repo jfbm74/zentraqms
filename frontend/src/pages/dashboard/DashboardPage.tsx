@@ -7,7 +7,7 @@
 
 import React, { useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { usePermissions, useRoleBasedUI } from '../../hooks/usePermissions';
+import { useRoleBasedUI } from '../../hooks/usePermissions';
 import {
   SuperAdminDashboard,
   AdminDashboard,

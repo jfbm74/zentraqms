@@ -6,7 +6,6 @@
  */
 
 import React from 'react';
-import { usePermissions } from '../../hooks/usePermissions';
 import { PermissionGate } from '../common/PermissionGate';
 
 /**
