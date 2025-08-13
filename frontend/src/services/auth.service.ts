@@ -357,11 +357,12 @@ class AuthService {
    * @returns Formatted AuthError
    */
   private handleAuthError(error: unknown): AuthError {
-    const errorResponse = error as { response?: { data?: any; status?: number }; code?: string };
+    const errorResponse = error as { response?: { data?: unknown; status?: number }; code?: string };
     
     // Handle backend error response format
-    if (errorResponse.response?.data?.error) {
-      const errorData = errorResponse.response.data.error;
+    const responseData = errorResponse.response?.data as { error?: { code?: string; message?: string; details?: unknown } };
+    if (responseData?.error) {
+      const errorData = responseData.error;
       
       // Map backend error codes to AuthErrorType
       let type: AuthErrorType;
