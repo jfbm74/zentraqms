@@ -81,6 +81,8 @@ const Header: React.FC<HeaderProps> = ({ headerClass, onToggleSidebar }) => {
           <form className="app-search d-none d-md-block ms-3">
             <div className="position-relative">
               <input
+                id="header-search"
+                name="search"
                 type="text"
                 className="form-control"
                 placeholder="Buscar..."
