@@ -1,0 +1,356 @@
+# 🚀 Implementación Backend - Modelos Base y Configuración Inicial
+
+## 📋 Contexto del Proyecto
+
+Estoy desarrollando un sistema de gestión de calidad con arquitectura separada (Django Backend + React Frontend). Necesito implementar la base del sistema de autenticación que posteriormente soportará RBAC (Role-Based Access Control).
+
+## 🎯 Objetivo de esta Fase
+
+Crear los modelos base de usuario y configurar Django + Django REST Framework para soportar una API RESTful con autenticación JWT. Esta es la Fase 1.1 del desarrollo, que establece los cimientos para todo el sistema de autenticación y autorización.
+
+## 🛠️ Stack Tecnológico
+
+- **Django 5.0** - Framework principal
+- **Django REST Framework** - API RESTful  
+- **PostgreSQL** - Base de datos
+- **Redis** - Cache (configurar en siguiente fase)
+- **Python 3.11+** - Lenguaje backend
+
+## 📦 Requerimientos de Implementación
+
+### 1. Custom User Model
+
+Necesito crear un modelo de usuario personalizado que extienda `AbstractUser` de Django con los siguientes campos adicionales y consideraciones:
+
+**Campos del Modelo User:**
+```python
+# Campos base de AbstractUser que mantener:
+- username (opcional, permitir login con email)
+- email (único, requerido, será el campo principal de login)
+- first_name
+- last_name
+- is_active
+- is_staff
+- is_superuser
+- date_joined
+
+# Campos adicionales a agregar:
+- id (UUID en lugar de autoincrement)
+- is_verified (BooleanField) - para verificación de email
+- last_login_ip (GenericIPAddressField, nullable)
+- failed_login_attempts (IntegerField, default=0)
+- locked_until (DateTimeField, nullable) - para bloqueo temporal
+- created_by (ForeignKey to self, nullable) - quién creó la cuenta
+- updated_at (DateTimeField, auto_now=True)
+- phone_number (CharField, opcional)
+- department (CharField, opcional) - preparando para RBAC
+- position (CharField, opcional) - cargo en la organización
+```
+
+**Configuraciones importantes:**
+- USERNAME_FIELD = 'email'
+- REQUIRED_FIELDS = ['first_name', 'last_name']
+- Usar UUID como primary key para mejor seguridad
+- Agregar índices en campos de búsqueda frecuente
+- Implementar método `__str__` que retorne el email
+- Agregar property `full_name` que combine first_name y last_name
+- Método `can_login()` que verifique is_active y locked_until
+
+**Manager personalizado:**
+- Crear UserManager personalizado
+- Override `create_user` y `create_superuser`
+- Normalizar email en la creación
+- Validar email único case-insensitive
+
+### 2. Estructura del Proyecto
+
+Organizar el proyecto Django con la siguiente estructura:
+```
+backend/
+├── config/
+│   ├── settings/
+│   │   ├── __init__.py
+│   │   ├── base.py       # Configuraciones comunes
+│   │   ├── development.py # Config desarrollo
+│   │   ├── production.py  # Config producción
+│   │   └── testing.py     # Config para tests
+│   ├── urls.py
+│   ├── wsgi.py
+│   └── asgi.py
+├── apps/
+│   ├── __init__.py
+│   ├── authentication/
+│   │   ├── __init__.py
+│   │   ├── models.py      # User model aquí
+│   │   ├── managers.py    # UserManager aquí
+│   │   ├── serializers.py
+│   │   ├── views.py
+│   │   ├── urls.py
+│   │   ├── admin.py
+│   │   └── migrations/
+│   └── common/
+│       ├── __init__.py
+│       ├── models.py      # Abstract models base
+│       └── utils.py       # Utilidades compartidas
+├── requirements/
+│   ├── base.txt
+│   ├── development.txt
+│   └── production.txt
+└── manage.py
+```
+
+### 3. Configuración de Django Settings
+
+**Settings Base (base.py):**
+```python
+# Configuraciones esenciales:
+- SECRET_KEY desde variable de entorno
+- DEBUG = False por defecto
+- ALLOWED_HOSTS desde env
+- AUTH_USER_MODEL = 'authentication.User'
+- Configuración de DATABASES para PostgreSQL
+- Timezone: 'America/Bogota' (Colombia)
+- USE_TZ = True
+- LANGUAGE_CODE = 'es-co'
+
+# Apps instaladas:
+INSTALLED_APPS = [
+    # Django apps
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    
+    # Third party apps
+    'rest_framework',
+    'corsheaders',
+    'django_filters',
+    
+    # Local apps
+    'apps.authentication',
+    'apps.common',
+]
+
+# Middleware importante:
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # Antes de CommonMiddleware
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+```
+
+### 4. Configuración de Django REST Framework
+
+```python
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',  # Por ahora
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.MultiPartParser',
+        'rest_framework.parsers.FormParser',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
+    'EXCEPTION_HANDLER': 'apps.common.utils.custom_exception_handler',
+    'NON_FIELD_ERRORS_KEY': 'error',
+    'DATETIME_FORMAT': '%Y-%m-%d %H:%M:%S',
+    'DATE_FORMAT': '%Y-%m-%d',
+}
+```
+
+### 5. Configuración CORS
+
+```python
+# Para desarrollo (development.py):
+CORS_ALLOW_ALL_ORIGINS = True  # Solo en desarrollo
+
+# Para producción (production.py):
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",  # Vite default
+    # Agregar dominio de producción
+]
+
+# Configuración común (base.py):
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+```
+
+### 6. Migraciones Iniciales
+
+Después de crear el modelo User:
+1. Crear migración inicial: `python manage.py makemigrations authentication`
+2. Aplicar migración: `python manage.py migrate`
+3. Crear superusuario de prueba
+4. Generar fixtures con datos de prueba
+
+### 7. Admin Configuration
+
+Configurar Django Admin para el modelo User con:
+- Lista filtrable por: is_active, is_verified, is_staff
+- Búsqueda por: email, first_name, last_name
+- Campos de solo lectura: date_joined, last_login
+- Acciones personalizadas: unlock_users, verify_users
+- Inline para futuros roles (preparación)
+
+### 8. Serializers Básicos
+
+Crear serializers iniciales:
+```python
+# UserSerializer básico
+- Campos de lectura para perfil
+- Validación de email único
+- Exclusión de campos sensibles (password, etc.)
+
+# UserCreateSerializer
+- Para registro de usuarios
+- Validación de contraseña fuerte
+- Confirmación de contraseña
+
+# UserUpdateSerializer  
+- Para actualización de perfil
+- Campos editables limitados
+```
+
+### 9. Validaciones y Utilidades
+
+**Validaciones personalizadas:**
+- Validador de email único case-insensitive
+- Validador de contraseña fuerte (mínimo 8 caracteres, mayúsculas, minúsculas, números)
+- Validador de formato de teléfono (Colombia)
+
+**Utilidades comunes:**
+- Generador de tokens únicos
+- Normalizador de emails
+- Manejador de excepciones personalizado
+- Logger configurado para auditoría
+
+### 10. Tests Unitarios
+
+Crear tests para:
+- Creación de usuario con campos válidos
+- Validación de email único
+- Método can_login()
+- UserManager.create_user()
+- UserManager.create_superuser()
+- Validadores personalizados
+
+## 📝 Criterios de Aceptación
+
+1. ✅ Modelo User personalizado funcional con todos los campos especificados
+2. ✅ Migraciones aplicadas sin errores
+3. ✅ Django Admin configurado y funcional
+4. ✅ Settings organizados por entornos
+5. ✅ CORS configurado correctamente
+6. ✅ DRF configurado con paginación y filtros
+7. ✅ Tests básicos pasando (mínimo 80% cobertura en models)
+8. ✅ Documentación de instalación en README
+9. ✅ Requirements.txt organizado por entornos
+10. ✅ Variables de entorno documentadas (.env.example)
+
+## 🚨 Consideraciones Importantes
+
+1. **NO implementar JWT todavía** - eso viene en la siguiente fase
+2. **NO crear endpoints de API todavía** - solo modelos y configuración
+3. **Usar PostgreSQL desde el inicio** - no SQLite
+4. **Preparar estructura para RBAC** pero no implementar roles aún
+5. **Seguir convenciones de Django** y PEP 8
+6. **Documentar cada decisión importante** en comentarios
+7. **Usar type hints** donde sea posible
+8. **Configurar logging** desde el inicio
+
+## 🔧 Comandos de Verificación
+
+Después de la implementación, estos comandos deben funcionar:
+```bash
+# Verificar modelo
+python manage.py shell
+>>> from apps.authentication.models import User
+>>> User.objects.create_user(email='test@example.com', password='Test1234!')
+
+# Verificar migraciones
+python manage.py showmigrations
+
+# Verificar admin
+python manage.py createsuperuser
+
+# Correr tests
+python manage.py test apps.authentication
+
+# Verificar configuración
+python manage.py check --deploy
+```
+
+## 📚 Dependencias Requeridas
+
+```txt
+# requirements/base.txt
+Django==5.0.0
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+django-filter==23.5
+python-decouple==3.8
+psycopg2-binary==2.9.9
+python-dotenv==1.0.0
+pytz==2023.3
+
+# requirements/development.txt
+-r base.txt
+django-debug-toolbar==4.2.0
+ipython==8.18.1
+pytest==7.4.3
+pytest-django==4.7.0
+pytest-cov==4.1.0
+black==23.12.0
+flake8==6.1.0
+```
+
+## 🎯 Entregables Esperados
+
+1. **Código fuente** con la estructura especificada
+2. **README.md** con instrucciones de instalación
+3. **.env.example** con todas las variables necesarias
+4. **Dockerfile** básico para desarrollo (opcional)
+5. **Makefile** con comandos comunes (opcional)
+
+---
+
+**Nota**: Esta implementación es la base fundamental del sistema. Es crítico que esté bien estructurada ya que todos los demás componentes dependerán de estos modelos y configuraciones. Tomar el tiempo necesario para hacerlo correctamente desde el inicio.

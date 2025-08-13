@@ -1,0 +1,48 @@
+# 🧪 Testing dependencies for ZentraQMS Backend
+
+# Base requirements
+-r base.txt
+
+# Testing frameworks
+pytest==7.4.3
+pytest-django==4.7.0
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+pytest-xdist==3.4.0
+pytest-html==4.1.1
+
+# Coverage tools
+coverage==7.3.2
+coverage[toml]==7.3.2
+
+# Code quality
+flake8==6.1.0
+black==23.11.0
+isort==5.12.0
+bandit==1.7.5
+
+# Security testing
+safety==2.3.5
+
+# Performance testing
+locust==2.17.0
+
+# API testing
+requests==2.31.0
+httpx==0.25.2
+
+# Database testing
+factory-boy==3.3.0
+freezegun==1.2.2
+
+# Mocking and fixtures
+responses==0.24.1
+faker==20.1.0
+
+# Django testing utilities
+django-extensions==3.2.3
+django-debug-toolbar==4.2.0
+
+# Additional testing utilities
+parameterized==0.9.0
+tox==4.11.4

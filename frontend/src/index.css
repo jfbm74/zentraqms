@@ -1,1 +1,4 @@
-/* Tailwind is loaded via CDN, so we don't need these directives */
+/* Tailwind CSS Directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

@@ -1,6 +1,6 @@
 # ZentraQMS - Sistema de Gestión de Calidad
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 ![Django](https://img.shields.io/badge/Django-5.0-green.svg)
 ![React](https://img.shields.io/badge/React-19.0-61DAFB.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)
@@ -264,15 +264,61 @@ Para soporte y consultas:
 - Email: soporte@zentraqms.com
 - Issues: [GitHub Issues](https://github.com/tu-usuario/zentraqms/issues)
 
-## 🔄 Changelog
+## 🔄 Versionado y Releases
 
-### v1.0.0 (2025-01-12)
-- 🎉 Lanzamiento inicial
-- ✨ Módulo de gestión de procesos
-- ✨ Módulo de auditorías
-- ✨ Dashboard con métricas
-- ✨ Sistema de autenticación JWT
-- ✨ Integración con Docker
+### Sistema de Versionado
+
+Este proyecto usa [Semantic Versioning](https://semver.org/lang/es/):
+
+- **MAJOR.MINOR.PATCH** (ej: 1.2.3)
+- **MAJOR**: Cambios incompatibles en la API
+- **MINOR**: Nuevas funcionalidades compatibles hacia atrás  
+- **PATCH**: Correcciones compatibles hacia atrás
+
+### Crear una Nueva Versión
+
+```bash
+# Versión patch (0.1.0 → 0.1.1)
+./scripts/create-release.sh patch
+
+# Versión minor (0.1.0 → 0.2.0)  
+./scripts/create-release.sh minor
+
+# Versión major (0.1.0 → 1.0.0)
+./scripts/create-release.sh major
+
+# Con push automático
+./scripts/create-release.sh minor --push
+
+# Simulación sin cambios
+./scripts/create-release.sh patch --dry-run
+```
+
+### Convenciones de Commits
+
+Usamos [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+feat: nueva funcionalidad
+fix: corrección de bug  
+docs: solo cambios en documentación
+style: cambios que no afectan el código (espacios, formato, etc)
+refactor: código que no corrige bug ni agrega funcionalidad
+test: agregar o corregir tests
+chore: cambios en el build, dependencias, etc
+```
+
+### Scripts de Versionado
+
+- `npm run version:patch` - Incrementa versión patch
+- `npm run version:minor` - Incrementa versión minor
+- `npm run version:major` - Incrementa versión major
+- `npm run version:sync` - Sincroniza versiones entre módulos
+- `./scripts/create-release.sh` - Script completo de release
+
+### Changelog
+
+Ver [CHANGELOG.md](./CHANGELOG.md) para el historial completo de cambios.
 
 ---
 
