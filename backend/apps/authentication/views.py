@@ -11,7 +11,6 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenRefreshView as BaseTokenRefreshView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -31,22 +30,22 @@ logger = logging.getLogger('authentication')
 class LoginView(APIView):
     """
     Login view that returns JWT tokens.
-    
+
     This view handles user authentication and returns access and refresh tokens
     along with user information. It also manages failed login attempts and
     account locking.
     """
-    
+
     permission_classes = [AllowAny]
     serializer_class = CustomTokenObtainPairSerializer
-    
+
     def post(self, request):
         """
         Authenticate user and return JWT tokens.
-        
+
         Args:
             request: HTTP request with email and password
-            
+
         Returns:
             Response: JWT tokens and user data or error message
         """
@@ -55,16 +54,16 @@ class LoginView(APIView):
                 data=request.data,
                 context={'request': request}
             )
-            
+
             if serializer.is_valid():
                 validated_data = serializer.validated_data
-                
+
                 # Log successful login
                 logger.info(
                     f"Successful login for user: {validated_data['user']['email']} "
                     f"from IP: {get_client_ip(request)}"
                 )
-                
+
                 return create_success_response(
                     data={
                         'access': validated_data['access'],
@@ -80,13 +79,13 @@ class LoginView(APIView):
                     f"Failed login attempt for email: {email} "
                     f"from IP: {get_client_ip(request)}"
                 )
-                
+
                 return create_error_response(
                     message='Credenciales inválidas.',
                     errors=serializer.errors,
                     status_code=status.HTTP_400_BAD_REQUEST
                 )
-                
+
         except Exception as e:
             logger.error(f"Login error: {str(e)}")
             return create_error_response(
@@ -98,27 +97,27 @@ class LoginView(APIView):
 class TokenRefreshView(BaseTokenRefreshView):
     """
     Custom token refresh view.
-    
+
     Extends the default SimpleJWT TokenRefreshView to add custom logging
     and response formatting.
     """
-    
+
     def post(self, request, *args, **kwargs):
         """
         Refresh JWT access token.
-        
+
         Args:
             request: HTTP request with refresh token
-            
+
         Returns:
             Response: New access token (and refresh token if rotation is enabled)
         """
         try:
             response = super().post(request, *args, **kwargs)
-            
+
             if response.status_code == 200:
                 logger.info(f"Token refreshed for IP: {get_client_ip(request)}")
-                
+
                 return create_success_response(
                     data=response.data,
                     message='Token actualizado exitosamente.'
@@ -126,7 +125,7 @@ class TokenRefreshView(BaseTokenRefreshView):
             else:
                 logger.warning(f"Failed token refresh from IP: {get_client_ip(request)}")
                 return response
-                
+
         except Exception as e:
             logger.error(f"Token refresh error: {str(e)}")
             return create_error_response(
@@ -138,35 +137,35 @@ class TokenRefreshView(BaseTokenRefreshView):
 class LogoutView(APIView):
     """
     Logout view that validates refresh token.
-    
+
     In Phase 2, this will be extended to blacklist the token.
     For now, it just validates the token and returns a success message.
     """
-    
+
     permission_classes = [IsAuthenticated]
-    
+
     def post(self, request):
         """
         Logout user by validating refresh token.
-        
+
         Args:
             request: HTTP request with refresh token
-            
+
         Returns:
             Response: Success message or error
         """
         try:
             serializer = LogoutSerializer(data=request.data)
-            
+
             if serializer.is_valid():
                 result = serializer.save()
-                
+
                 # Log successful logout
                 logger.info(
                     f"User logged out: {request.user.email} "
                     f"from IP: {get_client_ip(request)}"
                 )
-                
+
                 return create_success_response(
                     data=result,
                     message='Sesión cerrada exitosamente.'
@@ -177,7 +176,7 @@ class LogoutView(APIView):
                     errors=serializer.errors,
                     status_code=status.HTTP_400_BAD_REQUEST
                 )
-                
+
         except Exception as e:
             logger.error(f"Logout error for user {request.user.email}: {str(e)}")
             return create_error_response(
@@ -189,37 +188,37 @@ class LogoutView(APIView):
 class CurrentUserView(APIView):
     """
     View to get current authenticated user information.
-    
+
     Returns detailed user information for the authenticated user,
     including roles and permissions (empty for now).
     """
-    
+
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request):
         """
         Get current authenticated user data.
-        
+
         Args:
             request: HTTP request with authentication header
-            
+
         Returns:
             Response: User data including roles and permissions
         """
         try:
             user = request.user
             serializer = UserSerializer(user)
-            
+
             # Add additional data for frontend
             user_data = serializer.data
             user_data['roles'] = []  # Empty for now, will be populated in RBAC phase
             user_data['permissions'] = []  # Empty for now, will be populated in RBAC phase
-            
+
             return create_success_response(
                 data=user_data,
                 message='Datos del usuario obtenidos exitosamente.'
             )
-            
+
         except Exception as e:
             logger.error(f"Error getting user data for {request.user.email}: {str(e)}")
             return create_error_response(
@@ -231,20 +230,20 @@ class CurrentUserView(APIView):
 class ChangePasswordView(APIView):
     """
     View for changing user password.
-    
+
     This view will be fully implemented in Phase 2.
     For now, it's just a placeholder structure.
     """
-    
+
     permission_classes = [IsAuthenticated]
-    
+
     def post(self, request):
         """
         Change user password.
-        
+
         Args:
             request: HTTP request with current and new password
-            
+
         Returns:
             Response: Success message or validation errors
         """
@@ -264,51 +263,51 @@ class ChangePasswordView(APIView):
 def login_function_view(request):
     """
     Function-based login view (alternative implementation).
-    
+
     This is an alternative to the class-based LoginView.
     It uses the LoginSerializer instead of CustomTokenObtainPairSerializer.
     """
     try:
         serializer = LoginSerializer(data=request.data, context={'request': request})
-        
+
         if serializer.is_valid():
             user = serializer.validated_data['user']
-            
+
             # Generate tokens
             refresh = RefreshToken.for_user(user)
-            
+
             # Update last login
             user.last_login = timezone.now()
             user.save(update_fields=['last_login'])
-            
+
             # Update IP if available
             ip_address = get_client_ip(request)
             if ip_address:
                 user.update_last_login_ip(ip_address)
-            
+
             response_data = {
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
                 'user': UserSerializer(user).data
             }
-            
+
             logger.info(f"Successful login for user: {user.email} from IP: {ip_address}")
-            
+
             return create_success_response(
                 data=response_data,
                 message='Login exitoso.'
             )
-        
+
         else:
             email = request.data.get('email', 'Unknown')
             logger.warning(f"Failed login attempt for email: {email} from IP: {get_client_ip(request)}")
-            
+
             return create_error_response(
                 message='Credenciales inválidas.',
                 errors=serializer.errors,
                 status_code=status.HTTP_400_BAD_REQUEST
             )
-            
+
     except Exception as e:
         logger.error(f"Login error: {str(e)}")
         return create_error_response(
@@ -322,7 +321,7 @@ def login_function_view(request):
 def user_profile_view(request):
     """
     Function-based user profile view (alternative implementation).
-    
+
     Returns current user profile information.
     """
     try:
@@ -331,7 +330,7 @@ def user_profile_view(request):
             data=serializer.data,
             message='Perfil obtenido exitosamente.'
         )
-        
+
     except Exception as e:
         logger.error(f"Error getting profile for {request.user.email}: {str(e)}")
         return create_error_response(
@@ -349,7 +348,7 @@ def user_profile_view(request):
 def auth_health_check(request):
     """
     Health check endpoint for authentication service.
-    
+
     Returns the status of the authentication service.
     """
     return create_success_response(

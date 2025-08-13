@@ -25,8 +25,9 @@ logger = logging.getLogger('authentication')
 
 class AuthenticationException(Exception):
     """Base exception class for authentication errors."""
-    
-    def __init__(self, message: str, error_code: str = None, details: dict = None):
+
+    def __init__(self, message: str, error_code: str = None,
+                 details: dict = None):
         self.message = message
         self.error_code = error_code or 'AUTH_ERROR'
         self.details = details or {}
@@ -35,20 +36,25 @@ class AuthenticationException(Exception):
 
 class AccountLockedException(AuthenticationException):
     """Exception raised when trying to access a locked account."""
-    
-    def __init__(self, message: str = None, locked_until: timezone.datetime = None):
+
+    def __init__(self, message: str = None,
+                 locked_until: timezone.datetime = None):
         self.locked_until = locked_until
         default_message = "Cuenta bloqueada por múltiples intentos fallidos."
         super().__init__(
             message=message or default_message,
             error_code='ACCOUNT_LOCKED',
-            details={'locked_until': locked_until.isoformat() if locked_until else None}
+            details={
+                'locked_until': (
+                    locked_until.isoformat() if locked_until else None
+                )
+            }
         )
 
 
 class AccountInactiveException(AuthenticationException):
     """Exception raised when trying to access an inactive account."""
-    
+
     def __init__(self, message: str = None):
         default_message = "Cuenta desactivada. Contacte al administrador."
         super().__init__(
@@ -59,7 +65,7 @@ class AccountInactiveException(AuthenticationException):
 
 class InvalidCredentialsException(AuthenticationException):
     """Exception raised for invalid login credentials."""
-    
+
     def __init__(self, message: str = None, attempts_remaining: int = None):
         default_message = "Credenciales inválidas."
         super().__init__(
@@ -71,7 +77,7 @@ class InvalidCredentialsException(AuthenticationException):
 
 class TokenExpiredException(AuthenticationException):
     """Exception raised when a token has expired."""
-    
+
     def __init__(self, message: str = None, token_type: str = 'access'):
         default_message = f"Token {token_type} expirado."
         super().__init__(
@@ -83,7 +89,7 @@ class TokenExpiredException(AuthenticationException):
 
 class TokenInvalidException(AuthenticationException):
     """Exception raised when a token is invalid or malformed."""
-    
+
     def __init__(self, message: str = None, token_type: str = 'access'):
         default_message = f"Token {token_type} inválido."
         super().__init__(
@@ -95,7 +101,7 @@ class TokenInvalidException(AuthenticationException):
 
 class RateLimitExceededException(AuthenticationException):
     """Exception raised when rate limit is exceeded."""
-    
+
     def __init__(self, message: str = None, retry_after: int = None):
         default_message = "Demasiadas peticiones. Intente más tarde."
         super().__init__(
@@ -107,7 +113,7 @@ class RateLimitExceededException(AuthenticationException):
 
 class SuspiciousActivityException(AuthenticationException):
     """Exception raised when suspicious activity is detected."""
-    
+
     def __init__(self, message: str = None, activity_type: str = None):
         default_message = "Actividad sospechosa detectada."
         super().__init__(
@@ -119,7 +125,7 @@ class SuspiciousActivityException(AuthenticationException):
 
 class PermissionDeniedException(AuthenticationException):
     """Exception raised when user lacks required permissions."""
-    
+
     def __init__(self, message: str = None, required_permission: str = None):
         default_message = "Permisos insuficientes para esta acción."
         super().__init__(
@@ -136,25 +142,29 @@ class PermissionDeniedException(AuthenticationException):
 def custom_exception_handler(exc, context):
     """
     Custom exception handler for authentication-related errors.
-    
+
     This handler provides consistent error responses and logging
     for all authentication exceptions.
-    
+
     Args:
         exc: The exception instance
         context: Context dictionary containing request and view information
-        
+
     Returns:
         Response: Formatted error response
     """
     # Get the standard response first
     response = exception_handler(exc, context)
-    
+
     # Get request object for logging
     request = context.get('request')
     ip_address = get_client_ip(request) if request else 'unknown'
-    user_email = getattr(request.user, 'email', 'anonymous') if request and hasattr(request, 'user') else 'anonymous'
-    
+    user_email = (
+        getattr(request.user, 'email', 'anonymous')
+        if request and hasattr(request, 'user')
+        else 'anonymous'
+    )
+
     # Handle custom authentication exceptions
     if isinstance(exc, AuthenticationException):
         # Log the security event
@@ -170,7 +180,7 @@ def custom_exception_handler(exc, context):
                 'method': request.method if request else 'unknown'
             }
         )
-        
+
         # Determine HTTP status code based on exception type
         if isinstance(exc, AccountLockedException):
             status_code = status.HTTP_423_LOCKED
@@ -182,7 +192,7 @@ def custom_exception_handler(exc, context):
             status_code = status.HTTP_429_TOO_MANY_REQUESTS
         else:
             status_code = status.HTTP_400_BAD_REQUEST
-        
+
         # Create custom response
         response = Response(
             data={
@@ -196,7 +206,7 @@ def custom_exception_handler(exc, context):
             },
             status=status_code
         )
-    
+
     # Handle JWT-specific exceptions
     elif isinstance(exc, (TokenError, InvalidToken)):
         log_security_event(
@@ -209,7 +219,7 @@ def custom_exception_handler(exc, context):
                 'path': request.path if request else 'unknown'
             }
         )
-        
+
         response = Response(
             data={
                 'success': False,
@@ -222,7 +232,7 @@ def custom_exception_handler(exc, context):
             },
             status=status.HTTP_401_UNAUTHORIZED
         )
-    
+
     # Handle other authentication-related exceptions
     elif response is not None:
         # Log general authentication errors
@@ -238,9 +248,10 @@ def custom_exception_handler(exc, context):
                     'original_data': response.data
                 }
             )
-        
+
         # Ensure consistent response format
-        if not isinstance(response.data, dict) or 'success' not in response.data:
+        if (not isinstance(response.data, dict) or
+                'success' not in response.data):
             response.data = {
                 'success': False,
                 'error': {
@@ -250,26 +261,27 @@ def custom_exception_handler(exc, context):
                     'timestamp': timezone.now().isoformat()
                 }
             }
-    
+
     return response
 
 
-def handle_authentication_error(error_type: str, request=None, user=None, **kwargs):
+def handle_authentication_error(error_type: str, request=None,
+                                user=None, **kwargs):
     """
     Helper function to handle and log authentication errors consistently.
-    
+
     Args:
         error_type (str): Type of authentication error
         request: Django request object (optional)
         user: User instance (optional)
         **kwargs: Additional error details
-        
+
     Returns:
         dict: Formatted error response data
     """
     ip_address = get_client_ip(request) if request else 'unknown'
     user_email = getattr(user, 'email', 'anonymous') if user else 'anonymous'
-    
+
     # Define error messages and codes
     error_mappings = {
         'invalid_credentials': {
@@ -297,12 +309,12 @@ def handle_authentication_error(error_type: str, request=None, user=None, **kwar
             'code': 'RATE_LIMITED'
         }
     }
-    
+
     error_info = error_mappings.get(error_type, {
         'message': 'Error de autenticación.',
         'code': 'AUTH_ERROR'
     })
-    
+
     # Log the error
     log_security_event(
         event_type=f'auth_{error_type}',
@@ -315,7 +327,7 @@ def handle_authentication_error(error_type: str, request=None, user=None, **kwar
             **kwargs
         }
     )
-    
+
     return {
         'success': False,
         'error': {
@@ -334,10 +346,10 @@ def handle_authentication_error(error_type: str, request=None, user=None, **kwar
 def handle_auth_exceptions(view_func):
     """
     Decorator to handle authentication exceptions in view functions.
-    
+
     Args:
         view_func: The view function to wrap
-        
+
     Returns:
         Wrapped view function with exception handling
     """
@@ -347,8 +359,12 @@ def handle_auth_exceptions(view_func):
         except AuthenticationException as e:
             request = args[0] if args else None
             ip_address = get_client_ip(request) if request else 'unknown'
-            user_email = getattr(request.user, 'email', 'anonymous') if hasattr(request, 'user') else 'anonymous'
-            
+            user_email = (
+                getattr(request.user, 'email', 'anonymous')
+                if hasattr(request, 'user')
+                else 'anonymous'
+            )
+
             log_security_event(
                 event_type='view_auth_exception',
                 user_email=user_email,
@@ -360,7 +376,7 @@ def handle_auth_exceptions(view_func):
                     'message': e.message
                 }
             )
-            
+
             return Response(
                 data={
                     'success': False,
@@ -387,7 +403,7 @@ def handle_auth_exceptions(view_func):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-    
+
     return wrapper
 
 
@@ -398,7 +414,7 @@ def handle_auth_exceptions(view_func):
 def validate_and_raise(condition: bool, exception_class: AuthenticationException, *args, **kwargs):
     """
     Helper function to validate a condition and raise an exception if it fails.
-    
+
     Args:
         condition (bool): Condition to validate
         exception_class: Exception class to raise if condition is False
@@ -411,10 +427,10 @@ def validate_and_raise(condition: bool, exception_class: AuthenticationException
 def safe_get_user_email(user) -> str:
     """
     Safely get user email for logging purposes.
-    
+
     Args:
         user: User object or None
-        
+
     Returns:
         str: User email or 'anonymous'
     """

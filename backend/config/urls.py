@@ -16,7 +16,7 @@ from django.utils import timezone
 def health_check(request):
     """
     Simple health check endpoint.
-    
+
     Returns:
         JsonResponse: Health status
     """
@@ -31,13 +31,13 @@ def health_check(request):
 urlpatterns = [
     # Admin
     path(getattr(settings, 'ADMIN_URL', 'admin/'), admin.site.urls),
-    
+
     # Health check
     path(getattr(settings, 'HEALTH_CHECK_PATH', 'health/'), health_check, name='health_check'),
-    
+
     # API endpoints
     path('api/auth/', include('apps.authentication.urls')),
-    
+
     # Future API endpoints
     # path('api/v1/procesos/', include('procesos.urls')),
     # path('api/v1/auditorias/', include('auditorias.urls')),
@@ -49,7 +49,7 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    
+
     # Add debug toolbar if installed
     if 'debug_toolbar' in settings.INSTALLED_APPS:
         import debug_toolbar
