@@ -16,7 +16,7 @@ python-decouple==3.8
 python-dotenv==1.0.0
 
 # Timezone handling
-pytz==2023.3
+pytz==2025.2
 
 # Password validation and security
 argon2-cffi==23.1.0
