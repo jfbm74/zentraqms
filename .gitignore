@@ -172,6 +172,17 @@ credentials/
 tmp/
 temp/
 
+# Fix/cleanup scripts
+fix_*.py
+cleanup_*.py
+temp_*.py
+script_*.py
+
+# Development utilities
+unused_*.py
+duplicate_*.py
+migrate_*.py
+
 # Logs
 logs/
 *.log
