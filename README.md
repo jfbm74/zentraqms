@@ -378,7 +378,7 @@ El sistema incluye usuarios de prueba con diferentes roles y permisos para testi
 | Usuario | Email | Contraseña | Rol | Permisos |
 |---------|-------|------------|-----|----------|
 | **Admin** | `admin@zentraqms.com` | `[password del admin]` | Super Admin | Acceso total al sistema |
-| **Coordinador** | `coordinador@zentraqms.test` | `test123456` | Coordinador de Calidad | 35 permisos - Gestión completa de calidad |
+| **Coordinador** | `` | `test123456` | Coordinador de Calidad | 35 permisos - Gestión completa de calidad |
 | **Auditor** | `auditor@zentraqms.test` | `test123456` | Auditor Interno | 16 permisos - Ejecución y gestión de auditorías |
 | **Jefe de Área** | `jefe@zentraqms.test` | `test123456` | Jefe de Área | 17 permisos - Gestión de área y procesos |
 | **Responsable** | `responsable@zentraqms.test` | `test123456` | Responsable de Proceso | 11 permisos - Gestión de procesos específicos |

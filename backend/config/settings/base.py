@@ -45,6 +45,7 @@ LOCAL_APPS = [
     'apps.authentication',
     'apps.authorization',
     'apps.common',
+    'apps.organization',
     'procesos',
     'normograma',
     'auditorias',

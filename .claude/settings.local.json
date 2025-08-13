@@ -26,9 +26,16 @@
       "Bash(docker exec:*)",
       "Bash(git add:*)",
       "Bash(docker logs:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(curl:*)",
+      "Bash(./venv/bin/python manage.py migrate:*)",
+      "Bash(./venv/bin/python manage.py runserver:*)",
+      "Bash(./venv/bin/python test_audit_system.py:*)",
+      "Bash(./venv/bin/python manage.py shell:*)",
+      "Bash(./venv/bin/python manage.py show_urls:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "defaultMode": "acceptEdits"
   }
 }

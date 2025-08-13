@@ -11,17 +11,91 @@ interface DashboardStats {
   completedTasks?: number;
 }
 
+interface OrganizationCheck {
+  hasOrganizations: boolean;
+  canCreateOrganizations: boolean;
+  shouldRedirectToWizard: boolean;
+}
+
 const Dashboard: React.FC = () => {
-  const { user, logout, isLoading: authLoading } = useAuth();
+  const { user, logout, isLoading: authLoading, hasPermission } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [organizationCheck, setOrganizationCheck] = useState<OrganizationCheck>({
+    hasOrganizations: true, // Assume true by default to avoid premature redirect
+    canCreateOrganizations: false,
+    shouldRedirectToWizard: false
+  });
+
+  // Check organization status
+  const checkOrganizationStatus = async () => {
+    console.log('[Dashboard] checkOrganizationStatus called');
+    console.log('[Dashboard] User:', user);
+    console.log('[Dashboard] AuthLoading:', authLoading);
+    
+    if (!user || authLoading) {
+      console.log('[Dashboard] Skipping check - no user or still loading');
+      return;
+    }
+
+    try {
+      // Check if user has permission to create organizations
+      const canCreate = hasPermission('organization.create');
+      console.log('[Dashboard] Can create organizations:', canCreate);
+      
+      // Check if organizations exist using the lightweight endpoint
+      console.log('[Dashboard] Fetching organization existence...');
+      const response = await apiClient.get('/api/v1/organizations/exists_check/');
+      console.log('[Dashboard] Organization check response:', response.data);
+      const hasOrgs = response.data.exists;
+      
+      // Determine if should redirect to wizard
+      const shouldRedirect = !hasOrgs && canCreate;
+      console.log('[Dashboard] Should redirect to wizard:', shouldRedirect);
+      
+      setOrganizationCheck({
+        hasOrganizations: hasOrgs,
+        canCreateOrganizations: canCreate,
+        shouldRedirectToWizard: shouldRedirect
+      });
+
+      // Auto-redirect if needed (only if user has permissions)
+      if (shouldRedirect) {
+        console.log('[Dashboard] Triggering auto-redirect...');
+        toast.info('No se han configurado organizaciones. Redirigiendo al asistente de configuración...', {
+          autoClose: 3000
+        });
+        setTimeout(() => {
+          navigate('/organization/wizard');
+        }, 3000);
+      } else if (!hasOrgs && !canCreate) {
+        // Show message to users without permission
+        console.log('[Dashboard] User cannot create organizations, showing info message');
+        toast.warning('Las organizaciones no han sido configuradas. Contacte al administrador.', {
+          autoClose: 5000
+        });
+      }
+      
+    } catch (error) {
+      console.error('[Dashboard] Error checking organization status:', error);
+      // Don't show error toast, just assume organizations exist
+      setOrganizationCheck(prev => ({
+        ...prev,
+        hasOrganizations: true,
+        shouldRedirectToWizard: false
+      }));
+    }
+  };
 
   // Cargar datos del dashboard (simulado por ahora)
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
         setIsLoading(true);
+        
+        // Check organization status first
+        await checkOrganizationStatus();
         
         // Simular carga de datos
         // En el futuro, esto será una llamada real a la API
@@ -42,8 +116,10 @@ const Dashboard: React.FC = () => {
       }
     };
 
-    loadDashboardData();
-  }, []);
+    if (user && !authLoading) {
+      loadDashboardData();
+    }
+  }, [user, authLoading, hasPermission, navigate]);
 
   const handleLogout = async () => {
     try {
@@ -137,6 +213,42 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Organization Status Alert */}
+        {!organizationCheck.hasOrganizations && (
+          <div className="row">
+            <div className="col-12">
+              {organizationCheck.canCreateOrganizations ? (
+                <div className="alert alert-warning d-flex align-items-center" role="alert">
+                  <i className="ri-error-warning-line me-2 fs-16"></i>
+                  <div className="flex-grow-1">
+                    <strong>Configuración inicial requerida:</strong> No se han configurado organizaciones en el sistema. 
+                    {organizationCheck.shouldRedirectToWizard && (
+                      <span> Redirigiendo automáticamente al asistente de configuración...</span>
+                    )}
+                  </div>
+                  <div className="ms-3">
+                    <button
+                      onClick={() => navigate('/organization/wizard')}
+                      className="btn btn-warning btn-sm"
+                    >
+                      <i className="ri-settings-line me-1"></i>
+                      Configurar Ahora
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="alert alert-info d-flex align-items-center" role="alert">
+                  <i className="ri-information-line me-2 fs-16"></i>
+                  <div>
+                    <strong>Sistema en configuración:</strong> Las organizaciones están siendo configuradas por un administrador. 
+                    Por favor contacta al administrador del sistema si necesitas acceso.
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="row">

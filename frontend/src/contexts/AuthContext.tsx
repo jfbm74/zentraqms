@@ -173,36 +173,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Refresh permissions and roles from backend (internal)
    */
   const internalRefreshPermissions = useCallback(async (): Promise<void> => {
-    if (!state.isAuthenticated) {
-      return;
-    }
-
+    console.log('[AuthProvider] internalRefreshPermissions called, isAuthenticated:', state.isAuthenticated);
+    
     try {
       dispatch({ type: 'SET_RBAC_LOADING', payload: true });
       dispatch({ type: 'CLEAR_RBAC_ERROR' });
 
       const rbacData = await RBACService.fetchUserRBACData();
+      console.log('[AuthProvider] RBAC data fetched successfully');
       
       // Transform backend data to frontend format
+      console.log('[AuthProvider] Transforming permissions data...');
       const transformedPermissions = RBACService.transformPermissionsData(rbacData.permissions);
+      console.log('[AuthProvider] Permissions transformed:', transformedPermissions ? 'success' : 'failed');
+      
+      console.log('[AuthProvider] Transforming roles data...');
       const transformedRoles = RBACService.transformRolesData(rbacData.roles);
+      console.log('[AuthProvider] Roles transformed:', transformedRoles ? 'success' : 'failed');
 
+      console.log('[AuthProvider] Creating RBAC payload...');
       const rbacPayload = {
-        permissions: transformedPermissions.permissions,
-        roles: transformedRoles.roles,
-        permissionsByResource: transformedPermissions.permissionsByResource,
+        permissions: transformedPermissions?.permissions || [],
+        roles: transformedRoles?.roles || [],
+        permissionsByResource: transformedPermissions?.permissionsByResource || {},
       };
+      console.log('[AuthProvider] RBAC payload created:', {
+        permissionsCount: rbacPayload.permissions.length,
+        rolesCount: rbacPayload.roles.length
+      });
 
       // Update state
+      console.log('[AuthProvider] Dispatching RBAC data to state...');
       dispatch({
         type: 'SET_RBAC_DATA',
         payload: rbacPayload,
       });
+      console.log('[AuthProvider] RBAC data dispatched successfully');
 
       // Cache the data in sessionStorage
-      AuthStorage.setRBACData(rbacPayload);
+      console.log('[AuthProvider] Caching RBAC data...');
+      try {
+        AuthStorage.setRBACData(rbacPayload);
+        console.log('[AuthProvider] RBAC data cached successfully');
+      } catch (storageError) {
+        console.error('[AuthProvider] Failed to cache RBAC data:', storageError);
+        // Continue even if caching fails
+      }
 
-      console.log('[AuthProvider] RBAC data refreshed successfully');
+      console.log('[AuthProvider] RBAC data refreshed successfully', { 
+        permissionsCount: rbacPayload.permissions.length, 
+        rolesCount: rbacPayload.roles.length,
+        hasOrgCreate: rbacPayload.permissions.includes('organization.create')
+      });
     } catch (error) {
       console.error('[AuthProvider] Failed to refresh permissions:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load permissions';
@@ -333,8 +355,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           },
         });
 
-        // Load RBAC data after successful login
-        await internalRefreshPermissions();
+        // Mark that RBAC data should be loaded
+        console.log('[AuthProvider] Login successful, will load RBAC data...');
 
         // Dispatch login success event
         window.dispatchEvent(
@@ -526,6 +548,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   /**
+   * Load RBAC data when user becomes authenticated
+   */
+  useEffect(() => {
+    if (state.isAuthenticated && !state.rbacLoading && state.permissions.length === 0) {
+      console.log('[AuthProvider] User authenticated, loading RBAC data...');
+      internalRefreshPermissions().catch((error) => {
+        console.error('[AuthProvider] Failed to load RBAC data on auth:', error);
+      });
+    }
+  }, [state.isAuthenticated, state.rbacLoading, state.permissions.length]);
+
+  /**
    * Auto-refresh token when it's about to expire
    */
   useEffect(() => {
@@ -626,6 +660,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     getAccessToken,
     getRefreshToken,
   };
+
+  // Make auth context available for debugging in development
+  React.useEffect(() => {
+    if (import.meta.env.DEV) {
+      (window as any).authContext = contextValue;
+    }
+  }, [contextValue]);
 
   return (
     <AuthContext.Provider value={contextValue}>

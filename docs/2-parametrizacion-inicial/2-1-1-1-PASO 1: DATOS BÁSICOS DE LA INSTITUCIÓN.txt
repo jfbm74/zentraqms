@@ -88,9 +88,6 @@ pythonTASK-007: API de Templates
 pythonTASK-008: Servicio de Validación NIT
 - [ ] Algoritmo de cálculo dígito verificación para Colombia
 - [ ] Validación de formato (###.###.###-#)
-- [ ] Verificación contra base de datos
-- [ ] Manejo de NITs especiales (extranjeros)
-pythonTASK-009: Servicio de Auto-guardado
 - [ ] Endpoint para guardado parcial (draft)
 - [ ] Modelo DraftConfiguration para borradores
 - [ ] Limpieza automática de drafts antiguos (>30 días)

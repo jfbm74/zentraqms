@@ -25,6 +25,7 @@ import Layout from './components/layout/Layout';
 // Pages - Lazy loaded for better performance
 const LoginPage = React.lazy(() => import('./pages/auth/LoginPage'));
 const Dashboard = React.lazy(() => import('./pages/dashboard/Dashboard'));
+const OrganizationWizard = React.lazy(() => import('./pages/organization/wizard/OrganizationWizard'));
 const ProcesosPage = React.lazy(() => import('./pages/procesos/ProcesosPage'));
 const AuditoriasPage = React.lazy(() => import('./pages/auditorias/AuditoriasPage'));
 const NormogramaPage = React.lazy(() => import('./pages/normograma/NormogramaPage'));
@@ -100,6 +101,17 @@ const App: React.FC = () => {
                   />
 
                   <Route
+                    path="/organization/wizard"
+                    element={
+                      <ProtectedRoute permissions={['organization.create']}>
+                        <DashboardLayout>
+                          <OrganizationWizard />
+                        </DashboardLayout>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
                     path="/procesos"
                     element={
                       <ProtectedRoute>
@@ -158,6 +170,32 @@ const App: React.FC = () => {
                   <Route
                     path="/"
                     element={<Navigate to="/dashboard" replace />}
+                  />
+
+                  {/* Access denied route */}
+                  <Route
+                    path="/access-denied"
+                    element={
+                      <div className="d-flex align-items-center justify-content-center min-vh-100">
+                        <div className="text-center">
+                          <div className="card">
+                            <div className="card-body p-4">
+                              <h1 className="display-1 text-danger">🚫</h1>
+                              <h2 className="h4 mb-3">Acceso Denegado</h2>
+                              <p className="text-muted mb-4">
+                                No tienes permisos suficientes para acceder a esta página.
+                              </p>
+                              <button 
+                                className="btn btn-primary"
+                                onClick={() => window.history.back()}
+                              >
+                                Volver
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    }
                   />
 
                   {/* Catch all route - 404 */}

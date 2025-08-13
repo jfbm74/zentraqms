@@ -294,3 +294,24 @@ class ReadOnlyOrHasPermission(BasePermission):
     
     def has_object_permission(self, request, view, obj):
         return self.has_permission(request, view)
+
+
+# Organization-specific permissions
+class CanViewOrganization(HasPermission):
+    """Permission to view organization data."""
+    required_permission = 'organization.read'
+
+
+class CanCreateOrganization(HasPermission):
+    """Permission to create organization data."""
+    required_permission = 'organization.create'
+
+
+class CanUpdateOrganization(HasPermission):
+    """Permission to update organization data."""
+    required_permission = 'organization.update'
+
+
+class CanDeleteOrganization(HasPermission):
+    """Permission to delete organization data."""
+    required_permission = 'organization.delete'
