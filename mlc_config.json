@@ -1,0 +1,38 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "^http://localhost"
+    },
+    {
+      "pattern": "^https://localhost"
+    },
+    {
+      "pattern": "^http://127.0.0.1"
+    },
+    {
+      "pattern": "^http://localhost:3000"
+    },
+    {
+      "pattern": "^http://localhost:5173"
+    },
+    {
+      "pattern": "^http://localhost:8000"
+    },
+    {
+      "pattern": "^https://github.com/tu-usuario/"
+    }
+  ],
+  "httpHeaders": [
+    {
+      "urls": ["https://github.com/"],
+      "headers": {
+        "Accept": "text/html"
+      }
+    }
+  ],
+  "timeout": "20s",
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackRetryDelay": "30s",
+  "aliveStatusCodes": [200, 203, 206, 300, 301, 302, 303, 304, 307, 308, 403, 406, 409, 410, 414, 418, 429, 451, 999]
+}

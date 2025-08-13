@@ -86,15 +86,16 @@ const LoginPage: React.FC = () => {
 
       // Success message
       toast.success('¡Bienvenido! Has iniciado sesión correctamente.');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[LoginPage] Login failed:', error);
       
       // Show specific error messages
-      if (error.response?.status === 401) {
+      const errorResponse = error as { response?: { status?: number } };
+      if (errorResponse.response?.status === 401) {
         toast.error('Credenciales inválidas. Verifica tu email y contraseña.');
-      } else if (error.response?.status === 403) {
+      } else if (errorResponse.response?.status === 403) {
         toast.error('Tu cuenta está desactivada. Contacta al administrador.');
-      } else if (!error.response) {
+      } else if (!errorResponse.response) {
         toast.error('Error de conexión. Verifica tu conexión a internet.');
       } else {
         toast.error('Error al iniciar sesión. Intenta nuevamente.');

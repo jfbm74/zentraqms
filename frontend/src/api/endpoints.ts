@@ -84,11 +84,21 @@ export const apiClient = axios.create({
  */
 apiClient.interceptors.request.use(
   (config) => {
-    // Get token from localStorage
-    const token = localStorage.getItem('access_token');
+    // Skip adding token for authentication endpoints
+    const skipTokenPaths = [
+      AUTH_ENDPOINTS.LOGIN,
+      AUTH_ENDPOINTS.REFRESH,
+    ];
     
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const shouldSkipToken = skipTokenPaths.some(path => config.url?.includes(path));
+    
+    if (!shouldSkipToken) {
+      // Get token from localStorage
+      const token = localStorage.getItem('access_token');
+      
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     
     // Add request timestamp for debugging
@@ -137,8 +147,10 @@ apiClient.interceptors.response.use(
       });
     }
     
-    // Handle 401 (Unauthorized) errors
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Handle 401 (Unauthorized) errors - but not for login/refresh endpoints
+    if (error.response?.status === 401 && !originalRequest._retry && 
+        !originalRequest.url?.includes(AUTH_ENDPOINTS.LOGIN) &&
+        !originalRequest.url?.includes(AUTH_ENDPOINTS.REFRESH)) {
       originalRequest._retry = true;
       
       try {

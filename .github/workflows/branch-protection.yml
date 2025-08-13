@@ -1,7 +1,10 @@
 name: 🛡️ Branch Protection Setup
-
 on:
-  workflow_dispatch: # Solo ejecutar manualmente para configurar
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  administration: write
 
 jobs:
   setup-branch-protection:
@@ -18,7 +21,6 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             
-            // Configuración de protección para la rama main
             const protectionConfig = {
               required_status_checks: {
                 strict: true,
@@ -30,7 +32,7 @@ jobs:
                   { context: "📋 Quality Gates" }
                 ]
               },
-              enforce_admins: false, // Los admins pueden hacer override en emergencias
+              enforce_admins: false,
               required_pull_request_reviews: {
                 required_approving_review_count: 1,
                 dismiss_stale_reviews: true,
@@ -64,10 +66,9 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             
-            // Configuración más laxa para develop
             const protectionConfig = {
               required_status_checks: {
-                strict: false, // Más flexible en develop
+                strict: false,
                 checks: [
                   { context: "🎨 Frontend Tests" },
                   { context: "🔧 Backend Tests" }
@@ -94,5 +95,4 @@ jobs:
               console.log('✅ Branch protection configured for develop');
             } catch (error) {
               console.error('❌ Failed to configure branch protection:', error);
-              // No fallar si develop no existe aún
             }

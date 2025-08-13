@@ -148,7 +148,7 @@ export interface UserActivity {
   ip_address?: string;
   user_agent?: string;
   timestamp: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -326,7 +326,7 @@ export const getUserAvatarColor = (user: User): string => {
 /**
  * Type guards
  */
-export const isUser = (obj: any): obj is User => {
+export const isUser = (obj: unknown): obj is User => {
   return (
     obj &&
     typeof obj.id === 'string' &&
@@ -337,7 +337,7 @@ export const isUser = (obj: any): obj is User => {
   );
 };
 
-export const isUserListResponse = (response: any): response is UserListResponse => {
+export const isUserListResponse = (response: unknown): response is UserListResponse => {
   return (
     response &&
     response.success === true &&

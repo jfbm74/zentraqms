@@ -5,13 +5,12 @@ Script to create admin user for ZentraQMS
 import os
 import sys
 import django
+from django.contrib.auth import get_user_model
 
 # Setup Django environment
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 django.setup()
-
-from django.contrib.auth import get_user_model
 
 User = get_user_model()
 

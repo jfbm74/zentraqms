@@ -6,8 +6,7 @@
  */
 
 import type { AxiosResponse } from 'axios';
-import axiosInstance from '../api/axios.config';
-import { AUTH_ENDPOINTS } from '../api/endpoints';
+import { apiClient, AUTH_ENDPOINTS } from '../api/endpoints';
 import {
   LoginRequest,
   LoginResponse,
@@ -16,7 +15,6 @@ import {
   LogoutRequest,
   CurrentUserResponse,
   VerifyTokenRequest,
-  TokenPair,
   AuthError,
   AuthErrorType,
   TokenPayload,
@@ -36,7 +34,7 @@ class AuthService {
    */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     try {
-      const response: AxiosResponse<LoginResponse> = await axiosInstance.post(
+      const response: AxiosResponse<LoginResponse> = await apiClient.post(
         AUTH_ENDPOINTS.LOGIN,
         credentials
       );
@@ -48,7 +46,7 @@ class AuthService {
       } else {
         throw new Error('Login failed');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[AuthService] Login error:', error);
       throw this.handleAuthError(error);
     }
@@ -70,7 +68,7 @@ class AuthService {
 
         // Attempt to logout on server (invalidate refresh token)
         try {
-          await axiosInstance.post(AUTH_ENDPOINTS.LOGOUT, logoutData);
+          await apiClient.post(AUTH_ENDPOINTS.LOGOUT, logoutData);
         } catch (error) {
           // Log error but don't throw - we still want to clear local data
           console.warn('[AuthService] Server logout failed:', error);
@@ -108,7 +106,7 @@ class AuthService {
         refresh: refreshToken,
       };
 
-      const response: AxiosResponse<RefreshTokenResponse> = await axiosInstance.post(
+      const response: AxiosResponse<RefreshTokenResponse> = await apiClient.post(
         AUTH_ENDPOINTS.REFRESH,
         refreshData
       );
@@ -120,7 +118,7 @@ class AuthService {
       } else {
         throw new Error('Token refresh failed');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[AuthService] Token refresh error:', error);
       
       // If refresh fails, clear auth data and logout
@@ -139,7 +137,7 @@ class AuthService {
    */
   async getCurrentUser(): Promise<CurrentUserResponse> {
     try {
-      const response: AxiosResponse<CurrentUserResponse> = await axiosInstance.get(
+      const response: AxiosResponse<CurrentUserResponse> = await apiClient.get(
         AUTH_ENDPOINTS.CURRENT_USER
       );
 
@@ -150,7 +148,7 @@ class AuthService {
       } else {
         throw new Error('Failed to get current user');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[AuthService] Get current user error:', error);
       throw this.handleAuthError(error);
     }
@@ -174,7 +172,7 @@ class AuthService {
         token: tokenToVerify,
       };
 
-      const response = await axiosInstance.post(AUTH_ENDPOINTS.VERIFY_TOKEN, verifyData);
+      const response = await apiClient.post(AUTH_ENDPOINTS.VERIFY_TOKEN, verifyData);
       return response.status === 200;
     } catch (error) {
       console.warn('[AuthService] Token verification failed:', error);
@@ -358,55 +356,68 @@ class AuthService {
    * @param error - Raw error from API call
    * @returns Formatted AuthError
    */
-  private handleAuthError(error: any): AuthError {
+  private handleAuthError(error: unknown): AuthError {
+    const errorResponse = error as { response?: { data?: unknown; status?: number }; code?: string };
+    
+    // Handle backend error response format
+    const responseData = errorResponse.response?.data as { error?: { code?: string; message?: string; details?: unknown } };
+    if (responseData?.error) {
+      const errorData = responseData.error;
+      
+      // Map backend error codes to AuthErrorType
+      let type: AuthErrorType;
+      switch (errorData.code) {
+        case 'INVALID_CREDENTIALS':
+          type = AuthErrorType.INVALID_CREDENTIALS;
+          break;
+        case 'ACCOUNT_LOCKED':
+          type = AuthErrorType.ACCOUNT_LOCKED;
+          break;
+        case 'ACCOUNT_INACTIVE':
+          type = AuthErrorType.ACCOUNT_INACTIVE;
+          break;
+        case 'TOKEN_EXPIRED':
+          type = AuthErrorType.TOKEN_EXPIRED;
+          break;
+        case 'TOKEN_INVALID':
+          type = AuthErrorType.TOKEN_INVALID;
+          break;
+        case 'RATE_LIMITED':
+          type = AuthErrorType.RATE_LIMITED;
+          break;
+        default:
+          type = AuthErrorType.UNKNOWN_ERROR;
+      }
+      
+      return {
+        type,
+        message: errorData.message || 'Ha ocurrido un error. Intente nuevamente.',
+        code: errorData.code,
+        details: errorData.details,
+      };
+    }
+    
+    // Handle network errors
+    if (errorResponse.code === 'NETWORK_ERROR' || !errorResponse.response) {
+      return {
+        type: AuthErrorType.NETWORK_ERROR,
+        message: 'Error de conexión. Verifique su conexión a internet.',
+      };
+    }
+    
+    // Handle rate limiting
+    if (errorResponse.response?.status === 429) {
+      return {
+        type: AuthErrorType.RATE_LIMITED,
+        message: 'Demasiadas peticiones. Intente más tarde.',
+      };
+    }
+
     // Default error
-    let authError: AuthError = {
+    return {
       type: AuthErrorType.UNKNOWN_ERROR,
       message: 'Ha ocurrido un error desconocido. Intente nuevamente.',
     };
-
-    if (error.response?.data) {
-      const errorData = error.response.data;
-      
-      // Handle backend error response format
-      if (errorData.error) {
-        authError.message = errorData.error.message || authError.message;
-        authError.code = errorData.error.code;
-        authError.details = errorData.error.details;
-
-        // Map backend error codes to AuthErrorType
-        switch (errorData.error.code) {
-          case 'INVALID_CREDENTIALS':
-            authError.type = AuthErrorType.INVALID_CREDENTIALS;
-            break;
-          case 'ACCOUNT_LOCKED':
-            authError.type = AuthErrorType.ACCOUNT_LOCKED;
-            break;
-          case 'ACCOUNT_INACTIVE':
-            authError.type = AuthErrorType.ACCOUNT_INACTIVE;
-            break;
-          case 'TOKEN_EXPIRED':
-            authError.type = AuthErrorType.TOKEN_EXPIRED;
-            break;
-          case 'TOKEN_INVALID':
-            authError.type = AuthErrorType.TOKEN_INVALID;
-            break;
-          case 'RATE_LIMITED':
-            authError.type = AuthErrorType.RATE_LIMITED;
-            break;
-          default:
-            authError.type = AuthErrorType.UNKNOWN_ERROR;
-        }
-      }
-    } else if (error.code === 'NETWORK_ERROR' || !error.response) {
-      authError.type = AuthErrorType.NETWORK_ERROR;
-      authError.message = 'Error de conexión. Verifique su conexión a internet.';
-    } else if (error.response?.status === 429) {
-      authError.type = AuthErrorType.RATE_LIMITED;
-      authError.message = 'Demasiadas peticiones. Intente más tarde.';
-    }
-
-    return authError;
   }
 }
 

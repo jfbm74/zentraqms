@@ -6,6 +6,8 @@ Django==5.0.0
 djangorestframework==3.14.0
 djangorestframework-simplejwt==5.3.1
 django-cors-headers==4.3.1
+django-filter==23.5
+django-extensions==3.2.3
 
 # Database for testing
 psycopg2-binary==2.9.9
@@ -19,6 +21,10 @@ PyJWT==2.8.0
 
 # Utilities
 requests==2.31.0
+
+# Background tasks (required for core imports)
+celery==5.3.4
+redis==5.0.1
 
 # Testing frameworks
 pytest==7.4.3

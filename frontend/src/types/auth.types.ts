@@ -86,7 +86,7 @@ export interface ApiErrorResponse {
   error: {
     message: string;
     code: string;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
     timestamp: string;
   };
 }
@@ -161,7 +161,7 @@ export interface AuthError {
   type: AuthErrorType;
   message: string;
   code?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 /**
@@ -271,7 +271,7 @@ export interface SessionInfo {
 /**
  * Type guards for authentication responses
  */
-export const isLoginResponse = (response: any): response is LoginResponse => {
+export const isLoginResponse = (response: unknown): response is LoginResponse => {
   return (
     response &&
     typeof response.success === 'boolean' &&
@@ -283,7 +283,7 @@ export const isLoginResponse = (response: any): response is LoginResponse => {
   );
 };
 
-export const isApiErrorResponse = (response: any): response is ApiErrorResponse => {
+export const isApiErrorResponse = (response: unknown): response is ApiErrorResponse => {
   return (
     response &&
     response.success === false &&
@@ -292,7 +292,7 @@ export const isApiErrorResponse = (response: any): response is ApiErrorResponse 
   );
 };
 
-export const isTokenPair = (tokens: any): tokens is TokenPair => {
+export const isTokenPair = (tokens: unknown): tokens is TokenPair => {
   return (
     tokens &&
     typeof tokens.access === 'string' &&
