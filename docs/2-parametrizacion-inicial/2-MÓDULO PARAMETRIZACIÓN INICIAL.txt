@@ -1,0 +1,255 @@
+📋 ANÁLISIS DE REQUERIMIENTOS - MÓDULO PARAMETRIZACIÓN INICIAL
+🎯 DESCOMPOSICIÓN DE TAREAS LÓGICAS POR COMPONENTE
+1. PLANEACIÓN ESTRATÉGICA
+"Los objetivos estratégicos deben definirse primero" - Dra. García
+1.1 Gestión de Información Institucional
+TAREAS:
+├── Crear/Editar datos básicos de la institución
+│   ├── Razón social, NIT, tipo de organización
+│   ├── Sector económico, tamaño
+│   └── Información de contacto y sedes
+├── Definir identidad organizacional
+│   ├── Crear/Editar Misión
+│   ├── Crear/Editar Visión  
+│   ├── Definir Valores corporativos
+│   └── Establecer Política de Calidad
+└── Gestionar vigencias/períodos
+    ├── Definir período estratégico (ej: 2025-2028)
+    └── Configurar años fiscales
+1.2 Gestión de Servicios/Productos
+TAREAS:
+├── Crear catálogo de servicios/productos
+│   ├── Categorizar por tipo
+│   ├── Definir características clave
+│   └── Asignar códigos únicos
+├── Mapear servicios a procesos
+└── Establecer servicios críticos/prioritarios
+1.3 Gestión de Objetivos Estratégicos (CRÍTICO)
+TAREAS:
+├── Crear objetivos por perspectiva BSC
+│   ├── Perspectiva Financiera
+│   ├── Perspectiva Clientes
+│   ├── Perspectiva Procesos Internos
+│   └── Perspectiva Aprendizaje y Crecimiento
+├── Definir jerarquía y dependencias
+│   ├── Establecer objetivos padre/hijo
+│   └── Definir ponderaciones (% contribución)
+├── Establecer metas estratégicas
+│   ├── Definir línea base
+│   ├── Establecer meta por período
+│   └── Definir responsable estratégico
+└── Configurar reglas de cascada
+    └── Cómo se descomponen a niveles tácticos
+2. MAPA DE PROCESOS
+2.1 Gestión de Macroprocesos
+TAREAS:
+├── Crear macroprocesos por tipo
+│   ├── Estratégicos (Dirección, Planeación)
+│   ├── Misionales (Core del negocio)
+│   └── Apoyo (Soporte)
+├── Definir jerarquía de procesos
+│   ├── Macroproceso → Proceso → Subproceso
+│   └── Establecer códigos y nomenclatura
+├── Configurar visualización
+│   ├── Diseñar mapa visual interactivo
+│   ├── Definir colores por tipo
+│   └── Establecer navegación drill-down
+└── Asignar responsables
+    ├── Líder de macroproceso
+    └── Equipo de proceso
+2.2 Gestión de Procesos
+TAREAS:
+├── Crear procesos dentro de macroprocesos
+│   ├── Información básica (nombre, código, versión)
+│   ├── Objetivo del proceso
+│   └── Alcance y límites
+├── Definir interacciones
+│   ├── Entradas (de qué procesos vienen)
+│   ├── Salidas (a qué procesos van)
+│   └── Recursos necesarios
+├── Vincular con objetivos
+│   ├── Objetivos estratégicos que impacta
+│   └── % de contribución
+└── Estado del proceso
+    ├── En diseño / Activo / En revisión
+    └── Fecha última actualización
+3. ESTRUCTURA ORGANIZACIONAL
+3.1 Gestión del Organigrama
+TAREAS:
+├── Crear estructura jerárquica
+│   ├── Definir niveles organizacionales
+│   ├── Crear áreas/departamentos
+│   └── Establecer dependencias
+├── Gestionar cargos
+│   ├── Crear catálogo de cargos
+│   ├── Definir nivel jerárquico
+│   ├── Establecer funciones principales
+│   └── Definir competencias requeridas
+└── Visualización del organigrama
+    ├── Vista árbol expandible/colapsable
+    ├── Vista horizontal/vertical
+    └── Búsqueda rápida de cargos
+3.2 Gestión de Roles y Responsabilidades
+TAREAS:
+├── Mapear cargos a roles del sistema
+│   ├── Vincular cargo → rol RBAC
+│   └── Definir permisos adicionales
+├── Asignar responsabilidades
+│   ├── Responsable de proceso
+│   ├── Responsable de indicador
+│   ├── Responsable de documento
+│   └── Miembro de comité
+├── Gestionar colaboradores
+│   ├── Crear/editar perfiles de usuario
+│   ├── Asignar a cargo
+│   ├── Definir supervisor directo
+│   └── Establecer backups/suplentes
+└── Definir matrices RACI
+    ├── Responsible / Accountable
+    └── Consulted / Informed
+4. NORMOGRAMA
+4.1 Gestión de Marco Normativo
+TAREAS:
+├── Crear categorías normativas
+│   ├── Leyes
+│   ├── Decretos  
+│   ├── Resoluciones
+│   ├── Normas técnicas (ISO, NTC)
+│   └── Regulaciones sectoriales
+├── Registrar normativas
+│   ├── Información básica (título, número, fecha)
+│   ├── Entidad emisora
+│   ├── Ámbito de aplicación
+│   ├── Resumen ejecutivo
+│   └── Documento adjunto (PDF)
+└── Gestionar vigencia
+    ├── Fecha entrada en vigor
+    ├── Estado (Vigente/Derogada/Modificada)
+    └── Alertas de actualización
+4.2 Mapeo Normativo-Organizacional
+TAREAS:
+├── Vincular normas a procesos
+│   ├── Qué procesos son afectados
+│   └── Requisitos específicos por proceso
+├── Asignar responsables de cumplimiento
+│   ├── Responsable principal
+│   └── Equipo de cumplimiento
+├── Definir controles
+│   ├── Cómo se evidencia cumplimiento
+│   └── Frecuencia de revisión
+└── Configurar robot normativo (preparación)
+    ├── Fuentes de actualización
+    ├── Palabras clave de búsqueda
+    └── Notificaciones automáticas
+🔄 FLUJOS TRANSVERSALES (Aplican a todos)
+Gestión de Plantillas
+TAREAS:
+├── Cargar plantillas sectoriales
+│   ├── Salud (IPS, EPS)
+│   ├── Manufactura (ISO 9001)
+│   └── Servicios
+├── Personalizar plantillas
+│   ├── Activar/desactivar elementos
+│   ├── Modificar nomenclaturas
+│   └── Agregar campos personalizados
+└── Guardar como plantilla propia
+    └── Para reutilización futura
+Control de Cambios
+TAREAS:
+├── Versionar cambios
+│   ├── Registrar qué cambió
+│   ├── Quién lo cambió
+│   └── Cuándo y por qué
+├── Aprobar cambios críticos
+│   ├── Workflow de aprobación
+│   └── Notificaciones
+└── Auditoría de cambios
+    └── Log completo de modificaciones
+Validaciones y Reglas de Negocio
+TAREAS:
+├── Validar completitud
+│   ├── Campos obligatorios
+│   ├── Dependencias entre módulos
+│   └── Checklist de parametrización
+├── Validar coherencia
+│   ├── Suma de ponderaciones = 100%
+│   ├── No duplicación de códigos
+│   └── Jerarquías consistentes
+└── Asistente de configuración
+    ├── Wizard paso a paso
+    ├── Tooltips contextuales
+    └── Validación en tiempo real
+📊 MATRIZ DE DEPENDENCIAS
+mermaidgraph TD
+    A[Información Institucional] --> B[Objetivos Estratégicos]
+    B --> C[Mapa de Procesos]
+    C --> D[Estructura Organizacional]
+    D --> E[Asignación de Responsables]
+    E --> F[Normograma]
+    
+    B --> G[Goals Intelligence]
+    C --> G
+    
+    style A fill:#e1f5fe
+    style B fill:#fff3e0
+    style G fill:#f3e5f5
+🎯 CRITERIOS DE ACEPTACIÓN GENERALES
+
+Parametrización en 90 minutos: Con plantillas, un usuario debe poder completar la configuración básica
+Navegación intuitiva: Sin manual, un usuario debe entender el flujo
+Validación en tiempo real: Errores se muestran inmediatamente
+Guardado automático: No perder información por desconexión
+Importación masiva: Excel/CSV para datos existentes
+Vista previa: Ver cómo queda antes de confirmar
+Rollback: Poder deshacer cambios si es necesario
+
+🚀 PRIORIZACIÓN DE TAREAS (MES 1)
+Semana 1-2: CRÍTICO
+
+Información institucional ✅
+Objetivos estratégicos (4 perspectivas) ✅
+Jerarquía de objetivos ✅
+
+Semana 2-3: IMPORTANTE
+
+Creación de macroprocesos ✅
+Mapa visual de procesos ✅
+Vinculación objetivos-procesos ✅
+
+Semana 3-4: NECESARIO
+
+Estructura organizacional ✅
+Asignación de responsables ✅
+Normograma básico ✅
+
+Semana 4: COMPLETITUD
+
+Validaciones finales ✅
+Wizard de configuración ✅
+Plantillas sectoriales ✅
+
+💡 CONSIDERACIONES TÉCNICAS
+Modelos de Datos Clave
+
+Organization: Datos de la institución
+StrategicObjective: Objetivos con jerarquía
+Process: Procesos con tipo y nivel
+OrganizationalUnit: Estructura jerárquica
+Position: Cargos y roles
+Regulation: Marco normativo
+Template: Plantillas reutilizables
+
+APIs Necesarias
+
+CRUD para cada entidad
+API de validación en tiempo real
+API de importación masiva
+API de generación de mapa visual
+API de clonación desde plantillas
+
+Permisos RBAC Requeridos
+
+parametrization.* - Solo admin y coordinador
+parametrization.view - Todos los roles
+templates.apply - Admin y coordinador
+organization.edit - Solo super_admin
