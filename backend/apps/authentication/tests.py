@@ -13,7 +13,6 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.utils import timezone
 
-from .managers import UserManager
 from .validators import (
     StrongPasswordValidator,
     validate_colombian_phone,

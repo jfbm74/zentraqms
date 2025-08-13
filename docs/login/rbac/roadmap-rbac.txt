@@ -1,0 +1,97 @@
+FASE 3: RBAC - MODELOS Y ESTRUCTURA (Semana 3-4)
+Objetivo: Estructura de datos RBAC completa
+3.1 Modelos RBAC
+python# Orden estricto de creación:
+1. Role Model
+2. Permission Model
+3. RolePermission (M2M con campos extra)
+4. UserRole (M2M con campos extra)
+5. Migraciones y fixtures iniciales
+3.2 Datos Iniciales
+python1. Script de creación de permisos base
+2. Crear los 7 roles predefinidos
+3. Asignar permisos básicos a cada rol
+4. Usuario admin con rol Administrador
+5. Usuarios de prueba con diferentes roles
+3.3 Serializers y ViewSets
+python1. RoleSerializer (con permisos nested)
+2. PermissionSerializer
+3. UserSerializer actualizado (con roles)
+4. ViewSets de solo lectura inicialmente
+✅ Checkpoint: Estructura RBAC en BD poblada
+
+FASE 4: RBAC - BACKEND FUNCIONAL (Semana 4-5)
+Objetivo: Lógica de autorización funcionando
+4.1 Middleware y Decoradores
+python1. Middleware para cargar roles/permisos en request
+2. @require_permission decorator
+3. @require_role decorator
+4. @require_any_role decorator
+5. Permission classes para ViewSets
+4.2 Evaluación de Permisos
+python1. PermissionService class
+2. Lógica de evaluación (specific > wildcard)
+3. Cache en Redis (get/set/invalidate)
+4. Helpers: user.has_perm(), user.has_role()
+4.3 Endpoints Protegidos
+python1. Actualizar todos los endpoints con permisos
+2. GET /api/auth/permissions/ (mis permisos)
+3. GET /api/auth/roles/ (mis roles)
+4. Tests de autorización
+✅ Checkpoint: Backend rechaza/permite según roles
+
+FASE 5: RBAC - FRONTEND INTEGRATION (Semana 5-6)
+Objetivo: UI respeta roles y permisos
+5.1 Context y Estado
+typescript1. Actualizar AuthContext con roles/permissions
+2. Cargar roles/permisos en login
+3. Actualizar tipos TypeScript
+4. Cache de permisos en sessionStorage
+5.2 Componentes de Autorización
+typescript1. PermissionGate component
+2. usePermissions hook
+3. Actualizar ProtectedRoute con roles
+4. Página "Acceso Denegado"
+5.3 UI Adaptativa
+typescript1. Ocultar/mostrar botones según permisos
+2. Menú dinámico según rol
+3. Dashboard diferenciado por rol
+4. Redirección post-login según rol principal
+✅ Checkpoint: UI completa respeta RBAC
+
+FASE 6: ADMINISTRACIÓN DE ROLES (Semana 6-7)
+Objetivo: Gestión de usuarios y roles
+6.1 Backend Admin
+python1. CRUD completo de usuarios
+2. Endpoints asignación/revocación de roles
+3. Historial de cambios (audit log)
+4. Bulk operations
+5. Validaciones de negocio
+6.2 Frontend Admin
+typescript1. Lista de usuarios con filtros
+2. Modal asignación de roles
+3. Vista de permisos por rol
+4. Historial de cambios
+5. Bulk role assignment
+✅ Checkpoint: Admins pueden gestionar roles
+
+FASE 7: OPTIMIZACIÓN Y PULIDO (Semana 7-8)
+Objetivo: Production-ready
+7.1 Performance
+1. Optimizar queries N+1
+2. Implementar select_related/prefetch_related
+3. Indices en BD
+4. Compresión de responses
+5. Lazy loading de componentes pesados
+7.2 Seguridad Final
+1. Security headers (django-security)
+2. Pruebas de penetración básicas
+3. Sanitización completa de inputs
+4. Logs de auditoría completos
+5. Backup de configuración de roles
+7.3 Testing Completo
+1. Unit tests modelos (95% coverage)
+2. Integration tests endpoints
+3. E2E tests flujos críticos (Cypress)
+4. Tests de carga (Locust)
+5. Tests de seguridad

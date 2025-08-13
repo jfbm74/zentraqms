@@ -5,6 +5,7 @@ Script to fix Flake8 errors systematically.
 import os
 import subprocess
 
+
 def fix_w292_w293_errors():
     """Fix W292 (no newline at end) and W293 (blank line with whitespace) errors."""
     print("Fixing W292 and W293 errors...")
@@ -50,6 +51,7 @@ def fix_w292_w293_errors():
 
         except Exception as e:
             print(f"Error processing {file_path}: {e}")
+
 
 if __name__ == '__main__':
     fix_w292_w293_errors()

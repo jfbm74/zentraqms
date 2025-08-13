@@ -337,8 +337,8 @@ class AuthenticationEventMiddleware(MiddlewareMixin):
         """Process the response and log authentication events."""
         # Log successful login
         if (request.path == '/api/auth/login/' and
-            request.method == 'POST' and
-            response.status_code == 200):
+                request.method == 'POST' and
+                response.status_code == 200):
 
             ip_address = get_client_ip(request)
             try:

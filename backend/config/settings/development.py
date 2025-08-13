@@ -4,7 +4,8 @@ Development settings for ZentraQMS project.
 This file contains settings specific to the development environment.
 """
 
-from .base import *
+import os
+from .base import *  # noqa: F403
 from decouple import config
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -13,7 +14,7 @@ DEBUG = True
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,0.0.0.0').split(',')
 
 # Development-specific apps
-INSTALLED_APPS += [
+INSTALLED_APPS += [  # noqa: F405
     'django_extensions',  # For shell_plus and other development tools
 ]
 
@@ -39,13 +40,12 @@ CACHES = {
 }
 
 # Development logging (more verbose)
-LOGGING['handlers']['console']['level'] = 'DEBUG'
-LOGGING['loggers']['apps']['level'] = 'DEBUG'
-LOGGING['loggers']['django']['level'] = 'DEBUG'
+LOGGING['handlers']['console']['level'] = 'DEBUG'  # noqa: F405
+LOGGING['loggers']['apps']['level'] = 'DEBUG'  # noqa: F405
+LOGGING['loggers']['django']['level'] = 'DEBUG'  # noqa: F405
 
 # Create logs directory if it doesn't exist
-import os
-os.makedirs(BASE_DIR / 'logs', exist_ok=True)
+os.makedirs(BASE_DIR / 'logs', exist_ok=True)  # noqa: F405
 
 # Use SQLite for development (easier setup)
 DATABASES = {

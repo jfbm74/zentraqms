@@ -6,6 +6,7 @@ For production, testing, and development specific settings, see their respective
 """
 
 from pathlib import Path
+from datetime import timedelta
 from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -171,7 +172,6 @@ REST_FRAMEWORK = {
 }
 
 # Django Simple JWT Configuration
-from datetime import timedelta
 
 SIMPLE_JWT = {
     # Token lifetimes

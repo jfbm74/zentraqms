@@ -36,6 +36,7 @@ template_imports = [
     'from django.shortcuts import render',
 ]
 
+
 def fix_template_files():
     """Fix unused imports in template/placeholder files."""
     for file_path in template_files:
@@ -60,8 +61,8 @@ def fix_template_files():
                 new_lines = []
                 for line in lines:
                     if (line.strip().startswith('#') or
-                        line.strip() == '' or
-                        not any(imp in line for imp in template_imports)):
+                            line.strip() == '' or
+                            not any(imp in line for imp in template_imports)):
                         new_lines.append(line)
 
                 # Write back if changed
@@ -72,6 +73,7 @@ def fix_template_files():
 
         except Exception as e:
             print(f"Error processing {file_path}: {e}")
+
 
 if __name__ == '__main__':
     fix_template_files()
