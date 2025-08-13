@@ -5,7 +5,7 @@
  * Uses React Hook Form for form validation and our custom auth system.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
@@ -73,7 +73,7 @@ const LoginPage: React.FC = () => {
   /**
    * Get redirect URL based on location state or user role
    */
-  const getRedirectUrl = (): string => {
+  const getRedirectUrl = useCallback((): string => {
     // If there's a specific path requested, use it
     const requestedPath = (location.state as LocationState)?.from?.pathname;
     if (requestedPath && requestedPath !== '/login') {
@@ -88,7 +88,7 @@ const LoginPage: React.FC = () => {
 
     // Default fallback
     return '/dashboard';
-  };
+  }, [location.state, roles]);
 
   /**
    * Handle form submission

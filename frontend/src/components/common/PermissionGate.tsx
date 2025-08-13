@@ -94,18 +94,8 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({
     hasAllRoles,
   } = useAuth();
 
-  // If authentication is required but user is not authenticated
-  if (requireAuth && !isAuthenticated) {
-    return hideOnDeny ? null : <>{fallback}</>;
-  }
-
-  // Show loading state if RBAC data is being fetched
-  if (showLoading && rbacLoading) {
-    return loadingComponent ? <>{loadingComponent}</> : <DefaultLoadingComponent />;
-  }
-
   // Perform permission checks
-  const performPermissionChecks = (): boolean => {
+  const hasAccess = React.useMemo((): boolean => {
     // Custom check has highest priority
     if (customCheck) {
       return customCheck(userPermissions, userRoles);
@@ -150,10 +140,33 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({
 
     // All checks must pass (AND logic)
     return checks.every(check => check);
-  };
+  }, [
+    customCheck,
+    userPermissions, 
+    userRoles,
+    permission,
+    permissions,
+    requireAllPermissions,
+    role,
+    roles,
+    requireAllRoles,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    hasRole,
+    hasAnyRole,
+    hasAllRoles,
+  ]);
 
-  // Perform the permission check
-  const hasAccess = performPermissionChecks();
+  // If authentication is required but user is not authenticated
+  if (requireAuth && !isAuthenticated) {
+    return hideOnDeny ? null : <>{fallback}</>;
+  }
+
+  // Show loading state if RBAC data is being fetched
+  if (showLoading && rbacLoading) {
+    return loadingComponent ? <>{loadingComponent}</> : <DefaultLoadingComponent />;
+  }
 
   // Render based on access result
   if (hasAccess) {
@@ -163,95 +176,5 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({
   }
 };
 
-/**
- * Hook for imperative permission checking
- */
-export const usePermissionGate = () => {
-  const {
-    permissions: userPermissions,
-    roles: userRoles,
-    hasPermission,
-    hasAnyPermission,
-    hasAllPermissions,
-    hasRole,
-    hasAnyRole,
-    hasAllRoles,
-  } = useAuth();
-
-  const checkPermission = React.useCallback(
-    (options: Omit<PermissionGateProps, 'children' | 'fallback' | 'hideOnDeny' | 'showLoading' | 'loadingComponent' | 'requireAuth'>): boolean => {
-      const {
-        permission,
-        permissions = [],
-        requireAllPermissions = [],
-        role,
-        roles = [],
-        requireAllRoles = [],
-        customCheck,
-      } = options;
-
-      // Custom check has highest priority
-      if (customCheck) {
-        return customCheck(userPermissions, userRoles);
-      }
-
-      const checks: boolean[] = [];
-
-      // Single permission check
-      if (permission) {
-        checks.push(hasPermission(permission));
-      }
-
-      // Any permission check
-      if (permissions.length > 0) {
-        checks.push(hasAnyPermission(permissions));
-      }
-
-      // All permissions check
-      if (requireAllPermissions.length > 0) {
-        checks.push(hasAllPermissions(requireAllPermissions));
-      }
-
-      // Single role check
-      if (role) {
-        checks.push(hasRole(role));
-      }
-
-      // Any role check
-      if (roles.length > 0) {
-        checks.push(hasAnyRole(roles));
-      }
-
-      // All roles check
-      if (requireAllRoles.length > 0) {
-        checks.push(hasAllRoles(requireAllRoles));
-      }
-
-      // If no checks specified, default to true
-      if (checks.length === 0) {
-        return true;
-      }
-
-      // All checks must pass (AND logic)
-      return checks.every(check => check);
-    },
-    [
-      userPermissions,
-      userRoles,
-      hasPermission,
-      hasAnyPermission,
-      hasAllPermissions,
-      hasRole,
-      hasAnyRole,
-      hasAllRoles,
-    ]
-  );
-
-  return {
-    checkPermission,
-    userPermissions,
-    userRoles,
-  };
-};
 
 export default PermissionGate;
