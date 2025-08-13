@@ -34,8 +34,7 @@ structlog==23.2.0
 # JWT and Authentication
 PyJWT==2.8.0
 
-# Utilities
-uuid==1.30
+# Utilities  
 requests==2.31.0
 
 # Static files handling (for production)
