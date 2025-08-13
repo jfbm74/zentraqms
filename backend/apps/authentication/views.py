@@ -360,3 +360,116 @@ def auth_health_check(request):
         },
         message='Servicio de autenticación funcionando correctamente.'
     )
+
+
+# ================================
+# RBAC Authentication Views
+# ================================
+
+class UserPermissionsView(APIView):
+    """
+    View for getting current user's permissions.
+    
+    GET /api/auth/permissions/ - Returns user's permissions
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Get current user's permissions.
+        
+        Returns:
+            Response: User permissions organized by resource
+        """
+        try:
+            user = request.user
+            
+            # Get user permissions using enhanced helper method
+            permission_tree = user.get_permission_tree()
+            permissions_list = user.get_all_permissions()
+            
+            response_data = {
+                'user_id': str(user.id),
+                'user_email': user.email,
+                'permissions_by_resource': permission_tree,
+                'permissions_list': list(permissions_list),
+                'total_permissions': len(permissions_list)
+            }
+            
+            return create_success_response(
+                data=response_data,
+                message='Permisos del usuario obtenidos exitosamente.'
+            )
+            
+        except Exception as e:
+            logger.error(f"Error getting user permissions for {request.user.email}: {e}")
+            return create_error_response(
+                message='Error al obtener permisos del usuario.',
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class UserRolesView(APIView):
+    """
+    View for getting current user's roles.
+    
+    GET /api/auth/roles/ - Returns user's roles
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Get current user's roles.
+        
+        Returns:
+            Response: User roles with details
+        """
+        try:
+            user = request.user
+            
+            # Get user roles using RBAC system
+            from apps.authorization.models import UserRole
+            from django.utils import timezone
+            
+            user_roles = UserRole.objects.filter(
+                user=user,
+                is_active=True,
+                role__is_active=True
+            ).exclude(
+                expires_at__lt=timezone.now()
+            ).select_related('role')
+            
+            roles_data = []
+            for user_role in user_roles:
+                roles_data.append({
+                    'id': str(user_role.role.id),
+                    'code': user_role.role.code,
+                    'name': user_role.role.name,
+                    'description': user_role.role.description,
+                    'is_system': user_role.role.is_system,
+                    'assigned_at': user_role.assigned_at,
+                    'expires_at': user_role.expires_at,
+                    'assigned_by': user_role.assigned_by.email if user_role.assigned_by else None
+                })
+            
+            response_data = {
+                'user_id': str(user.id),
+                'user_email': user.email,
+                'roles': roles_data,
+                'total_roles': len(roles_data),
+                'role_codes': [role['code'] for role in roles_data]
+            }
+            
+            return create_success_response(
+                data=response_data,
+                message='Roles del usuario obtenidos exitosamente.'
+            )
+            
+        except Exception as e:
+            logger.error(f"Error getting user roles for {request.user.email}: {e}")
+            return create_error_response(
+                message='Error al obtener roles del usuario.',
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

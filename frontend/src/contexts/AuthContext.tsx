@@ -16,6 +16,8 @@ import {
   AuthEventType,
 } from '../types/auth.types';
 import { User } from '../types/user.types';
+import { RBACService } from '../services/rbac.service';
+import { PermissionUtils } from '../types/rbac.types';
 
 /**
  * Authentication actions for reducer
@@ -27,7 +29,15 @@ type AuthAction =
   | { type: 'LOGOUT' }
   | { type: 'UPDATE_USER'; payload: User }
   | { type: 'TOKEN_REFRESHED'; payload: { access: string; refresh?: string } }
-  | { type: 'CLEAR_ERROR' };
+  | { type: 'CLEAR_ERROR' }
+  | { type: 'SET_RBAC_LOADING'; payload: boolean }
+  | { type: 'SET_RBAC_ERROR'; payload: string | null }
+  | { type: 'SET_RBAC_DATA'; payload: { 
+      permissions: string[]; 
+      roles: string[]; 
+      permissionsByResource: Record<string, string[]> 
+    } }
+  | { type: 'CLEAR_RBAC_ERROR' };
 
 /**
  * Initial authentication state
@@ -38,6 +48,14 @@ const initialAuthState: AuthState = {
   user: null,
   tokens: null,
   error: null,
+  
+  // RBAC state (Phase 5)
+  permissions: [],
+  roles: [],
+  permissionsByResource: {},
+  rbacLoading: false,
+  rbacError: null,
+  rbacLastUpdated: null,
 };
 
 /**
@@ -99,6 +117,36 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         error: null,
       };
 
+    case 'SET_RBAC_LOADING':
+      return {
+        ...state,
+        rbacLoading: action.payload,
+      };
+
+    case 'SET_RBAC_ERROR':
+      return {
+        ...state,
+        rbacError: action.payload,
+        rbacLoading: false,
+      };
+
+    case 'SET_RBAC_DATA':
+      return {
+        ...state,
+        permissions: action.payload.permissions,
+        roles: action.payload.roles,
+        permissionsByResource: action.payload.permissionsByResource,
+        rbacLoading: false,
+        rbacError: null,
+        rbacLastUpdated: new Date(),
+      };
+
+    case 'CLEAR_RBAC_ERROR':
+      return {
+        ...state,
+        rbacError: null,
+      };
+
     default:
       return state;
   }
@@ -123,6 +171,85 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialAuthState);
 
   /**
+   * Refresh permissions and roles from backend (internal)
+   */
+  const internalRefreshPermissions = useCallback(async (): Promise<void> => {
+    if (!state.isAuthenticated) {
+      return;
+    }
+
+    try {
+      dispatch({ type: 'SET_RBAC_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_RBAC_ERROR' });
+
+      const rbacData = await RBACService.fetchUserRBACData();
+      
+      // Transform backend data to frontend format
+      const transformedPermissions = RBACService.transformPermissionsData(rbacData.permissions);
+      const transformedRoles = RBACService.transformRolesData(rbacData.roles);
+
+      const rbacPayload = {
+        permissions: transformedPermissions.permissions,
+        roles: transformedRoles.roles,
+        permissionsByResource: transformedPermissions.permissionsByResource,
+      };
+
+      // Update state
+      dispatch({
+        type: 'SET_RBAC_DATA',
+        payload: rbacPayload,
+      });
+
+      // Cache the data in sessionStorage
+      AuthStorage.setRBACData(rbacPayload);
+
+      console.log('[AuthProvider] RBAC data refreshed successfully');
+    } catch (error) {
+      console.error('[AuthProvider] Failed to refresh permissions:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load permissions';
+      dispatch({ type: 'SET_RBAC_ERROR', payload: errorMessage });
+    }
+  }, [state.isAuthenticated]);
+
+  /**
+   * Load cached RBAC data from sessionStorage
+   */
+  const loadCachedRBACData = useCallback(async () => {
+    try {
+      const cachedRBACData = AuthStorage.getRBACData();
+      
+      // Check if cache is valid (less than 1 hour old)
+      if (cachedRBACData.timestamp && AuthStorage.isRBACCacheValid()) {
+        dispatch({
+          type: 'SET_RBAC_DATA',
+          payload: {
+            permissions: cachedRBACData.permissions,
+            roles: cachedRBACData.roles,
+            permissionsByResource: cachedRBACData.permissionsByResource,
+          },
+        });
+        return true; // Cache was valid and loaded
+      } else {
+        // Cache is stale, fetch fresh data
+        await internalRefreshPermissions();
+        return false; // Cache was stale, had to refresh
+      }
+    } catch (error) {
+      console.error('[AuthProvider] Failed to load cached RBAC data:', error);
+      // If loading cached data fails, try to refresh
+      await internalRefreshPermissions();
+      return false;
+    }
+  }, [internalRefreshPermissions]);
+
+  /**
+   * Public refresh permissions method for external use
+   */
+  const refreshPermissions = useCallback(async (): Promise<void> => {
+    await internalRefreshPermissions();
+  }, [internalRefreshPermissions]);
+
+  /**
    * Initialize authentication state from storage
    */
   const initializeAuth = useCallback(async () => {
@@ -145,6 +272,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               tokens: authData.tokens,
             },
           });
+          
+          // Load cached RBAC data
+          await loadCachedRBACData();
         } else {
           // Try to refresh tokens
           try {
@@ -203,6 +333,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             },
           },
         });
+
+        // Load RBAC data after successful login
+        await internalRefreshPermissions();
 
         // Dispatch login success event
         window.dispatchEvent(
@@ -338,6 +471,62 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [state.tokens]);
 
   /**
+   * Check if user has specific permission
+   */
+  const hasPermission = useCallback((permission: string): boolean => {
+    return RBACService.hasPermission(state.permissions, permission);
+  }, [state.permissions]);
+
+  /**
+   * Check if user has any of the specified permissions
+   */
+  const hasAnyPermission = useCallback((permissions: string[]): boolean => {
+    return RBACService.hasAnyPermission(state.permissions, permissions);
+  }, [state.permissions]);
+
+  /**
+   * Check if user has all of the specified permissions
+   */
+  const hasAllPermissions = useCallback((permissions: string[]): boolean => {
+    return RBACService.hasAllPermissions(state.permissions, permissions);
+  }, [state.permissions]);
+
+  /**
+   * Check if user has specific role
+   */
+  const hasRole = useCallback((role: string): boolean => {
+    return RBACService.hasRole(state.roles, role);
+  }, [state.roles]);
+
+  /**
+   * Check if user has any of the specified roles
+   */
+  const hasAnyRole = useCallback((roles: string[]): boolean => {
+    return RBACService.hasAnyRole(state.roles, roles);
+  }, [state.roles]);
+
+  /**
+   * Check if user has all of the specified roles
+   */
+  const hasAllRoles = useCallback((roles: string[]): boolean => {
+    return RBACService.hasAllRoles(state.roles, roles);
+  }, [state.roles]);
+
+  /**
+   * Get permissions for specific resource
+   */
+  const getResourcePermissions = useCallback((resource: string): string[] => {
+    return RBACService.getResourcePermissions(state.permissionsByResource, resource);
+  }, [state.permissionsByResource]);
+
+  /**
+   * Clear RBAC error
+   */
+  const clearRbacError = useCallback((): void => {
+    dispatch({ type: 'CLEAR_RBAC_ERROR' });
+  }, []);
+
+  /**
    * Auto-refresh token when it's about to expire
    */
   useEffect(() => {
@@ -407,12 +596,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     tokens: state.tokens,
     error: state.error,
 
+    // RBAC state (Phase 5)
+    permissions: state.permissions,
+    roles: state.roles,
+    permissionsByResource: state.permissionsByResource,
+    rbacLoading: state.rbacLoading,
+    rbacError: state.rbacError,
+    rbacLastUpdated: state.rbacLastUpdated,
+
     // Actions
     login,
     logout,
     refreshToken,
     getCurrentUser,
     clearError,
+
+    // RBAC methods (Phase 5)
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    hasRole,
+    hasAnyRole,
+    hasAllRoles,
+    getResourcePermissions,
+    refreshPermissions,
+    clearRbacError,
 
     // Utility methods
     isTokenExpired,

@@ -37,6 +37,7 @@ urlpatterns = [
 
     # API endpoints
     path('api/auth/', include('apps.authentication.urls')),
+    path('api/authorization/', include('apps.authorization.urls')),
 
     # Future API endpoints
     # path('api/v1/procesos/', include('procesos.urls')),

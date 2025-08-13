@@ -1,5 +1,6 @@
 FASE 3: RBAC - MODELOS Y ESTRUCTURA (Semana 3-4)
 Objetivo: Estructura de datos RBAC completa
+
 3.1 Modelos RBAC
 python# Orden estricto de creación:
 1. Role Model
@@ -7,6 +8,7 @@ python# Orden estricto de creación:
 3. RolePermission (M2M con campos extra)
 4. UserRole (M2M con campos extra)
 5. Migraciones y fixtures iniciales
+
 3.2 Datos Iniciales
 python1. Script de creación de permisos base
 2. Crear los 7 roles predefinidos

@@ -21,6 +21,9 @@ export const AUTH_ENDPOINTS = {
   CURRENT_USER: '/api/auth/user/',
   VERIFY_TOKEN: '/api/auth/verify/',
   HEALTH: '/api/auth/health/',
+  // RBAC endpoints (Phase 5)
+  PERMISSIONS: '/api/auth/permissions/',
+  ROLES: '/api/auth/roles/',
 } as const;
 
 /**

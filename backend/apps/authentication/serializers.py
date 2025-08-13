@@ -20,6 +20,16 @@ from apps.common.utils import get_client_ip
 User = get_user_model()
 
 
+class UserRoleSimpleSerializer(serializers.Serializer):
+    """
+    Simple serializer for user roles in UserSerializer.
+    """
+    id = serializers.UUIDField(read_only=True)
+    code = serializers.CharField(read_only=True)
+    name = serializers.CharField(read_only=True)
+    description = serializers.CharField(read_only=True)
+
+
 class UserSerializer(serializers.ModelSerializer):
     """
     Basic user serializer for read operations.
@@ -34,6 +44,7 @@ class UserSerializer(serializers.ModelSerializer):
     can_login = serializers.ReadOnlyField()
     is_account_locked = serializers.ReadOnlyField()
     has_organizational_info = serializers.ReadOnlyField()
+    roles = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -57,6 +68,7 @@ class UserSerializer(serializers.ModelSerializer):
             'can_login',
             'is_account_locked',
             'has_organizational_info',
+            'roles',
         ]
         read_only_fields = [
             'id',
@@ -66,6 +78,31 @@ class UserSerializer(serializers.ModelSerializer):
             'is_staff',
             'is_verified',
         ]
+
+    def get_roles(self, obj):
+        """
+        Get user roles with basic information.
+        
+        Returns:
+            List of roles with id, code, name, and description
+        """
+        try:
+            # Get active user roles
+            from apps.authorization.models import UserRole
+            user_roles = UserRole.objects.filter(
+                user=obj,
+                is_active=True,
+                role__is_active=True
+            ).select_related('role')
+            
+            # Filter out expired roles
+            from django.utils import timezone
+            active_roles = user_roles.exclude(expires_at__lt=timezone.now())
+            
+            return UserRoleSimpleSerializer([ur.role for ur in active_roles], many=True).data
+        except Exception:
+            # Return empty list if there are any issues (e.g., authorization app not available)
+            return []
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -467,8 +504,30 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['first_name'] = user.first_name
         token['last_name'] = user.last_name
         token['is_verified'] = user.is_verified
-        token['roles'] = []  # Empty for now, will be populated in RBAC phase
-        token['permissions'] = []  # Empty for now, will be populated in RBAC phase
+        
+        # Add RBAC information
+        try:
+            # Get user roles
+            from apps.authorization.models import UserRole
+            from django.utils import timezone
+            
+            user_roles = UserRole.objects.filter(
+                user=user,
+                is_active=True,
+                role__is_active=True
+            ).exclude(expires_at__lt=timezone.now()).select_related('role')
+            
+            token['roles'] = [ur.role.code for ur in user_roles]
+            
+            # Get user permissions
+            from apps.authorization.permissions import PermissionChecker
+            permissions = PermissionChecker.get_user_permissions(user)
+            token['permissions'] = list(permissions)
+            
+        except Exception:
+            # Fallback to empty lists if RBAC is not available
+            token['roles'] = []
+            token['permissions'] = []
 
         return token
 

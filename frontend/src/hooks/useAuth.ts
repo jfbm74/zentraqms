@@ -20,6 +20,14 @@ interface UseAuthReturn {
   user: User | null;
   error: string | null;
 
+  // RBAC state (Phase 5)
+  permissions: string[];
+  roles: string[];
+  permissionsByResource: Record<string, string[]>;
+  rbacLoading: boolean;
+  rbacError: string | null;
+  rbacLastUpdated: Date | null;
+
   // Authentication actions
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
@@ -27,16 +35,23 @@ interface UseAuthReturn {
   getCurrentUser: () => Promise<void>;
   clearError: () => void;
 
+  // RBAC methods (Phase 5)
+  hasPermission: (permission: string) => boolean;
+  hasAnyPermission: (permissions: string[]) => boolean;
+  hasAllPermissions: (permissions: string[]) => boolean;
+  hasRole: (role: string) => boolean;
+  hasAnyRole: (roles: string[]) => boolean;
+  hasAllRoles: (roles: string[]) => boolean;
+  getResourcePermissions: (resource: string) => string[];
+  refreshPermissions: () => Promise<void>;
+  clearRbacError: () => void;
+
   // User utility methods
   getUserFullName: () => string;
   getUserInitials: () => string;
   getUserDisplayName: () => string;
   isUserActive: () => boolean;
   isUserStaff: () => boolean;
-  hasRole: (role: string) => boolean;
-  hasPermission: (permission: string) => boolean;
-  hasAnyRole: (roles: string[]) => boolean;
-  hasAnyPermission: (permissions: string[]) => boolean;
 
   // Token utility methods
   getAccessToken: () => string | null;
@@ -68,6 +83,22 @@ export const useAuth = (): UseAuthReturn => {
     getAccessToken,
     getRefreshToken,
     isTokenExpired,
+    // RBAC state and methods (Phase 5)
+    permissions,
+    roles,
+    permissionsByResource,
+    rbacLoading,
+    rbacError,
+    rbacLastUpdated,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    hasRole,
+    hasAnyRole,
+    hasAllRoles,
+    getResourcePermissions,
+    refreshPermissions,
+    clearRbacError,
   } = useAuthContext();
 
   /**
@@ -113,37 +144,6 @@ export const useAuth = (): UseAuthReturn => {
     return user.is_staff;
   }, [user]);
 
-  /**
-   * Check if user has specific role
-   */
-  const hasRole = useCallback((role: string): boolean => {
-    if (!user || !user.roles) return false;
-    return user.roles.includes(role);
-  }, [user]);
-
-  /**
-   * Check if user has specific permission
-   */
-  const hasPermission = useCallback((permission: string): boolean => {
-    if (!user || !user.permissions) return false;
-    return user.permissions.includes(permission);
-  }, [user]);
-
-  /**
-   * Check if user has any of the specified roles
-   */
-  const hasAnyRole = useCallback((roles: string[]): boolean => {
-    if (!user || !user.roles || roles.length === 0) return false;
-    return roles.some(role => user.roles.includes(role));
-  }, [user]);
-
-  /**
-   * Check if user has any of the specified permissions
-   */
-  const hasAnyPermission = useCallback((permissions: string[]): boolean => {
-    if (!user || !user.permissions || permissions.length === 0) return false;
-    return permissions.some(permission => user.permissions.includes(permission));
-  }, [user]);
 
   /**
    * Check if user can access based on roles and permissions
@@ -161,18 +161,18 @@ export const useAuth = (): UseAuthReturn => {
 
     // Check roles (user must have ALL required roles)
     if (requiredRoles?.length) {
-      const hasAllRoles = requiredRoles.every(role => hasRole(role));
-      if (!hasAllRoles) return false;
+      const hasAllRequiredRoles = hasAllRoles(requiredRoles);
+      if (!hasAllRequiredRoles) return false;
     }
 
     // Check permissions (user must have ALL required permissions)
     if (requiredPermissions?.length) {
-      const hasAllPermissions = requiredPermissions.every(permission => hasPermission(permission));
-      if (!hasAllPermissions) return false;
+      const hasAllRequiredPermissions = hasAllPermissions(requiredPermissions);
+      if (!hasAllRequiredPermissions) return false;
     }
 
     return true;
-  }, [isAuthenticated, user, hasRole, hasPermission]);
+  }, [isAuthenticated, user, hasAllRoles, hasAllPermissions]);
 
   /**
    * Check if user is admin (has admin role or is staff)
@@ -230,6 +230,14 @@ export const useAuth = (): UseAuthReturn => {
     user,
     error,
 
+    // RBAC state (Phase 5)
+    permissions,
+    roles,
+    permissionsByResource,
+    rbacLoading,
+    rbacError,
+    rbacLastUpdated,
+
     // Authentication actions (use enhanced versions)
     login: handleLogin,
     logout: handleLogout,
@@ -237,16 +245,23 @@ export const useAuth = (): UseAuthReturn => {
     getCurrentUser,
     clearError,
 
+    // RBAC methods (Phase 5)
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    hasRole,
+    hasAnyRole,
+    hasAllRoles,
+    getResourcePermissions,
+    refreshPermissions,
+    clearRbacError,
+
     // User utility methods
     getUserFullName,
     getUserInitials,
     getUserDisplayName,
     isUserActive,
     isUserStaff,
-    hasRole,
-    hasPermission,
-    hasAnyRole,
-    hasAnyPermission,
 
     // Token utility methods
     getAccessToken,
@@ -262,20 +277,31 @@ export const useAuth = (): UseAuthReturn => {
     isLoading,
     user,
     error,
+    permissions,
+    roles,
+    permissionsByResource,
+    rbacLoading,
+    rbacError,
+    rbacLastUpdated,
     handleLogin,
     handleLogout,
     refreshToken,
     getCurrentUser,
     clearError,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    hasRole,
+    hasAnyRole,
+    hasAllRoles,
+    getResourcePermissions,
+    refreshPermissions,
+    clearRbacError,
     getUserFullName,
     getUserInitials,
     getUserDisplayName,
     isUserActive,
     isUserStaff,
-    hasRole,
-    hasPermission,
-    hasAnyRole,
-    hasAnyPermission,
     getAccessToken,
     getRefreshToken,
     isTokenExpired,

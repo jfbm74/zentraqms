@@ -306,6 +306,119 @@ export class AuthStorage {
   }
 
   /**
+   * Store user permissions (Phase 5 - RBAC)
+   */
+  static setUserPermissions(permissions: string[]): boolean {
+    return sessionStorage.setItem(StorageKeys.USER_PERMISSIONS, permissions);
+  }
+
+  /**
+   * Get user permissions (Phase 5 - RBAC)
+   */
+  static getUserPermissions(): string[] {
+    return sessionStorage.getItem<string[]>(StorageKeys.USER_PERMISSIONS) || [];
+  }
+
+  /**
+   * Store user roles (Phase 5 - RBAC)
+   */
+  static setUserRoles(roles: string[]): boolean {
+    return sessionStorage.setItem(StorageKeys.USER_ROLES, roles);
+  }
+
+  /**
+   * Get user roles (Phase 5 - RBAC)
+   */
+  static getUserRoles(): string[] {
+    return sessionStorage.getItem<string[]>(StorageKeys.USER_ROLES) || [];
+  }
+
+  /**
+   * Store permissions by resource (Phase 5 - RBAC)
+   */
+  static setPermissionsByResource(permissionsByResource: Record<string, string[]>): boolean {
+    return sessionStorage.setItem(StorageKeys.PERMISSIONS_BY_RESOURCE, permissionsByResource);
+  }
+
+  /**
+   * Get permissions by resource (Phase 5 - RBAC)
+   */
+  static getPermissionsByResource(): Record<string, string[]> {
+    return sessionStorage.getItem<Record<string, string[]>>(StorageKeys.PERMISSIONS_BY_RESOURCE) || {};
+  }
+
+  /**
+   * Store RBAC cache timestamp (Phase 5 - RBAC)
+   */
+  static setRBACCacheTimestamp(timestamp: Date): boolean {
+    return sessionStorage.setItem(StorageKeys.RBAC_CACHE_TIMESTAMP, timestamp.toISOString());
+  }
+
+  /**
+   * Get RBAC cache timestamp (Phase 5 - RBAC)
+   */
+  static getRBACCacheTimestamp(): Date | null {
+    const timestamp = sessionStorage.getItem<string>(StorageKeys.RBAC_CACHE_TIMESTAMP);
+    return timestamp ? new Date(timestamp) : null;
+  }
+
+  /**
+   * Store complete RBAC data (Phase 5)
+   */
+  static setRBACData(data: {
+    permissions: string[];
+    roles: string[];
+    permissionsByResource: Record<string, string[]>;
+  }): boolean {
+    const permissionsStored = this.setUserPermissions(data.permissions);
+    const rolesStored = this.setUserRoles(data.roles);
+    const permissionsByResourceStored = this.setPermissionsByResource(data.permissionsByResource);
+    const timestampStored = this.setRBACCacheTimestamp(new Date());
+    
+    return permissionsStored && rolesStored && permissionsByResourceStored && timestampStored;
+  }
+
+  /**
+   * Get complete RBAC data (Phase 5)
+   */
+  static getRBACData(): {
+    permissions: string[];
+    roles: string[];
+    permissionsByResource: Record<string, string[]>;
+    timestamp: Date | null;
+  } {
+    return {
+      permissions: this.getUserPermissions(),
+      roles: this.getUserRoles(),
+      permissionsByResource: this.getPermissionsByResource(),
+      timestamp: this.getRBACCacheTimestamp(),
+    };
+  }
+
+  /**
+   * Clear RBAC data (Phase 5)
+   */
+  static clearRBACData(): void {
+    sessionStorage.removeItem(StorageKeys.USER_PERMISSIONS);
+    sessionStorage.removeItem(StorageKeys.USER_ROLES);
+    sessionStorage.removeItem(StorageKeys.PERMISSIONS_BY_RESOURCE);
+    sessionStorage.removeItem(StorageKeys.RBAC_CACHE_TIMESTAMP);
+  }
+
+  /**
+   * Check if RBAC cache is valid (less than 1 hour old)
+   */
+  static isRBACCacheValid(): boolean {
+    const timestamp = this.getRBACCacheTimestamp();
+    if (!timestamp) return false;
+    
+    const oneHourAgo = new Date();
+    oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+    
+    return timestamp > oneHourAgo;
+  }
+
+  /**
    * Clear all authentication data
    */
   static clearAuth(): void {
@@ -313,6 +426,9 @@ export class AuthStorage {
     storage.removeItem(StorageKeys.REFRESH_TOKEN);
     storage.removeItem(StorageKeys.USER_DATA);
     storage.removeItem(StorageKeys.REMEMBER_ME);
+    
+    // Clear RBAC data as well (Phase 5)
+    this.clearRBACData();
   }
 
   /**

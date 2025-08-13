@@ -11,6 +11,7 @@ from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.db.models import Q
 
 from .managers import UserManager
 
@@ -302,3 +303,283 @@ class User(AbstractUser):
             self.email = self.email.lower()
 
         super().save(*args, **kwargs)
+    
+    # RBAC Integration Methods
+    @property
+    def roles(self):
+        """
+        Get all active roles for this user.
+        
+        Returns:
+            QuerySet: Active roles assigned to the user
+        """
+        from apps.authorization.models import UserRole
+        return UserRole.objects.filter(
+            user=self,
+            is_active=True,
+            role__is_active=True
+        ).exclude(
+            expires_at__lt=timezone.now()
+        ).select_related('role')
+    
+    def has_permission(self, permission_code):
+        """
+        Check if user has a specific permission.
+        
+        Args:
+            permission_code (str): Permission code to check (e.g., 'users.create')
+            
+        Returns:
+            bool: True if user has the permission
+        """
+        # Superusers have all permissions
+        if self.is_superuser:
+            return True
+        
+        from apps.authorization.permissions import PermissionChecker
+        return PermissionChecker.user_has_permission(self, permission_code)
+    
+    def get_all_permissions(self):
+        """
+        Get all permission codes for this user.
+        
+        Returns:
+            set: Set of permission codes
+        """
+        if self.is_superuser:
+            return {'*.all'}
+        
+        from apps.authorization.permissions import PermissionChecker
+        return PermissionChecker.get_user_permissions(self)
+    
+    def has_any_role(self, *role_codes):
+        """
+        Check if user has any of the specified roles.
+        
+        Args:
+            *role_codes: Variable number of role codes to check
+            
+        Returns:
+            bool: True if user has at least one of the roles
+        """
+        return self.roles.filter(role__code__in=role_codes).exists()
+    
+    def has_all_roles(self, *role_codes):
+        """
+        Check if user has all of the specified roles.
+        
+        Args:
+            *role_codes: Variable number of role codes to check
+            
+        Returns:
+            bool: True if user has all the roles
+        """
+        user_role_codes = set(self.roles.values_list('role__code', flat=True))
+        return set(role_codes).issubset(user_role_codes)
+    
+    def get_role_names(self):
+        """
+        Get list of role names assigned to this user.
+        
+        Returns:
+            list: List of role names
+        """
+        return list(self.roles.values_list('role__name', flat=True))
+    
+    def add_role(self, role_code, assigned_by=None, expires_at=None):
+        """
+        Add a role to this user.
+        
+        Args:
+            role_code (str): Code of the role to add
+            assigned_by (User): User who is assigning the role
+            expires_at (datetime): Optional expiration date for the role
+            
+        Returns:
+            UserRole: The created UserRole instance
+        """
+        from apps.authorization.models import Role, UserRole
+        
+        try:
+            role = Role.objects.get(code=role_code, is_active=True)
+        except Role.DoesNotExist:
+            raise ValueError(f"Role with code '{role_code}' does not exist or is not active")
+        
+        user_role, created = UserRole.objects.update_or_create(
+            user=self,
+            role=role,
+            defaults={
+                'assigned_by': assigned_by,
+                'expires_at': expires_at,
+                'is_active': True
+            }
+        )
+        
+        # Clear permission cache
+        from apps.authorization.permissions import PermissionChecker
+        PermissionChecker.clear_user_cache(str(self.id))
+        
+        return user_role
+    
+    def remove_role(self, role_code):
+        """
+        Remove a role from this user.
+        
+        Args:
+            role_code (str): Code of the role to remove
+        """
+        from apps.authorization.models import UserRole
+        
+        UserRole.objects.filter(
+            user=self,
+            role__code=role_code
+        ).update(is_active=False)
+        
+        # Clear permission cache
+        from apps.authorization.permissions import PermissionChecker
+        PermissionChecker.clear_user_cache(str(self.id))
+    
+    # Enhanced RBAC helper methods using PermissionService
+    def has_perm(self, permission_code):
+        """
+        Enhanced permission check using PermissionService.
+        
+        Args:
+            permission_code (str): Permission code to check
+            
+        Returns:
+            bool: True if user has the permission
+        """
+        try:
+            from apps.authorization.services import PermissionService
+            return PermissionService.evaluate_permission(self, permission_code)
+        except ImportError:
+            # Fallback to basic permission check
+            return self.has_permission(permission_code)
+    
+    def has_perms(self, permission_codes, require_all=False):
+        """
+        Check multiple permissions at once.
+        
+        Args:
+            permission_codes (list): List of permission codes to check
+            require_all (bool): If True, user must have ALL permissions
+            
+        Returns:
+            bool or dict: If require_all=True, returns bool. Otherwise returns dict with results
+        """
+        try:
+            from apps.authorization.services import PermissionService
+            return PermissionService.check_multiple_permissions(
+                self, permission_codes, require_all
+            )
+        except ImportError:
+            # Fallback implementation
+            if require_all:
+                return all(self.has_permission(code) for code in permission_codes)
+            else:
+                return {code: self.has_permission(code) for code in permission_codes}
+    
+    def has_role(self, role_code):
+        """
+        Check if user has a specific role using caching.
+        
+        Args:
+            role_code (str): Role code to check
+            
+        Returns:
+            bool: True if user has the role
+        """
+        try:
+            from apps.authorization.services import PermissionService
+            user_roles = PermissionService.get_user_roles_set(self)
+            return role_code in user_roles
+        except ImportError:
+            # Fallback to database query
+            from apps.authorization.models import UserRole
+            from django.utils import timezone
+            return UserRole.objects.filter(
+                user=self,
+                role__code=role_code,
+                role__is_active=True,
+                is_active=True
+            ).exclude(
+                expires_at__lt=timezone.now()
+            ).exists()
+    
+    def get_resource_permissions(self, resource):
+        """
+        Get all permissions for a specific resource.
+        
+        Args:
+            resource (str): Resource name (e.g., 'users', 'reports')
+            
+        Returns:
+            list: List of actions permitted on the resource
+        """
+        try:
+            from apps.authorization.services import PermissionService
+            return PermissionService.get_resource_permissions(self, resource)
+        except ImportError:
+            # Fallback implementation
+            permissions = self.get_all_permissions()
+            actions = []
+            for perm in permissions:
+                if perm.startswith(f'{resource}.'):
+                    action = perm.split('.', 1)[1]
+                    actions.append(action)
+            return actions
+    
+    def get_permission_tree(self):
+        """
+        Get organized tree of user permissions by resource.
+        
+        Returns:
+            dict: Dictionary with resources as keys and actions as values
+        """
+        try:
+            from apps.authorization.services import PermissionService
+            return PermissionService.get_permission_tree(self)
+        except ImportError:
+            # Fallback implementation
+            permissions = self.get_all_permissions()
+            tree = {}
+            for perm in permissions:
+                if '.' in perm:
+                    resource, action = perm.split('.', 1)
+                    if resource not in tree:
+                        tree[resource] = []
+                    tree[resource].append(action)
+            return tree
+    
+    def can_assign_role(self, target_user, role_code):
+        """
+        Check if this user can assign a role to another user.
+        
+        Args:
+            target_user (User): User to assign role to
+            role_code (str): Role code to assign
+            
+        Returns:
+            tuple: (can_assign, reason)
+        """
+        try:
+            from apps.authorization.services import PermissionService
+            return PermissionService.can_assign_role(self, target_user, role_code)
+        except ImportError:
+            # Fallback - only superusers can assign roles
+            if self.is_superuser:
+                return True, "Superuser"
+            return False, "Only superusers can assign roles"
+    
+    def clear_permission_cache(self):
+        """
+        Clear cached permissions for this user.
+        """
+        try:
+            from apps.authorization.services import PermissionService
+            PermissionService.invalidate_user_cache(str(self.id))
+        except ImportError:
+            # Fallback to basic cache clearing
+            from apps.authorization.permissions import PermissionChecker
+            PermissionChecker.clear_user_cache(str(self.id))

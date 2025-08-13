@@ -1,0 +1,129 @@
+Implementar Sistema RBAC - Fase 3: Modelos y Estructura
+Contexto
+Estoy desarrollando un Sistema de Gestión de Calidad con Django 5.0 + DRF backend y React frontend. Ya tengo implementado:
+
+Custom User model con UUID como PK
+Autenticación JWT con SimpleJWT funcionando
+Estructura del proyecto en backend/apps/
+
+Objetivo
+Implementar la estructura de datos completa para un sistema RBAC (Role-Based Access Control) dinámico y flexible.
+Requerimientos Específicos
+1. Crear Modelos en backend/apps/authorization/
+Necesito crear una nueva app Django llamada authorization con los siguientes modelos:
+Model: Permission
+
+Campos: name, code (único, formato: recurso.accion), description, resource, action, is_active
+El code debe seguir el formato: users.create, reports.view, etc.
+Debe soportar wildcards: users.* (todas las acciones en users), *.all (super admin)
+
+Model: Role
+
+Campos: name, code (único), description, is_system (boolean para roles predefinidos), is_active, created_at, updated_at
+Relación many-to-many con Permission a través de RolePermission
+
+Model: RolePermission
+
+Tabla intermedia para Role-Permission
+Campos adicionales: granted_at, granted_by (FK a User)
+
+Model: UserRole
+
+Relación User-Role
+Campos: user (FK), role (FK), assigned_at, assigned_by (FK a User), is_active
+Un usuario puede tener múltiples roles
+
+2. Datos Iniciales
+Crear migration o comando management para popular:
+7 Roles Predefinidos:
+
+super_admin - Administrador Sistema (permiso *.all)
+quality_coordinator - Coordinador de Calidad
+internal_auditor - Auditor Interno
+department_head - Jefe de Área
+process_owner - Responsable de Proceso
+operative_user - Usuario Operativo
+read_only_user - Usuario Consulta
+
+Permisos Base (mínimo estos recursos):
+
+users: create, read, update, delete, list, deactivate
+roles: create, read, update, delete, list, assign
+reports: create, read, update, delete, list, export, approve
+audits: create, read, update, delete, list, schedule, execute
+documents: create, read, update, delete, list, approve, version
+processes: create, read, update, delete, list, approve
+dashboard: view, export
+
+3. Serializers para la API
+En backend/apps/authorization/serializers.py:
+
+PermissionSerializer (list y detail)
+RoleSerializer (con permisos anidados)
+UserRoleSerializer (para asignación)
+RolePermissionSerializer
+
+4. Utilidades y Mixins
+Crear en backend/apps/authorization/:
+
+permissions.py: Clase PermissionChecker con métodos como user_has_permission(user, permission_code)
+mixins.py: PermissionRequiredMixin para ViewSets
+decorators.py: @require_permission decorator
+
+5. Integración con User Model
+Actualizar el User model existente en backend/apps/authentication/models.py:
+
+Agregar property roles que retorne los roles activos
+Agregar método has_permission(permission_code)
+Agregar método get_all_permissions() que retorne lista de códigos de permisos
+
+Estructura de Archivos Esperada
+backend/apps/authorization/
+├── __init__.py
+├── apps.py
+├── models.py
+├── serializers.py
+├── views.py
+├── urls.py
+├── permissions.py
+├── mixins.py
+├── decorators.py
+├── admin.py
+├── migrations/
+│   └── 0001_initial.py
+└── management/
+    └── commands/
+        └── populate_rbac.py
+Consideraciones Importantes
+
+Mantener compatibilidad: No romper el sistema de autenticación JWT existente
+Soft deletes: Usar is_active en lugar de eliminar registros
+Auditoría: Trackear quién asigna roles/permisos y cuándo
+Performance: Agregar índices en campos que se consultarán frecuentemente
+Validaciones: No permitir eliminar roles del sistema (is_system=True)
+Cache-ready: Estructura preparada para cachear permisos con Redis
+
+Código Base de Referencia
+Mi User model actual en backend/apps/authentication/models.py:
+pythonclass User(AbstractBaseUser, PermissionsMixin):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    email = models.EmailField(unique=True)
+    first_name = models.CharField(max_length=150)
+    last_name = models.CharField(max_length=150)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    date_joined = models.DateTimeField(auto_now_add=True)
+    department = models.CharField(max_length=100, blank=True)
+    position = models.CharField(max_length=100, blank=True)
+    failed_login_attempts = models.IntegerField(default=0)
+    locked_until = models.DateTimeField(null=True, blank=True)
+Output Esperado
+
+Código Python completo y funcional para todos los modelos
+Migration con los datos iniciales
+Comando management para popular permisos y roles
+Serializers listos para usar en ViewSets
+Documentación inline con docstrings
+Tests básicos para validar el modelo de permisos
+
+Por favor, implementa todo el código necesario siguiendo las mejores prácticas de Django y manteniendo consistencia con el código existente.

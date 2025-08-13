@@ -10,7 +10,9 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../hooks/useAuth';
+import { usePermissions } from '../../hooks/usePermissions';
 import { LoginFormData } from '../../types/auth.types';
+import { RBACService } from '../../services/rbac.service';
 import logoLight from '../../assets/images/logo-light.png';
 import authBg from '../../assets/images/auth-one-bg.jpg';
 
@@ -49,7 +51,7 @@ const loginValidationRules = {
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isLoading, error, clearError, isAuthenticated } = useAuth();
+  const { login, isLoading, error, clearError, isAuthenticated, roles } = useAuth();
 
   // State for password visibility
   const [showPassword, setShowPassword] = useState(false);
@@ -69,8 +71,25 @@ const LoginPage: React.FC = () => {
     }
   });
 
-  // Get redirect URL from location state
-  const from = (location.state as LocationState)?.from?.pathname || '/dashboard';
+  /**
+   * Get redirect URL based on location state or user role
+   */
+  const getRedirectUrl = (): string => {
+    // If there's a specific path requested, use it
+    const requestedPath = (location.state as LocationState)?.from?.pathname;
+    if (requestedPath && requestedPath !== '/login') {
+      return requestedPath;
+    }
+
+    // If user has roles, redirect based on primary role
+    if (roles && roles.length > 0) {
+      const primaryRole = RBACService.getPrimaryRole(roles);
+      return RBACService.getDefaultRouteForRole(primaryRole);
+    }
+
+    // Default fallback
+    return '/dashboard';
+  };
 
   /**
    * Handle form submission
@@ -84,8 +103,10 @@ const LoginPage: React.FC = () => {
         password: data.password
       });
 
-      // Success message
+      // Success message with role-based redirection info
       toast.success('¡Bienvenido! Has iniciado sesión correctamente.');
+      
+      // The useEffect will handle the redirection once authentication state updates
     } catch (error: unknown) {
       console.error('[LoginPage] Login failed:', error);
       
@@ -119,12 +140,18 @@ const LoginPage: React.FC = () => {
 
   /**
    * Redirect if already authenticated
+   * Phase 5: Enhanced with role-based redirection
    */
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(from, { replace: true });
+      const redirectUrl = getRedirectUrl();
+      
+      // Small delay to ensure RBAC data is loaded
+      setTimeout(() => {
+        navigate(redirectUrl, { replace: true });
+      }, 100);
     }
-  }, [isAuthenticated, navigate, from]);
+  }, [isAuthenticated, navigate, roles]);
 
   /**
    * Clear error when component unmounts or email changes

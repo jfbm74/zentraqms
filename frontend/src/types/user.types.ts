@@ -23,9 +23,9 @@ export interface User {
   last_login?: string; // ISO date string
   date_joined: string; // ISO date string
   
-  // RBAC fields (prepared for Phase 2)
-  roles: string[]; // Will be populated in Phase 2
-  permissions: string[]; // Will be populated in Phase 2
+  // RBAC fields (Phase 5 - Populated from backend)
+  roles: string[]; // Role codes: ["admin", "coordinador"]
+  permissions: string[]; // Permission codes: ["documents.create", "users.read"]
   
   // Optional profile fields
   profile_picture?: string;
@@ -234,29 +234,8 @@ export interface PasswordResetConfirm {
   confirm_password: string;
 }
 
-/**
- * User permission interface (for RBAC in Phase 2)
- */
-export interface Permission {
-  id: string;
-  name: string;
-  codename: string;
-  content_type: string;
-  description?: string;
-}
-
-/**
- * User role interface (for RBAC in Phase 2)
- */
-export interface Role {
-  id: string;
-  name: string;
-  description?: string;
-  permissions: Permission[];
-  is_system_role: boolean;
-  created_at: string;
-  updated_at: string;
-}
+// RBAC interfaces moved to rbac.types.ts for better organization
+// Import from: import { Permission, Role } from './rbac.types';
 
 /**
  * User session interface

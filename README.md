@@ -239,6 +239,62 @@ GET    /api/indicadores/       # Listar KPIs
 POST   /api/indicadores/       # Crear KPI
 ```
 
+## 🔐 Credenciales de Prueba RBAC
+
+El sistema incluye usuarios de prueba con diferentes roles y permisos para testing y demostración:
+
+### Usuarios de Prueba
+
+| Usuario | Email | Contraseña | Rol | Permisos |
+|---------|-------|------------|-----|----------|
+| **Admin** | `admin@zentraqms.com` | `[password del admin]` | Super Admin | Acceso total al sistema |
+| **Coordinador** | `coordinador@zentraqms.test` | `test123456` | Coordinador de Calidad | 35 permisos - Gestión completa de calidad |
+| **Auditor** | `auditor@zentraqms.test` | `test123456` | Auditor Interno | 16 permisos - Ejecución y gestión de auditorías |
+| **Jefe de Área** | `jefe@zentraqms.test` | `test123456` | Jefe de Área | 17 permisos - Gestión de área y procesos |
+| **Responsable** | `responsable@zentraqms.test` | `test123456` | Responsable de Proceso | 11 permisos - Gestión de procesos específicos |
+| **Operativo** | `operativo@zentraqms.test` | `test123456` | Usuario Operativo | 8 permisos - Operaciones básicas |
+| **Consulta** | `consulta@zentraqms.test` | `test123456` | Usuario de Consulta | 11 permisos - Solo lectura y consulta |
+
+### Endpoints RBAC Disponibles
+
+```bash
+# Gestión de roles
+GET    /api/authorization/roles/                    # Listar roles
+GET    /api/authorization/permissions/              # Listar permisos
+
+# Gestión de permisos de usuario
+GET    /api/authorization/user-permissions/my_permissions/     # Mis permisos
+POST   /api/authorization/user-permissions/check_permission/   # Verificar permiso específico
+```
+
+### Ejemplo de Uso
+
+```bash
+# Login con usuario coordinador
+curl -X POST http://localhost:8000/api/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"email": "coordinador@zentraqms.test", "password": "test123456"}'
+
+# Verificar permisos del usuario
+curl -X GET http://localhost:8000/api/authorization/user-permissions/my_permissions/ \
+  -H "Authorization: Bearer [access_token]"
+
+# Verificar permiso específico
+curl -X POST http://localhost:8000/api/authorization/user-permissions/check_permission/ \
+  -H "Authorization: Bearer [access_token]" \
+  -H "Content-Type: application/json" \
+  -d '{"permission_code": "audits.create"}'
+```
+
+### Sistema de Permisos
+
+El sistema implementa un RBAC completo con:
+- **42 permisos base** distribuidos en 6 recursos (audits, documents, processes, reports, users, dashboard)
+- **7 roles predefinidos** con diferentes niveles de acceso
+- **Wildcards** para permisos (`*.all` para super admin, `resource.*` para acceso completo a un recurso)
+- **Cache de permisos** para optimizar rendimiento
+- **JWT tokens** que incluyen roles y permisos del usuario
+
 ## 👥 Equipo de Desarrollo
 
 - **Desarrollador Principal**: [Tu Nombre]
