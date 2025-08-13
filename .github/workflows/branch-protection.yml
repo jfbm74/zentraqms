@@ -2,6 +2,10 @@ name: 🛡️ Branch Protection Setup
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  administration: write
+
 jobs:
   setup-branch-protection:
     name: 🛡️ Configure Branch Protection
