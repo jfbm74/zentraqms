@@ -50,7 +50,7 @@ const Dashboard: React.FC = () => {
       await logout();
       toast.success('Sesión cerrada correctamente');
       navigate('/login');
-    } catch (error) {
+    } catch {
       toast.error('Error al cerrar sesión');
     }
   };

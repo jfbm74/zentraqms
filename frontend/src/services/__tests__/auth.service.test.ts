@@ -481,9 +481,10 @@ describe('AuthService', () => {
           email: 'wrong@test.com',
           password: 'wrongpass'
         })
-      } catch (error: any) {
-        expect(error.response.status).toBe(400)
-        expect(error.response.data.error.code).toBe('INVALID_CREDENTIALS')
+      } catch (error: unknown) {
+        const errorResponse = error as { response: { status: number; data: { error: { code: string } } } };
+        expect(errorResponse.response.status).toBe(400)
+        expect(errorResponse.response.data.error.code).toBe('INVALID_CREDENTIALS')
       }
     })
   })
