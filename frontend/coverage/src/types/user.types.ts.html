@@ -388,28 +388,7 @@
 <a name='L323'></a><a href='#L323'>323</a>
 <a name='L324'></a><a href='#L324'>324</a>
 <a name='L325'></a><a href='#L325'>325</a>
-<a name='L326'></a><a href='#L326'>326</a>
-<a name='L327'></a><a href='#L327'>327</a>
-<a name='L328'></a><a href='#L328'>328</a>
-<a name='L329'></a><a href='#L329'>329</a>
-<a name='L330'></a><a href='#L330'>330</a>
-<a name='L331'></a><a href='#L331'>331</a>
-<a name='L332'></a><a href='#L332'>332</a>
-<a name='L333'></a><a href='#L333'>333</a>
-<a name='L334'></a><a href='#L334'>334</a>
-<a name='L335'></a><a href='#L335'>335</a>
-<a name='L336'></a><a href='#L336'>336</a>
-<a name='L337'></a><a href='#L337'>337</a>
-<a name='L338'></a><a href='#L338'>338</a>
-<a name='L339'></a><a href='#L339'>339</a>
-<a name='L340'></a><a href='#L340'>340</a>
-<a name='L341'></a><a href='#L341'>341</a>
-<a name='L342'></a><a href='#L342'>342</a>
-<a name='L343'></a><a href='#L343'>343</a>
-<a name='L344'></a><a href='#L344'>344</a>
-<a name='L345'></a><a href='#L345'>345</a>
-<a name='L346'></a><a href='#L346'>346</a>
-<a name='L347'></a><a href='#L347'>347</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L326'></a><a href='#L326'>326</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -618,27 +597,6 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -780,9 +738,9 @@ export interface User {
   last_login?: string; // ISO date string
   date_joined: string; // ISO date string
   
-  // RBAC fields (prepared for Phase 2)
-  roles: string[]; // Will be populated in Phase 2
-  permissions: string[]; // Will be populated in Phase 2
+  // RBAC fields (Phase 5 - Populated from backend)
+  roles: string[]; // Role codes: ["admin", "coordinador"]
+  permissions: string[]; // Permission codes: ["documents.create", "users.read"]
   
   // Optional profile fields
   profile_picture?: string;
@@ -905,7 +863,7 @@ export interface UserActivity {
   ip_address?: string;
   user_agent?: string;
   timestamp: string;
-  metadata?: Record&lt;string, any&gt;;
+  metadata?: Record&lt;string, unknown&gt;;
 }
 &nbsp;
 /**
@@ -991,29 +949,8 @@ export interface PasswordResetConfirm {
   confirm_password: string;
 }
 &nbsp;
-/**
- * User permission interface (for RBAC in Phase 2)
- */
-export interface Permission {
-  id: string;
-  name: string;
-  codename: string;
-  content_type: string;
-  description?: string;
-}
-&nbsp;
-/**
- * User role interface (for RBAC in Phase 2)
- */
-export interface Role {
-  id: string;
-  name: string;
-  description?: string;
-  permissions: Permission[];
-  is_system_role: boolean;
-  created_at: string;
-  updated_at: string;
-}
+// RBAC interfaces moved to rbac.types.ts for better organization
+// Import from: import { Permission, Role } from './rbac.types';
 &nbsp;
 /**
  * User session interface
@@ -1083,7 +1020,7 @@ export type UserBasicInfo = Pick&lt;User, 'id' | 'email' | 'first_name' | 'last_
 /**
  * Type guards
  */
-<span class="cstat-no" title="statement not covered" >export const isUser = (obj: any): obj is User =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >export const isUser = (obj: unknown): obj is User =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    obj &amp;&amp;</span>
 <span class="cstat-no" title="statement not covered" >    typeof obj.id === 'string' &amp;&amp;</span>
@@ -1094,7 +1031,7 @@ export type UserBasicInfo = Pick&lt;User, 'id' | 'email' | 'first_name' | 'last_
   );
 <span class="cstat-no" title="statement not covered" >};</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export const isUserListResponse = (response: any): response is UserListResponse =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >export const isUserListResponse = (response: unknown): response is UserListResponse =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    response &amp;&amp;</span>
 <span class="cstat-no" title="statement not covered" >    response.success === true &amp;&amp;</span>
@@ -1108,7 +1045,7 @@ export type UserBasicInfo = Pick&lt;User, 'id' | 'email' | 'first_name' | 'last_
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-08-13T00:41:25.195Z
+                at 2025-08-13T17:07:41.117Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

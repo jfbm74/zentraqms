@@ -2,23 +2,58 @@
  * Dashboard Page for ZentraQMS Frontend
  * 
  * Main dashboard with KPIs and analytics for the Quality Management System.
- * Adapted from Velzon DashboardAnalytics template.
+ * Phase 5: Enhanced with role-based dashboard differentiation.
  */
 
 import React, { useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { useRoleBasedUI } from '../../hooks/usePermissions';
+import {
+  SuperAdminDashboard,
+  AdminDashboard,
+  CoordinatorDashboard,
+  AuditorDashboard,
+  ReadOnlyDashboard,
+  DefaultDashboard,
+} from '../../components/dashboard/RoleBasedDashboard';
 
 /**
  * Dashboard Page Component
  * 
- * Displays main QMS metrics, recent activities, and key performance indicators.
+ * Displays role-specific dashboard content based on user permissions and roles.
+ * Phase 5: Dynamically renders different dashboard experiences.
  */
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
+  const { uiConfig } = useRoleBasedUI();
 
   useEffect(() => {
     document.title = 'Dashboard | ZentraQMS - Sistema de Gestión de Calidad';
   }, []);
+
+  /**
+   * Render appropriate dashboard based on user role and permissions
+   */
+  const renderRoleDashboard = () => {
+    switch (uiConfig.dashboardType) {
+      case 'admin':
+        return user?.roles?.includes('super_admin') ? 
+          <SuperAdminDashboard /> : 
+          <AdminDashboard />;
+      
+      case 'coordinator':
+        return <CoordinatorDashboard />;
+      
+      case 'auditor':
+        return <AuditorDashboard />;
+      
+      case 'readonly':
+        return <ReadOnlyDashboard />;
+      
+      default:
+        return <DefaultDashboard />;
+    }
+  };
 
   return (
     <React.Fragment>
@@ -46,150 +81,10 @@ const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="row">
-        <div className="col-xl-3 col-md-6">
-          <div className="card card-animate">
-            <div className="card-body">
-              <div className="d-flex align-items-center">
-                <div className="flex-grow-1 overflow-hidden">
-                  <p className="text-uppercase fw-medium text-muted text-truncate mb-0">
-                    Procesos Activos
-                  </p>
-                </div>
-                <div className="flex-shrink-0">
-                  <h5 className="text-success fs-14 mb-0">
-                    <i className="ri-arrow-right-up-line fs-13 align-middle"></i>
-                    +15.3%
-                  </h5>
-                </div>
-              </div>
-              <div className="d-flex align-items-end justify-content-between mt-4">
-                <div>
-                  <h4 className="fs-22 fw-semibold ff-secondary mb-4">
-                    <span className="counter-value">45</span>
-                  </h4>
-                  <a href="/procesos" className="text-decoration-underline">
-                    Ver Procesos
-                  </a>
-                </div>
-                <div className="avatar-sm flex-shrink-0">
-                  <span className="avatar-title bg-success-subtle rounded fs-3">
-                    <i className="ri-file-list-3-line text-success"></i>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Role-based Dashboard Content */}
+      {renderRoleDashboard()}
 
-        <div className="col-xl-3 col-md-6">
-          <div className="card card-animate">
-            <div className="card-body">
-              <div className="d-flex align-items-center">
-                <div className="flex-grow-1 overflow-hidden">
-                  <p className="text-uppercase fw-medium text-muted text-truncate mb-0">
-                    Auditorías Pendientes
-                  </p>
-                </div>
-                <div className="flex-shrink-0">
-                  <h5 className="text-danger fs-14 mb-0">
-                    <i className="ri-arrow-right-down-line fs-13 align-middle"></i>
-                    -3.57%
-                  </h5>
-                </div>
-              </div>
-              <div className="d-flex align-items-end justify-content-between mt-4">
-                <div>
-                  <h4 className="fs-22 fw-semibold ff-secondary mb-4">
-                    <span className="counter-value">12</span>
-                  </h4>
-                  <a href="/auditorias" className="text-decoration-underline">
-                    Ver Auditorías
-                  </a>
-                </div>
-                <div className="avatar-sm flex-shrink-0">
-                  <span className="avatar-title bg-warning-subtle rounded fs-3">
-                    <i className="ri-search-eye-line text-warning"></i>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-xl-3 col-md-6">
-          <div className="card card-animate">
-            <div className="card-body">
-              <div className="d-flex align-items-center">
-                <div className="flex-grow-1 overflow-hidden">
-                  <p className="text-uppercase fw-medium text-muted text-truncate mb-0">
-                    Documentos Normograma
-                  </p>
-                </div>
-                <div className="flex-shrink-0">
-                  <h5 className="text-success fs-14 mb-0">
-                    <i className="ri-arrow-right-up-line fs-13 align-middle"></i>
-                    +2.85%
-                  </h5>
-                </div>
-              </div>
-              <div className="d-flex align-items-end justify-content-between mt-4">
-                <div>
-                  <h4 className="fs-22 fw-semibold ff-secondary mb-4">
-                    <span className="counter-value">128</span>
-                  </h4>
-                  <a href="/normograma" className="text-decoration-underline">
-                    Ver Normograma
-                  </a>
-                </div>
-                <div className="avatar-sm flex-shrink-0">
-                  <span className="avatar-title bg-info-subtle rounded fs-3">
-                    <i className="ri-book-open-line text-info"></i>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-xl-3 col-md-6">
-          <div className="card card-animate">
-            <div className="card-body">
-              <div className="d-flex align-items-center">
-                <div className="flex-grow-1 overflow-hidden">
-                  <p className="text-uppercase fw-medium text-muted text-truncate mb-0">
-                    Indicadores KPI
-                  </p>
-                </div>
-                <div className="flex-shrink-0">
-                  <h5 className="text-success fs-14 mb-0">
-                    <i className="ri-arrow-right-up-line fs-13 align-middle"></i>
-                    +8.42%
-                  </h5>
-                </div>
-              </div>
-              <div className="d-flex align-items-end justify-content-between mt-4">
-                <div>
-                  <h4 className="fs-22 fw-semibold ff-secondary mb-4">
-                    <span className="counter-value">24</span>
-                  </h4>
-                  <a href="/indicadores" className="text-decoration-underline">
-                    Ver Indicadores
-                  </a>
-                </div>
-                <div className="avatar-sm flex-shrink-0">
-                  <span className="avatar-title bg-primary-subtle rounded fs-3">
-                    <i className="ri-line-chart-line text-primary"></i>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Activities */}
+      {/* Common Recent Activities Section */}
       <div className="row">
         <div className="col-xl-8">
           <div className="card">

@@ -18,6 +18,25 @@ const mockAuthContext = {
   getAccessToken: vi.fn(),
   getRefreshToken: vi.fn(),
   isTokenExpired: vi.fn(),
+  
+  // RBAC state (Phase 5)
+  permissions: [],
+  roles: [],
+  permissionsByResource: {},
+  rbacLoading: false,
+  rbacError: null,
+  rbacLastUpdated: null,
+  
+  // RBAC methods (Phase 5)
+  hasPermission: vi.fn(),
+  hasAnyPermission: vi.fn(),
+  hasAllPermissions: vi.fn(),
+  hasRole: vi.fn(),
+  hasAnyRole: vi.fn(),
+  hasAllRoles: vi.fn(),
+  getResourcePermissions: vi.fn(),
+  refreshPermissions: vi.fn(),
+  clearRbacError: vi.fn(),
 }
 
 vi.mock('../../contexts/AuthContext', () => ({
@@ -45,6 +64,25 @@ describe('useAuth', () => {
       getAccessToken: vi.fn(),
       getRefreshToken: vi.fn(),
       isTokenExpired: vi.fn(),
+      
+      // RBAC state (Phase 5)
+      permissions: [],
+      roles: [],
+      permissionsByResource: {},
+      rbacLoading: false,
+      rbacError: null,
+      rbacLastUpdated: null,
+      
+      // RBAC methods (Phase 5)
+      hasPermission: vi.fn(),
+      hasAnyPermission: vi.fn(),
+      hasAllPermissions: vi.fn(),
+      hasRole: vi.fn(),
+      hasAnyRole: vi.fn(),
+      hasAllRoles: vi.fn(),
+      getResourcePermissions: vi.fn(),
+      refreshPermissions: vi.fn(),
+      clearRbacError: vi.fn(),
     })
   })
 
@@ -237,13 +275,13 @@ describe('useAuth', () => {
   describe('Role and permission methods', () => {
     const userWithRoles = {
       ...mockUser,
-      roles: ['admin', 'editor'],
-      permissions: ['read_posts', 'write_posts', 'delete_posts']
     }
 
     describe('hasRole', () => {
       it('should return true when user has the role', () => {
         mockAuthContext.user = userWithRoles
+        mockAuthContext.roles = ['admin', 'editor']
+        mockAuthContext.hasRole.mockImplementation((role: string) => ['admin', 'editor'].includes(role))
 
         const { result } = renderHook(() => useAuth())
 
@@ -253,6 +291,8 @@ describe('useAuth', () => {
 
       it('should return false when user does not have the role', () => {
         mockAuthContext.user = userWithRoles
+        mockAuthContext.roles = ['admin', 'editor']
+        mockAuthContext.hasRole.mockImplementation((role: string) => ['admin', 'editor'].includes(role))
 
         const { result } = renderHook(() => useAuth())
 
@@ -261,6 +301,8 @@ describe('useAuth', () => {
 
       it('should return false when no user', () => {
         mockAuthContext.user = null
+        mockAuthContext.roles = []
+        mockAuthContext.hasRole.mockReturnValue(false)
 
         const { result } = renderHook(() => useAuth())
 
@@ -268,7 +310,9 @@ describe('useAuth', () => {
       })
 
       it('should return false when user has no roles', () => {
-        mockAuthContext.user = { ...mockUser, roles: [] }
+        mockAuthContext.user = mockUser
+        mockAuthContext.roles = []
+        mockAuthContext.hasRole.mockReturnValue(false)
 
         const { result } = renderHook(() => useAuth())
 
@@ -279,6 +323,9 @@ describe('useAuth', () => {
     describe('hasPermission', () => {
       it('should return true when user has the permission', () => {
         mockAuthContext.user = userWithRoles
+        mockAuthContext.permissions = ['read_posts', 'write_posts', 'delete_posts']
+        mockAuthContext.hasPermission.mockImplementation((perm: string) => 
+          ['read_posts', 'write_posts', 'delete_posts'].includes(perm))
 
         const { result } = renderHook(() => useAuth())
 
@@ -288,6 +335,9 @@ describe('useAuth', () => {
 
       it('should return false when user does not have the permission', () => {
         mockAuthContext.user = userWithRoles
+        mockAuthContext.permissions = ['read_posts', 'write_posts', 'delete_posts']
+        mockAuthContext.hasPermission.mockImplementation((perm: string) => 
+          ['read_posts', 'write_posts', 'delete_posts'].includes(perm))
 
         const { result } = renderHook(() => useAuth())
 
@@ -296,6 +346,8 @@ describe('useAuth', () => {
 
       it('should return false when no user', () => {
         mockAuthContext.user = null
+        mockAuthContext.permissions = []
+        mockAuthContext.hasPermission.mockReturnValue(false)
 
         const { result } = renderHook(() => useAuth())
 
@@ -303,7 +355,9 @@ describe('useAuth', () => {
       })
 
       it('should return false when user has no permissions', () => {
-        mockAuthContext.user = { ...mockUser, permissions: [] }
+        mockAuthContext.user = mockUser
+        mockAuthContext.permissions = []
+        mockAuthContext.hasPermission.mockReturnValue(false)
 
         const { result } = renderHook(() => useAuth())
 
@@ -314,6 +368,9 @@ describe('useAuth', () => {
     describe('hasAnyRole', () => {
       it('should return true when user has any of the roles', () => {
         mockAuthContext.user = userWithRoles
+        mockAuthContext.roles = ['admin', 'editor']
+        mockAuthContext.hasAnyRole.mockImplementation((roles: string[]) => 
+          roles.some(role => ['admin', 'editor'].includes(role)))
 
         const { result } = renderHook(() => useAuth())
 
@@ -323,6 +380,9 @@ describe('useAuth', () => {
 
       it('should return false when user has none of the roles', () => {
         mockAuthContext.user = userWithRoles
+        mockAuthContext.roles = ['admin', 'editor']
+        mockAuthContext.hasAnyRole.mockImplementation((roles: string[]) => 
+          roles.some(role => ['admin', 'editor'].includes(role)))
 
         const { result } = renderHook(() => useAuth())
 
@@ -331,6 +391,8 @@ describe('useAuth', () => {
 
       it('should return false when roles array is empty', () => {
         mockAuthContext.user = userWithRoles
+        mockAuthContext.roles = ['admin', 'editor']
+        mockAuthContext.hasAnyRole.mockReturnValue(false)
 
         const { result } = renderHook(() => useAuth())
 
@@ -339,6 +401,8 @@ describe('useAuth', () => {
 
       it('should return false when no user', () => {
         mockAuthContext.user = null
+        mockAuthContext.roles = []
+        mockAuthContext.hasAnyRole.mockReturnValue(false)
 
         const { result } = renderHook(() => useAuth())
 
@@ -349,6 +413,9 @@ describe('useAuth', () => {
     describe('hasAnyPermission', () => {
       it('should return true when user has any of the permissions', () => {
         mockAuthContext.user = userWithRoles
+        mockAuthContext.permissions = ['read_posts', 'write_posts', 'delete_posts']
+        mockAuthContext.hasAnyPermission.mockImplementation((perms: string[]) => 
+          perms.some(perm => ['read_posts', 'write_posts', 'delete_posts'].includes(perm)))
 
         const { result } = renderHook(() => useAuth())
 
@@ -358,6 +425,9 @@ describe('useAuth', () => {
 
       it('should return false when user has none of the permissions', () => {
         mockAuthContext.user = userWithRoles
+        mockAuthContext.permissions = ['read_posts', 'write_posts', 'delete_posts']
+        mockAuthContext.hasAnyPermission.mockImplementation((perms: string[]) => 
+          perms.some(perm => ['read_posts', 'write_posts', 'delete_posts'].includes(perm)))
 
         const { result } = renderHook(() => useAuth())
 
@@ -366,6 +436,8 @@ describe('useAuth', () => {
 
       it('should return false when permissions array is empty', () => {
         mockAuthContext.user = userWithRoles
+        mockAuthContext.permissions = ['read_posts', 'write_posts', 'delete_posts']
+        mockAuthContext.hasAnyPermission.mockReturnValue(false)
 
         const { result } = renderHook(() => useAuth())
 
@@ -374,6 +446,8 @@ describe('useAuth', () => {
 
       it('should return false when no user', () => {
         mockAuthContext.user = null
+        mockAuthContext.permissions = []
+        mockAuthContext.hasAnyPermission.mockReturnValue(false)
 
         const { result } = renderHook(() => useAuth())
 
@@ -412,6 +486,9 @@ describe('useAuth', () => {
       it('should return true when user has all required roles', () => {
         mockAuthContext.isAuthenticated = true
         mockAuthContext.user = userWithRoles
+        mockAuthContext.roles = ['admin', 'editor']
+        mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) => 
+          roles.every(role => ['admin', 'editor'].includes(role)))
 
         const { result } = renderHook(() => useAuth())
 
@@ -422,6 +499,9 @@ describe('useAuth', () => {
       it('should return false when user does not have all required roles', () => {
         mockAuthContext.isAuthenticated = true
         mockAuthContext.user = userWithRoles
+        mockAuthContext.roles = ['admin', 'editor']
+        mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) => 
+          roles.every(role => ['admin', 'editor'].includes(role)))
 
         const { result } = renderHook(() => useAuth())
 
@@ -431,6 +511,9 @@ describe('useAuth', () => {
       it('should return true when user has all required permissions', () => {
         mockAuthContext.isAuthenticated = true
         mockAuthContext.user = userWithRoles
+        mockAuthContext.permissions = ['read_posts', 'write_posts']
+        mockAuthContext.hasAllPermissions.mockImplementation((perms: string[]) => 
+          perms.every(perm => ['read_posts', 'write_posts'].includes(perm)))
 
         const { result } = renderHook(() => useAuth())
 
@@ -441,6 +524,9 @@ describe('useAuth', () => {
       it('should return false when user does not have all required permissions', () => {
         mockAuthContext.isAuthenticated = true
         mockAuthContext.user = userWithRoles
+        mockAuthContext.permissions = ['read_posts', 'write_posts']
+        mockAuthContext.hasAllPermissions.mockImplementation((perms: string[]) => 
+          perms.every(perm => ['read_posts', 'write_posts'].includes(perm)))
 
         const { result } = renderHook(() => useAuth())
 
@@ -450,6 +536,12 @@ describe('useAuth', () => {
       it('should return true when user has both required roles and permissions', () => {
         mockAuthContext.isAuthenticated = true
         mockAuthContext.user = userWithRoles
+        mockAuthContext.roles = ['admin', 'editor']
+        mockAuthContext.permissions = ['read_posts', 'write_posts']
+        mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) => 
+          roles.every(role => ['admin', 'editor'].includes(role)))
+        mockAuthContext.hasAllPermissions.mockImplementation((perms: string[]) => 
+          perms.every(perm => ['read_posts', 'write_posts'].includes(perm)))
 
         const { result } = renderHook(() => useAuth())
 
@@ -467,7 +559,8 @@ describe('useAuth', () => {
       })
 
       it('should return true when user has admin role', () => {
-        mockAuthContext.user = { ...userWithRoles, is_staff: false, roles: ['admin'] }
+        mockAuthContext.user = { ...userWithRoles, is_staff: false }
+        mockAuthContext.hasRole.mockImplementation((role: string) => role === 'admin')
 
         const { result } = renderHook(() => useAuth())
 
@@ -475,7 +568,8 @@ describe('useAuth', () => {
       })
 
       it('should return true when user has administrator role', () => {
-        mockAuthContext.user = { ...userWithRoles, is_staff: false, roles: ['administrator'] }
+        mockAuthContext.user = { ...userWithRoles, is_staff: false }
+        mockAuthContext.hasRole.mockImplementation((role: string) => role === 'administrator')
 
         const { result } = renderHook(() => useAuth())
 
@@ -483,7 +577,8 @@ describe('useAuth', () => {
       })
 
       it('should return false when user is not admin', () => {
-        mockAuthContext.user = { ...userWithRoles, is_staff: false, roles: ['editor'] }
+        mockAuthContext.user = { ...userWithRoles, is_staff: false }
+        mockAuthContext.hasRole.mockReturnValue(false)
 
         const { result } = renderHook(() => useAuth())
 
@@ -501,7 +596,8 @@ describe('useAuth', () => {
 
     describe('isSuperUser', () => {
       it('should return true when user has superuser role', () => {
-        mockAuthContext.user = { ...userWithRoles, roles: ['superuser'] }
+        mockAuthContext.user = userWithRoles
+        mockAuthContext.hasRole.mockImplementation((role: string) => role === 'superuser')
 
         const { result } = renderHook(() => useAuth())
 
@@ -509,7 +605,8 @@ describe('useAuth', () => {
       })
 
       it('should return true when user has super_admin role', () => {
-        mockAuthContext.user = { ...userWithRoles, roles: ['super_admin'] }
+        mockAuthContext.user = userWithRoles
+        mockAuthContext.hasRole.mockImplementation((role: string) => role === 'super_admin')
 
         const { result } = renderHook(() => useAuth())
 
@@ -517,7 +614,8 @@ describe('useAuth', () => {
       })
 
       it('should return false when user does not have superuser role', () => {
-        mockAuthContext.user = { ...userWithRoles, roles: ['admin'] }
+        mockAuthContext.user = userWithRoles
+        mockAuthContext.hasRole.mockReturnValue(false)
 
         const { result } = renderHook(() => useAuth())
 
@@ -526,6 +624,7 @@ describe('useAuth', () => {
 
       it('should return false when no user', () => {
         mockAuthContext.user = null
+        mockAuthContext.hasRole.mockReturnValue(false)
 
         const { result } = renderHook(() => useAuth())
 
@@ -732,6 +831,15 @@ describe('useRoleAccess', () => {
   })
 
   it('should return access control information', () => {
+    mockAuthContext.roles = ['admin', 'editor']
+    mockAuthContext.permissions = ['read_posts', 'write_posts']
+    mockAuthContext.hasRole.mockImplementation((role: string) => ['admin', 'editor'].includes(role))
+    mockAuthContext.hasPermission.mockImplementation((perm: string) => ['read_posts', 'write_posts'].includes(perm))
+    mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) => 
+      roles.every(role => ['admin', 'editor'].includes(role)))
+    mockAuthContext.hasAllPermissions.mockImplementation((perms: string[]) => 
+      perms.every(perm => ['read_posts', 'write_posts'].includes(perm)))
+
     const { result } = renderHook(() => useRoleAccess(['admin'], ['read_posts']))
 
     expect(result.current.hasAccess).toBe(true)
@@ -741,6 +849,15 @@ describe('useRoleAccess', () => {
   })
 
   it('should return false when user does not have required roles', () => {
+    mockAuthContext.roles = ['admin', 'editor']
+    mockAuthContext.permissions = ['read_posts', 'write_posts']
+    mockAuthContext.hasRole.mockImplementation((role: string) => ['admin', 'editor'].includes(role))
+    mockAuthContext.hasPermission.mockImplementation((perm: string) => ['read_posts', 'write_posts'].includes(perm))
+    mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) => 
+      roles.every(role => ['admin', 'editor'].includes(role)))
+    mockAuthContext.hasAllPermissions.mockImplementation((perms: string[]) => 
+      perms.every(perm => ['read_posts', 'write_posts'].includes(perm)))
+
     const { result } = renderHook(() => useRoleAccess(['superuser'], ['read_posts']))
 
     expect(result.current.hasAccess).toBe(false)
@@ -749,6 +866,15 @@ describe('useRoleAccess', () => {
   })
 
   it('should return false when user does not have required permissions', () => {
+    mockAuthContext.roles = ['admin', 'editor']
+    mockAuthContext.permissions = ['read_posts', 'write_posts']
+    mockAuthContext.hasRole.mockImplementation((role: string) => ['admin', 'editor'].includes(role))
+    mockAuthContext.hasPermission.mockImplementation((perm: string) => ['read_posts', 'write_posts'].includes(perm))
+    mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) => 
+      roles.every(role => ['admin', 'editor'].includes(role)))
+    mockAuthContext.hasAllPermissions.mockImplementation((perms: string[]) => 
+      perms.every(perm => ['read_posts', 'write_posts'].includes(perm)))
+
     const { result } = renderHook(() => useRoleAccess(['admin'], ['admin_panel']))
 
     expect(result.current.hasAccess).toBe(false)
@@ -757,6 +883,13 @@ describe('useRoleAccess', () => {
   })
 
   it('should provide hasAnyRole and hasAnyPermission functions', () => {
+    mockAuthContext.roles = ['admin', 'editor']
+    mockAuthContext.permissions = ['read_posts', 'write_posts']
+    mockAuthContext.hasAnyRole.mockImplementation((roles: string[]) => 
+      roles.some(role => ['admin', 'editor'].includes(role)))
+    mockAuthContext.hasAnyPermission.mockImplementation((perms: string[]) => 
+      perms.some(perm => ['read_posts', 'write_posts'].includes(perm)))
+
     const { result } = renderHook(() => useRoleAccess())
 
     expect(result.current.hasAnyRole(['admin', 'superuser'])).toBe(true)

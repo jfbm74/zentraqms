@@ -17,6 +17,8 @@ from .views import (
     login_function_view,
     user_profile_view,
     auth_health_check,
+    UserPermissionsView,
+    UserRolesView,
 )
 
 app_name = 'authentication'
@@ -40,6 +42,10 @@ urlpatterns = [
 
     # Health check
     path('health/', auth_health_check, name='auth_health'),
+    
+    # RBAC endpoints
+    path('permissions/', UserPermissionsView.as_view(), name='user_permissions'),
+    path('roles/', UserRolesView.as_view(), name='user_roles'),
 
     # Future endpoints (to be implemented in subsequent phases)
     # path('register/', RegisterView.as_view(), name='register'),

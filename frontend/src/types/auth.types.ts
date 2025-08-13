@@ -100,6 +100,14 @@ export interface AuthState {
   user: User | null;
   tokens: TokenPair | null;
   error: string | null;
+  
+  // RBAC state (Phase 5)
+  permissions: string[];
+  roles: string[];
+  permissionsByResource: Record<string, string[]>;
+  rbacLoading: boolean;
+  rbacError: string | null;
+  rbacLastUpdated: Date | null;
 }
 
 /**
@@ -112,6 +120,17 @@ export interface AuthContextType extends AuthState {
   refreshToken: () => Promise<void>;
   getCurrentUser: () => Promise<void>;
   clearError: () => void;
+  
+  // RBAC methods (Phase 5)
+  hasPermission: (permission: string) => boolean;
+  hasAnyPermission: (permissions: string[]) => boolean;
+  hasAllPermissions: (permissions: string[]) => boolean;
+  hasRole: (role: string) => boolean;
+  hasAnyRole: (roles: string[]) => boolean;
+  hasAllRoles: (roles: string[]) => boolean;
+  getResourcePermissions: (resource: string) => string[];
+  refreshPermissions: () => Promise<void>;
+  clearRbacError: () => void;
   
   // Utility methods
   isTokenExpired: (token?: string) => boolean;
@@ -189,6 +208,12 @@ export enum StorageKeys {
   REFRESH_TOKEN = 'refresh_token',
   USER_DATA = 'user_data',
   REMEMBER_ME = 'remember_me',
+  
+  // RBAC storage keys (Phase 5)
+  USER_PERMISSIONS = 'user_permissions',
+  USER_ROLES = 'user_roles',
+  PERMISSIONS_BY_RESOURCE = 'permissions_by_resource',
+  RBAC_CACHE_TIMESTAMP = 'rbac_cache_timestamp',
 }
 
 /**
