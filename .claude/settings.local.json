@@ -25,7 +25,8 @@
       "Bash(docker-compose:*)",
       "Bash(docker exec:*)",
       "Bash(git add:*)",
-      "Bash(docker logs:*)"
+      "Bash(docker logs:*)",
+      "Bash(npm test:*)"
     ],
     "deny": [],
     "ask": []
