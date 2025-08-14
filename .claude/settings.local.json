@@ -32,7 +32,15 @@
       "Bash(./venv/bin/python manage.py runserver:*)",
       "Bash(./venv/bin/python test_audit_system.py:*)",
       "Bash(./venv/bin/python manage.py shell:*)",
-      "Bash(./venv/bin/python manage.py show_urls:*)"
+      "Bash(./venv/bin/python manage.py show_urls:*)",
+      "Bash(export DJANGO_SETTINGS_MODULE=config.settings.testing)",
+      "Bash(rm:*)",
+      "Bash(find:*)",
+      "Bash(true)",
+      "Bash(npm ls:*)",
+      "Bash(npm run test:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx prettier:*)"
     ],
     "deny": [],
     "ask": [],

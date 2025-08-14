@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface SimpleLayoutProps {
   children: React.ReactNode;
@@ -7,12 +7,12 @@ interface SimpleLayoutProps {
 const SimpleLayout: React.FC<SimpleLayoutProps> = ({ children }) => {
   return (
     <div className="simple-layout">
-      <header style={{ background: '#007bff', color: 'white', padding: '1rem' }}>
+      <header
+        style={{ background: "#007bff", color: "white", padding: "1rem" }}
+      >
         <h3>ZentraQMS - Layout Simple</h3>
       </header>
-      <main style={{ padding: '2rem' }}>
-        {children}
-      </main>
+      <main style={{ padding: "2rem" }}>{children}</main>
     </div>
   );
 };

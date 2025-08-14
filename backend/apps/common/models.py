@@ -21,15 +21,15 @@ class TimeStampedModel(models.Model):
     """
 
     created_at = models.DateTimeField(
-        _('created at'),
+        _("created at"),
         auto_now_add=True,
-        help_text=_('Date and time when the record was created.')
+        help_text=_("Date and time when the record was created."),
     )
 
     updated_at = models.DateTimeField(
-        _('updated at'),
+        _("updated at"),
         auto_now=True,
-        help_text=_('Date and time when the record was last updated.')
+        help_text=_("Date and time when the record was last updated."),
     )
 
     class Meta:
@@ -48,7 +48,7 @@ class UUIDModel(models.Model):
         primary_key=True,
         default=uuid.uuid4,
         editable=False,
-        help_text=_('Unique identifier for the record.')
+        help_text=_("Unique identifier for the record."),
     )
 
     class Meta:
@@ -66,21 +66,21 @@ class AuditModel(models.Model):
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
-        related_name='%(class)s_created',
+        related_name="%(class)s_created",
         null=True,
         blank=True,
-        verbose_name=_('created by'),
-        help_text=_('User who created this record.')
+        verbose_name=_("created by"),
+        help_text=_("User who created this record."),
     )
 
     updated_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
-        related_name='%(class)s_updated',
+        related_name="%(class)s_updated",
         null=True,
         blank=True,
-        verbose_name=_('updated by'),
-        help_text=_('User who last updated this record.')
+        verbose_name=_("updated by"),
+        help_text=_("User who last updated this record."),
     )
 
     class Meta:
@@ -145,20 +145,20 @@ class SoftDeleteModel(models.Model):
     """
 
     deleted_at = models.DateTimeField(
-        _('deleted at'),
+        _("deleted at"),
         null=True,
         blank=True,
-        help_text=_('Date and time when the record was soft deleted.')
+        help_text=_("Date and time when the record was soft deleted."),
     )
 
     deleted_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
-        related_name='%(class)s_deleted',
+        related_name="%(class)s_deleted",
         null=True,
         blank=True,
-        verbose_name=_('deleted by'),
-        help_text=_('User who soft deleted this record.')
+        verbose_name=_("deleted by"),
+        help_text=_("User who soft deleted this record."),
     )
 
     # Use custom manager
@@ -177,7 +177,7 @@ class SoftDeleteModel(models.Model):
         self.deleted_at = timezone.now()
         if user:
             self.deleted_by = user
-        self.save(update_fields=['deleted_at', 'deleted_by'])
+        self.save(update_fields=["deleted_at", "deleted_by"])
 
     def hard_delete(self):
         """
@@ -191,7 +191,7 @@ class SoftDeleteModel(models.Model):
         """
         self.deleted_at = None
         self.deleted_by = None
-        self.save(update_fields=['deleted_at', 'deleted_by'])
+        self.save(update_fields=["deleted_at", "deleted_by"])
 
     @property
     def is_deleted(self):
@@ -225,9 +225,9 @@ class StatusModel(models.Model):
     """
 
     is_active = models.BooleanField(
-        _('active'),
+        _("active"),
         default=True,
-        help_text=_('Designates whether this record should be treated as active.')
+        help_text=_("Designates whether this record should be treated as active."),
     )
 
     # Managers
@@ -242,14 +242,14 @@ class StatusModel(models.Model):
         Mark the record as active.
         """
         self.is_active = True
-        self.save(update_fields=['is_active'])
+        self.save(update_fields=["is_active"])
 
     def deactivate(self):
         """
         Mark the record as inactive.
         """
         self.is_active = False
-        self.save(update_fields=['is_active'])
+        self.save(update_fields=["is_active"])
 
 
 class FullBaseModel(BaseModel, SoftDeleteModel, StatusModel):

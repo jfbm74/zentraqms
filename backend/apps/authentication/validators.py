@@ -38,40 +38,49 @@ class StrongPasswordValidator:
         # Check minimum length
         if len(password) < self.min_length:
             errors.append(
-                _('La contraseña debe tener al menos %(min_length)d caracteres.') % {
-                    'min_length': self.min_length
-                }
+                _("La contraseña debe tener al menos %(min_length)d caracteres.")
+                % {"min_length": self.min_length}
             )
 
         # Check for uppercase letter
-        if not re.search(r'[A-Z]', password):
-            errors.append(_('La contraseña debe contener al menos una letra mayúscula.'))
+        if not re.search(r"[A-Z]", password):
+            errors.append(
+                _("La contraseña debe contener al menos una letra mayúscula.")
+            )
 
         # Check for lowercase letter
-        if not re.search(r'[a-z]', password):
-            errors.append(_('La contraseña debe contener al menos una letra minúscula.'))
+        if not re.search(r"[a-z]", password):
+            errors.append(
+                _("La contraseña debe contener al menos una letra minúscula.")
+            )
 
         # Check for digit
-        if not re.search(r'\d', password):
-            errors.append(_('La contraseña debe contener al menos un número.'))
+        if not re.search(r"\d", password):
+            errors.append(_("La contraseña debe contener al menos un número."))
 
         # Check for special character
         if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-            errors.append(_('La contraseña debe contener al menos un carácter especial (!@#$%^&*(),.?":{}|<>).'))
+            errors.append(
+                _(
+                    'La contraseña debe contener al menos un carácter especial (!@#$%^&*(),.?":{}|<>).'
+                )
+            )
 
         # Check if password contains user information (if user is provided)
         if user:
             user_info = []
-            if hasattr(user, 'email') and user.email:
-                user_info.append(user.email.split('@')[0].lower())
-            if hasattr(user, 'first_name') and user.first_name:
+            if hasattr(user, "email") and user.email:
+                user_info.append(user.email.split("@")[0].lower())
+            if hasattr(user, "first_name") and user.first_name:
                 user_info.append(user.first_name.lower())
-            if hasattr(user, 'last_name') and user.last_name:
+            if hasattr(user, "last_name") and user.last_name:
                 user_info.append(user.last_name.lower())
 
             for info in user_info:
                 if len(info) >= 3 and info in password.lower():
-                    errors.append(_('La contraseña no debe contener información personal.'))
+                    errors.append(
+                        _("La contraseña no debe contener información personal.")
+                    )
                     break
 
         if errors:
@@ -85,10 +94,10 @@ class StrongPasswordValidator:
             str: Help text describing password requirements
         """
         return _(
-            'Tu contraseña debe contener al menos %(min_length)d caracteres, '
-            'incluyendo al menos una letra mayúscula, una minúscula, un número '
-            'y un carácter especial.'
-        ) % {'min_length': self.min_length}
+            "Tu contraseña debe contener al menos %(min_length)d caracteres, "
+            "incluyendo al menos una letra mayúscula, una minúscula, un número "
+            "y un carácter especial."
+        ) % {"min_length": self.min_length}
 
 
 def validate_colombian_phone(value):
@@ -105,43 +114,49 @@ def validate_colombian_phone(value):
         return
 
     # Check for invalid characters (only allow digits, spaces, +, -, (, ))
-    if not re.match(r'^[+\d\s\-()]+$', value):
+    if not re.match(r"^[+\d\s\-()]+$", value):
         raise ValidationError(
-            _('Número de teléfono debe ser un número colombiano válido. '
-              'Ejemplo: 3001234567 o +573001234567')
+            _(
+                "Número de teléfono debe ser un número colombiano válido. "
+                "Ejemplo: 3001234567 o +573001234567"
+            )
         )
 
     # Remove allowed formatting characters but keep digits
-    digits_only = re.sub(r'[\s\-()]', '', value)
+    digits_only = re.sub(r"[\s\-()]", "", value)
 
     # Remove country code prefix if present
-    if digits_only.startswith('+57'):
+    if digits_only.startswith("+57"):
         digits_only = digits_only[3:]
-    elif digits_only.startswith('57'):
+    elif digits_only.startswith("57"):
         digits_only = digits_only[2:]
-    elif digits_only.startswith('+'):
+    elif digits_only.startswith("+"):
         # If it starts with + but not +57, it's invalid
         raise ValidationError(
-            _('Número de teléfono debe ser un número colombiano válido. '
-              'Ejemplo: 3001234567 o +573001234567')
+            _(
+                "Número de teléfono debe ser un número colombiano válido. "
+                "Ejemplo: 3001234567 o +573001234567"
+            )
         )
 
     # Colombian mobile format (10 digits starting with 3)
-    if re.match(r'^3[0-9]{9}$', digits_only):
+    if re.match(r"^3[0-9]{9}$", digits_only):
         return  # Valid mobile number
 
     # Colombian landline format including special cases
-    if re.match(r'^[1-8][0-9]{6,8}$', digits_only):
+    if re.match(r"^[1-8][0-9]{6,8}$", digits_only):
         return  # Valid landline
 
     # Special case: landline with leading 0 (like 016041234)
-    if re.match(r'^0[1-8][0-9]{6,7}$', digits_only):
+    if re.match(r"^0[1-8][0-9]{6,7}$", digits_only):
         return  # Valid landline with leading 0
 
     # If none of the patterns match, it's invalid
     raise ValidationError(
-        _('Número de teléfono debe ser un número colombiano válido. '
-          'Ejemplo: 3001234567 o +573001234567')
+        _(
+            "Número de teléfono debe ser un número colombiano válido. "
+            "Ejemplo: 3001234567 o +573001234567"
+        )
     )
 
 
@@ -160,9 +175,7 @@ def validate_unique_email_case_insensitive(email):
     User = get_user_model()
 
     if User.objects.filter(email__iexact=email).exists():
-        raise ValidationError(
-            _('Ya existe un usuario con esta dirección de email.')
-        )
+        raise ValidationError(_("Ya existe un usuario con esta dirección de email."))
 
 
 def validate_department_name(value):
@@ -181,13 +194,15 @@ def validate_department_name(value):
     # Check minimum length
     if len(value.strip()) < 2:
         raise ValidationError(
-            _('El nombre del departamento debe tener al menos 2 caracteres.')
+            _("El nombre del departamento debe tener al menos 2 caracteres.")
         )
 
     # Check for valid characters (letters, spaces, hyphens, apostrophes)
     if not re.match(r"^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s\-']+$", value):
         raise ValidationError(
-            _('El nombre del departamento solo puede contener letras, espacios, guiones y apostrofes.')
+            _(
+                "El nombre del departamento solo puede contener letras, espacios, guiones y apostrofes."
+            )
         )
 
 
@@ -207,13 +222,15 @@ def validate_position_name(value):
     # Check minimum length
     if len(value.strip()) < 2:
         raise ValidationError(
-            _('El nombre del cargo debe tener al menos 2 caracteres.')
+            _("El nombre del cargo debe tener al menos 2 caracteres.")
         )
 
     # Check for valid characters (letters, spaces, hyphens, apostrophes, parentheses)
     if not re.match(r"^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s\-'()]+$", value):
         raise ValidationError(
-            _('El nombre del cargo solo puede contener letras, espacios, guiones, apostrofes y paréntesis.')
+            _(
+                "El nombre del cargo solo puede contener letras, espacios, guiones, apostrofes y paréntesis."
+            )
         )
 
 
@@ -229,6 +246,4 @@ def validate_password_confirmation(password1, password2):
         ValidationError: If passwords don't match
     """
     if password1 != password2:
-        raise ValidationError(
-            _('Las contraseñas no coinciden.')
-        )
+        raise ValidationError(_("Las contraseñas no coinciden."))

@@ -9,6 +9,44 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### 🚀 Agregado
 
+#### Fase 6: Gestión de Organizaciones y Testing (2025-08-14)
+
+- **Módulo de Organizaciones Completo**:
+  - Wizard de configuración inicial en 5 pasos
+  - Validación automática de NIT colombiano con cálculo de dígito de verificación
+  - Gestión de sedes principales y sucursales
+  - Aplicación automática de plantillas por sector económico
+  - Registro de auditoría completo (AuditLog)
+  - Soft delete para registros eliminados
+
+- **Sistema de Manejo de Errores**:
+  - Interceptores HTTP con retry automático
+  - Clasificación de errores por tipo y severidad
+  - ErrorBoundary para captura de errores JavaScript
+  - Mensajes de error amigables al usuario
+  - Sistema de logging estructurado
+
+- **Tests Comprehensivos**:
+  - Backend: 34 tests de modelos pasando (100%)
+  - Backend: Tests de APIs completos
+  - Frontend: Tests de componentes wizard
+  - Frontend: Tests de hooks personalizados (useOrganization, useAutoSave, useWizardNavigation)
+  - E2E: Tests de flujo completo de creación de organización
+  - Cobertura >80% en backend
+
+- **Componentes UI Nuevos**:
+  - NitInput: Componente especializado para NIT colombiano
+  - OrganizationWizard: Wizard completo de configuración
+  - Step1OrganizationData: Datos básicos de la institución
+  - Step2LocationData: Información de ubicación
+  - Step3SectorTemplate: Selección de plantilla por sector
+  - Step5BranchOffices: Gestión de sucursales
+
+- **Hooks Personalizados**:
+  - useOrganization: Gestión completa de organizaciones
+  - useAutoSave: Guardado automático con detección de conflictos
+  - useWizardNavigation: Navegación de wizard con validación
+
 #### Fase 5: Sistema RBAC Frontend (2025-08-13)
 
 - **Control de Acceso Basado en Roles (RBAC)**:
@@ -53,6 +91,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### 🔧 Modificado
 
+- **Modelos Django**: Actualizada lógica de guardado para primera sede principal automática
+- **Validación NIT**: Corregido cálculo de dígito de verificación según algoritmo colombiano
+- **Tests Backend**: Actualizados todos los valores de verificación de NIT
+- **Wizard UI**: Mejorado contraste visual del título (texto blanco sobre fondo azul)
 - **AuthContext mejorado**: Ahora incluye gestión completa de RBAC con métodos para verificación de permisos
 - **useAuth hook**: Extendido con todas las funciones RBAC necesarias
 - **LoginPage**: Actualizada con redirección basada en roles después del login
@@ -65,6 +107,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### 🐛 Corregido
 
+- **UUID Primary Keys**: Corregida detección de nuevas instancias usando `_state.adding`
+- **Tests de Location**: Ajustado test de primera sede principal automática
+- **Cálculo de NIT**: Corregidos valores esperados en tests según algoritmo oficial
+- **Regex NIT**: Actualizado para permitir formatos con guiones internos
+- **Tests de Auditoría**: Ajustado conteo para incluir auditoría de creación
+- **CORS**: Deshabilitado header X-Request-ID que causaba problemas de CORS
 - **ESLint Fast Refresh**: Resueltos todos los warnings de React Fast Refresh
 - **React Hooks Order**: Corregido el orden de llamada de hooks en PermissionGate
 - **Test Mocks**: Agregados todos los métodos RBAC faltantes en los mocks de tests

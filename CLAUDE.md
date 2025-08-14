@@ -228,6 +228,23 @@ ZentraQMS es un Sistema de Gestión de Calidad completo construido con:
 - Vite + Bootstrap 5.3
 - **Velzon 4.4.1 como base de UI**
 
+### 🏢 Módulos Implementados
+- **✅ Autenticación JWT**: Sistema completo con RBAC
+- **✅ Gestión de Organizaciones**: Wizard de configuración inicial
+  - Validación de NIT colombiano con cálculo automático de dígito
+  - Gestión de sedes principales y sucursales
+  - Templates por sector económico
+  - Sistema completo de auditoría con rollback
+- **🔧 Gestión de Procesos**: En desarrollo
+- **🔧 Auditorías**: En desarrollo  
+- **🔧 Normograma**: En desarrollo
+- **🔧 Indicadores KPI**: En desarrollo
+
+### 🧪 Estado de Testing
+- **Backend**: ✅ 34/34 tests pasando (100%)
+- **Frontend**: ⚠️ 97/253 tests pasando (necesita dependencias)
+- **Cobertura**: >80% en backend
+
 ### Puertos de Desarrollo
 - Frontend: http://localhost:3000
 - Backend: http://localhost:8000
@@ -235,3 +252,200 @@ ZentraQMS es un Sistema de Gestión de Calidad completo construido con:
 - Redis: 6379
 
 **Recuerda: SIEMPRE usa Velzon primero, crea desde cero solo como último recurso.**
+
+---
+
+## 🔗 RUTAS DE API - ZentraQMS Backend
+
+### 📍 Base URLs
+- **Frontend**: http://localhost:3000
+- **Backend**: http://localhost:8000
+
+### 🗂️ Estructura de APIs
+
+#### Autenticación
+```
+/api/auth/
+├── login/                     # POST - Iniciar sesión
+├── logout/                    # POST - Cerrar sesión
+├── refresh/                   # POST - Renovar token
+├── permissions/               # GET - Obtener permisos del usuario
+├── roles/                     # GET - Obtener roles del usuario
+└── profile/                   # GET/PUT - Perfil del usuario
+```
+
+#### Autorización (RBAC)
+```
+/api/authorization/
+├── permissions/               # GET/POST - Gestión de permisos
+├── roles/                     # GET/POST - Gestión de roles
+└── user-roles/               # GET/POST - Asignación de roles
+```
+
+#### Organizaciones
+```
+/api/v1/organizations/
+├── ''                        # GET/POST - Lista/Crear organizaciones
+├── {id}/                     # GET/PUT/DELETE - CRUD individual
+├── exists_check/             # GET - Verificar si existen organizaciones
+├── wizard/step1/             # GET/POST - Wizard paso 1 (datos básicos)
+├── {id}/locations/           # GET - Sedes de una organización
+├── calculate_verification_digit/  # POST - Calcular dígito NIT
+├── {id}/audit-history/       # GET - Historial de auditoría
+└── {id}/rollback/            # POST - Rollback a estado anterior
+```
+
+#### Ubicaciones/Sedes
+```
+/api/v1/locations/
+├── ''                        # GET/POST - Lista/Crear ubicaciones
+├── {id}/                     # GET/PUT/DELETE - CRUD individual
+├── wizard/step1/             # GET/POST - Wizard sede principal
+└── by_organization/          # GET - Ubicaciones por organización
+```
+
+#### Templates de Sector
+```
+/api/v1/sector-templates/
+├── ''                        # GET/POST - Lista/Crear templates
+├── {id}/                     # GET/PUT/DELETE - CRUD individual
+├── by-sector/                # GET - Templates por sector
+├── {id}/apply/               # POST - Aplicar template
+├── create-basic/             # POST - Crear template básico
+└── sectors/                  # GET - Sectores disponibles
+```
+
+### ⚠️ IMPORTANTE: Usar Siempre las Rutas Correctas
+
+1. **Autenticación**: `/api/auth/`
+2. **Organizaciones**: `/api/v1/` (NO `/api/organization/`)
+3. **Wizard de Configuración**: `/api/v1/organizations/wizard/step1/`
+
+### 📝 Ejemplos de Uso
+
+```typescript
+// ✅ CORRECTO
+const response = await apiClient.post('/api/v1/organizations/wizard/step1/', data);
+const exists = await apiClient.get('/api/v1/organizations/exists_check/');
+const login = await apiClient.post('/api/auth/login/', credentials);
+
+// ❌ INCORRECTO
+const response = await apiClient.post('/api/organization/organizations/wizard/step1/', data);
+const response = await apiClient.post('/api/v1/organizations/setup/', data);
+```
+
+### 🔧 Headers Requeridos
+- **Authorization**: `Bearer {token}` (para endpoints autenticados)
+- **Content-Type**: `application/json`
+- **X-CSRFToken**: `{csrf_token}` (para operaciones POST/PUT/DELETE)
+
+---
+
+## 🏢 Módulo de Gestión de Organizaciones
+
+### ✅ Características Implementadas
+
+#### 🗃️ Modelos Django
+- **Organization**: Información legal y básica de la institución
+  - Validación automática de NIT colombiano
+  - Cálculo de dígito de verificación
+  - Clasificación por tipo, sector y tamaño
+- **Location**: Gestión de sedes principales y sucursales
+  - Constraint único para sede principal por organización
+  - Auto-asignación de primera sede como principal
+- **SectorTemplate**: Plantillas de configuración por sector
+  - Aplicación automática de procesos, indicadores y documentos
+- **AuditLog**: Sistema completo de auditoría
+  - Tracking de cambios con rollback capability
+
+#### 🎨 Componentes Frontend (Velzon)
+- **OrganizationWizard**: Wizard de 5 pasos para configuración inicial
+- **Step1OrganizationData**: Datos básicos institucionales
+- **Step2LocationData**: Información de sede principal
+- **Step3SectorTemplate**: Selección y aplicación de plantilla
+- **Step5BranchOffices**: Gestión de sucursales adicionales
+- **NitInput**: Componente especializado para NIT con validación
+
+#### 🔧 Hooks Personalizados
+- **useOrganization**: Gestión completa de organizaciones
+- **useAutoSave**: Guardado automático con detección de conflictos
+- **useWizardNavigation**: Navegación de wizard con validación
+
+### 📋 Guía de Implementación para Nuevos Módulos
+
+#### 1. Usar Organization como Referencia
+```typescript
+// Al crear nuevos módulos, seguir el patrón de Organization:
+// 1. Modelos Django con FullBaseModel (UUID + timestamps + audit + soft delete)
+// 2. Tests comprehensivos (>80% cobertura)
+// 3. Serializers DRF con validaciones
+// 4. ViewSets con permisos RBAC
+// 5. Frontend con hooks personalizados
+// 6. Componentes basados en Velzon
+```
+
+#### 2. Validaciones Colombianas Implementadas
+```python
+# NIT con dígito de verificación
+Organization.calcular_digito_verificacion(nit)
+
+# Regex para teléfonos colombianos
+r'^\\+?[\\d\\s\\-\\(\\)]{7,15}$'
+
+# Campos de ubicación colombianos
+departamento, ciudad, codigo_postal
+```
+
+#### 3. Sistema de Auditoría
+```python
+# Auto-logging en todos los modelos FullBaseModel
+AuditLog.log_change(instance, action, user, old_values, new_values)
+
+# Rollback capability
+audit_log.perform_rollback(user, reason)
+```
+
+### 🧪 Tests del Módulo
+- **34 tests pasando al 100%**
+- Cobertura de validaciones de NIT
+- Tests de constraints únicos
+- Tests de aplicación de templates
+- Tests de auditoría y rollback
+- Tests de concurrencia para sedes principales
+
+### 🔄 Próximos Pasos Recomendados
+1. Implementar módulo de **Procesos** siguiendo el patrón de Organization
+2. Conectar templates de sector con módulos de Procesos/Indicadores
+3. Agregar notificaciones en tiempo real con WebSockets
+4. Implementar reportes automáticos con base en auditorías
+
+---
+
+## 🚀 Comandos de Testing
+
+### Backend
+```bash
+# Ejecutar todos los tests
+cd backend && python manage.py test
+
+# Tests específicos del módulo Organization
+pytest apps/organization/test_models.py -v
+pytest apps/organization/test_apis.py -v
+
+# Con cobertura
+coverage run --source='.' manage.py test
+coverage report
+```
+
+### Frontend
+```bash
+# Tests del wizard y hooks
+cd frontend && npm run test
+
+# Tests específicos
+npm run test -- organization
+npm run test -- wizard
+
+# Con cobertura
+npm run test:coverage
+```

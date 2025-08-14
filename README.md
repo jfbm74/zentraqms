@@ -16,6 +16,12 @@ ZentraQMS es un Sistema de Gestión de Calidad (QMS) completo y moderno diseñad
 ### Módulos del Sistema
 
 - **📊 Dashboard**: Vista general con métricas y KPIs en tiempo real
+- **🏢 Gestión de Organizaciones**: Configuración inicial y gestión de sedes
+  - Wizard de configuración inicial paso a paso
+  - Gestión de información básica institucional
+  - Administración de sedes y sucursales
+  - Validación de NIT colombiano
+  - Plantillas por sector económico
 - **📋 Gestión de Procesos**: Documentación y control de procesos organizacionales
 - **📚 Normograma**: Gestión de documentos normativos y regulatorios
 - **🔍 Auditorías**: Planificación, ejecución y seguimiento de auditorías internas
@@ -157,24 +163,35 @@ docker-compose exec db psql -U zentrauser -d zentradb
 ```
 zentraqms/
 ├── backend/
-│   ├── core/                  # Configuración principal Django
-│   ├── authentication/        # App de autenticación
-│   ├── procesos/             # App de gestión de procesos
-│   ├── normograma/           # App de documentos normativos
-│   ├── auditorias/           # App de auditorías
-│   ├── indicadores/          # App de KPIs
-│   ├── requirements.txt      # Dependencias Python
+│   ├── config/               # Configuración principal Django
+│   ├── apps/
+│   │   ├── authentication/  # App de autenticación JWT
+│   │   ├── authorization/   # App de RBAC y permisos
+│   │   ├── organization/    # App de gestión de organizaciones
+│   │   ├── common/          # Modelos y utilidades comunes
+│   ├── procesos/            # App de gestión de procesos
+│   ├── normograma/          # App de documentos normativos
+│   ├── auditorias/          # App de auditorías
+│   ├── indicadores/         # App de KPIs
+│   ├── requirements.txt     # Dependencias Python
 │   └── manage.py
 ├── frontend/
 │   ├── src/
-│   │   ├── components/       # Componentes React
-│   │   │   └── layout/      # Layout principal
-│   │   ├── assets/          # Imágenes y recursos
+│   │   ├── components/      # Componentes React
+│   │   │   ├── layout/      # Layout principal
+│   │   │   ├── wizard/      # Wizard de configuración
+│   │   │   └── forms/       # Componentes de formulario
+│   │   ├── hooks/           # Custom hooks
+│   │   ├── utils/           # Utilidades y helpers
+│   │   ├── pages/           # Páginas principales
+│   │   ├── assets/          # Imágenes y recursos (Velzon)
 │   │   ├── App.tsx          # Componente principal
 │   │   └── main.tsx         # Punto de entrada
 │   ├── package.json         # Dependencias Node
 │   └── vite.config.ts       # Configuración Vite
 ├── docker-compose.yml       # Configuración Docker
+├── CHANGELOG.md            # Historial de cambios
+├── CLAUDE.md               # Instrucciones para Claude AI
 ├── Makefile                # Comandos de automatización
 └── README.md               # Este archivo
 ```
@@ -207,16 +224,32 @@ CELERY_RESULT_BACKEND=redis://redis:6379/0
 
 ### Backend
 ```bash
+# Con Docker
 docker-compose exec django python manage.py test
+
+# Local con pytest
+cd backend
+source venv/bin/activate
+pytest apps/organization/test_models.py -v
+pytest apps/organization/test_apis.py -v
 ```
+
+Estado actual: ✅ **34/34 tests pasando (100%)**
 
 ### Frontend
 ```bash
 cd frontend
 npm run test              # Ejecutar tests
-npm run test:coverage      # Ejecutar tests con cobertura
-npm run test:ui           # UI interactiva de tests
+npm run test:coverage     # Ejecutar tests con cobertura
+npm run test:ui          # UI interactiva de tests
 ```
+
+Estado actual: ⚠️ **97/253 tests pasando** (necesita instalación de dependencias)
+
+### Cobertura de Tests
+- **Backend**: >80% cobertura
+- **Frontend**: En proceso de mejora
+- **E2E Tests**: Implementados para flujo completo de organización
 
 ## 🔒 Uso del Sistema RBAC (Para Desarrolladores)
 

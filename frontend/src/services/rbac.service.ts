@@ -1,15 +1,15 @@
 /**
  * RBAC Service for ZentraQMS Frontend
- * 
+ *
  * This service handles all RBAC-related API calls to fetch user permissions
  * and roles from the backend.
  */
 
-import { apiClient, AUTH_ENDPOINTS } from '../api/endpoints';
+import { apiClient, AUTH_ENDPOINTS } from "../api/endpoints";
 import type {
   UserPermissionsResponse,
   UserRolesResponse,
-} from '../types/rbac.types';
+} from "../types/rbac.types";
 
 /**
  * RBAC service class
@@ -23,8 +23,8 @@ export class RBACService {
       const response = await apiClient.get(AUTH_ENDPOINTS.PERMISSIONS);
       return response.data;
     } catch (error) {
-      console.error('[RBACService] Failed to fetch user permissions:', error);
-      throw new Error('Failed to fetch user permissions');
+      console.error("[RBACService] Failed to fetch user permissions:", error);
+      throw new Error("Failed to fetch user permissions");
     }
   }
 
@@ -36,8 +36,8 @@ export class RBACService {
       const response = await apiClient.get(AUTH_ENDPOINTS.ROLES);
       return response.data;
     } catch (error) {
-      console.error('[RBACService] Failed to fetch user roles:', error);
-      throw new Error('Failed to fetch user roles');
+      console.error("[RBACService] Failed to fetch user roles:", error);
+      throw new Error("Failed to fetch user roles");
     }
   }
 
@@ -59,8 +59,8 @@ export class RBACService {
         roles: rolesResponse,
       };
     } catch (error) {
-      console.error('[RBACService] Failed to fetch RBAC data:', error);
-      throw new Error('Failed to fetch user permissions and roles');
+      console.error("[RBACService] Failed to fetch RBAC data:", error);
+      throw new Error("Failed to fetch user permissions and roles");
     }
   }
 
@@ -73,7 +73,7 @@ export class RBACService {
     }
 
     // Check for super admin permission
-    if (userPermissions.includes('*.all')) {
+    if (userPermissions.includes("*.all")) {
       return true;
     }
 
@@ -83,27 +83,33 @@ export class RBACService {
     }
 
     // Check for wildcard permissions
-    const resource = permission.split('.')[0];
+    const resource = permission.split(".")[0];
     const wildcardPermission = `${resource}.*`;
-    
+
     return userPermissions.includes(wildcardPermission);
   }
 
   /**
    * Check if user has any of the specified permissions
    */
-  static hasAnyPermission(userPermissions: string[], permissions: string[]): boolean {
-    return permissions.some(permission => 
-      this.hasPermission(userPermissions, permission)
+  static hasAnyPermission(
+    userPermissions: string[],
+    permissions: string[],
+  ): boolean {
+    return permissions.some((permission) =>
+      this.hasPermission(userPermissions, permission),
     );
   }
 
   /**
    * Check if user has all of the specified permissions
    */
-  static hasAllPermissions(userPermissions: string[], permissions: string[]): boolean {
-    return permissions.every(permission => 
-      this.hasPermission(userPermissions, permission)
+  static hasAllPermissions(
+    userPermissions: string[],
+    permissions: string[],
+  ): boolean {
+    return permissions.every((permission) =>
+      this.hasPermission(userPermissions, permission),
     );
   }
 
@@ -122,22 +128,22 @@ export class RBACService {
    * Check if user has any of the specified roles
    */
   static hasAnyRole(userRoles: string[], roles: string[]): boolean {
-    return roles.some(role => this.hasRole(userRoles, role));
+    return roles.some((role) => this.hasRole(userRoles, role));
   }
 
   /**
    * Check if user has all of the specified roles
    */
   static hasAllRoles(userRoles: string[], roles: string[]): boolean {
-    return roles.every(role => this.hasRole(userRoles, role));
+    return roles.every((role) => this.hasRole(userRoles, role));
   }
 
   /**
    * Get permissions for a specific resource
    */
   static getResourcePermissions(
-    permissionsByResource: Record<string, string[]>, 
-    resource: string
+    permissionsByResource: Record<string, string[]>,
+    resource: string,
   ): string[] {
     return permissionsByResource[resource] || [];
   }
@@ -171,24 +177,27 @@ export class RBACService {
   /**
    * Check permission with detailed result (for debugging)
    */
-  static checkPermissionDetailed(userPermissions: string[], permission: string): {
+  static checkPermissionDetailed(
+    userPermissions: string[],
+    permission: string,
+  ): {
     hasPermission: boolean;
     reason: string;
-    matchType?: 'exact' | 'wildcard' | 'superuser';
+    matchType?: "exact" | "wildcard" | "superuser";
   } {
     if (!userPermissions || userPermissions.length === 0) {
       return {
         hasPermission: false,
-        reason: 'User has no permissions',
+        reason: "User has no permissions",
       };
     }
 
     // Check for super admin permission
-    if (userPermissions.includes('*.all')) {
+    if (userPermissions.includes("*.all")) {
       return {
         hasPermission: true,
-        reason: 'Super admin permission grants access to all resources',
-        matchType: 'superuser',
+        reason: "Super admin permission grants access to all resources",
+        matchType: "superuser",
       };
     }
 
@@ -197,19 +206,19 @@ export class RBACService {
       return {
         hasPermission: true,
         reason: `Exact permission match: ${permission}`,
-        matchType: 'exact',
+        matchType: "exact",
       };
     }
 
     // Check for wildcard permissions
-    const resource = permission.split('.')[0];
+    const resource = permission.split(".")[0];
     const wildcardPermission = `${resource}.*`;
-    
+
     if (userPermissions.includes(wildcardPermission)) {
       return {
         hasPermission: true,
         reason: `Wildcard permission match: ${wildcardPermission}`,
-        matchType: 'wildcard',
+        matchType: "wildcard",
       };
     }
 
@@ -222,14 +231,17 @@ export class RBACService {
   /**
    * Check role with detailed result (for debugging)
    */
-  static checkRoleDetailed(userRoles: string[], role: string): {
+  static checkRoleDetailed(
+    userRoles: string[],
+    role: string,
+  ): {
     hasRole: boolean;
     reason: string;
   } {
     if (!userRoles || userRoles.length === 0) {
       return {
         hasRole: false,
-        reason: 'User has no roles assigned',
+        reason: "User has no roles assigned",
       };
     }
 
@@ -252,7 +264,7 @@ export class RBACService {
   static getUserCapabilities(
     permissions: string[],
     roles: string[],
-    permissionsByResource: Record<string, string[]>
+    permissionsByResource: Record<string, string[]>,
   ): {
     isSuperAdmin: boolean;
     resourceAccess: Record<string, string[]>;
@@ -266,14 +278,32 @@ export class RBACService {
       canManageSystem: boolean;
     };
   } {
-    const isSuperAdmin = permissions.includes('*.all');
-    
+    const isSuperAdmin = permissions.includes("*.all");
+
     const capabilities = {
-      canManageUsers: this.hasAnyPermission(permissions, ['users.create', 'users.update', 'users.delete']),
-      canManageProcesses: this.hasAnyPermission(permissions, ['processes.create', 'processes.update', 'processes.delete']),
-      canManageAudits: this.hasAnyPermission(permissions, ['audits.create', 'audits.update', 'audits.delete']),
-      canViewReports: this.hasAnyPermission(permissions, ['reports.read', 'reports.export']),
-      canManageSystem: this.hasAnyPermission(permissions, ['settings.update', 'system.admin']),
+      canManageUsers: this.hasAnyPermission(permissions, [
+        "users.create",
+        "users.update",
+        "users.delete",
+      ]),
+      canManageProcesses: this.hasAnyPermission(permissions, [
+        "processes.create",
+        "processes.update",
+        "processes.delete",
+      ]),
+      canManageAudits: this.hasAnyPermission(permissions, [
+        "audits.create",
+        "audits.update",
+        "audits.delete",
+      ]),
+      canViewReports: this.hasAnyPermission(permissions, [
+        "reports.read",
+        "reports.export",
+      ]),
+      canManageSystem: this.hasAnyPermission(permissions, [
+        "settings.update",
+        "system.admin",
+      ]),
     };
 
     return {
@@ -291,16 +321,16 @@ export class RBACService {
   static getPrimaryRole(roles: string[]): string {
     // Role hierarchy (higher index = higher priority)
     const roleHierarchy = [
-      'guest',
-      'consulta',
-      'auditor', 
-      'coordinador',
-      'admin',
-      'super_admin',
+      "guest",
+      "consulta",
+      "auditor",
+      "coordinador",
+      "admin",
+      "super_admin",
     ];
 
     // Find the highest priority role
-    let primaryRole = 'guest';
+    let primaryRole = "guest";
     let highestPriority = -1;
 
     for (const role of roles) {
@@ -319,15 +349,15 @@ export class RBACService {
    */
   static getDefaultRouteForRole(role: string): string {
     const routeMap: Record<string, string> = {
-      super_admin: '/dashboard',
-      admin: '/dashboard',
-      coordinador: '/dashboard', 
-      auditor: '/auditorias',
-      consulta: '/procesos',
-      guest: '/dashboard',
+      super_admin: "/dashboard",
+      admin: "/dashboard",
+      coordinador: "/dashboard",
+      auditor: "/auditorias",
+      consulta: "/procesos",
+      guest: "/dashboard",
     };
 
-    return routeMap[role] || '/dashboard';
+    return routeMap[role] || "/dashboard";
   }
 
   /**
@@ -345,29 +375,34 @@ export class RBACService {
 
     // Check if permissions array is valid
     if (!Array.isArray(data.permissions)) {
-      errors.push('Permissions must be an array');
+      errors.push("Permissions must be an array");
     }
 
     // Check if roles array is valid
     if (!Array.isArray(data.roles)) {
-      errors.push('Roles must be an array');
+      errors.push("Roles must be an array");
     }
 
     // Check if permissionsByResource is an object
-    if (typeof data.permissionsByResource !== 'object' || data.permissionsByResource === null) {
-      errors.push('PermissionsByResource must be an object');
+    if (
+      typeof data.permissionsByResource !== "object" ||
+      data.permissionsByResource === null
+    ) {
+      errors.push("PermissionsByResource must be an object");
     }
 
     // Validate permission format
     if (Array.isArray(data.permissions)) {
       for (const permission of data.permissions) {
-        if (typeof permission !== 'string') {
+        if (typeof permission !== "string") {
           errors.push(`Invalid permission format: ${permission}`);
           continue;
         }
-        
-        if (!permission.includes('.') && permission !== '*.all') {
-          errors.push(`Invalid permission format: ${permission} (should be resource.action)`);
+
+        if (!permission.includes(".") && permission !== "*.all") {
+          errors.push(
+            `Invalid permission format: ${permission} (should be resource.action)`,
+          );
         }
       }
     }

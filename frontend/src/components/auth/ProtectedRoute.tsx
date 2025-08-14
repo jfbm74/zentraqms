@@ -1,60 +1,60 @@
 /**
  * Protected Route Component for ZentraQMS Frontend
- * 
+ *
  * Adapted from Velzon's AuthProtected component to work with our AuthContext.
  * Protects routes from unauthorized access and handles authentication state.
  * Phase 5: Enhanced with RBAC support for roles and permissions.
  */
 
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import LoadingSpinner from '../ui/LoadingSpinner';
+import React from "react";
+import { Navigate, useLocation } from "../../utils/SimpleRouter";
+import { useAuth } from "../../hooks/useAuth";
+import LoadingSpinner from "../ui/LoadingSpinner";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  
+
   /** Single permission required to access route */
   permission?: string;
-  
+
   /** Array of permissions - user needs ANY of these */
   permissions?: string[];
-  
+
   /** Array of permissions - user needs ALL of these */
   requireAllPermissions?: string[];
-  
+
   /** Single role required to access route */
   role?: string;
-  
+
   /** Array of roles - user needs ANY of these */
   roles?: string[];
-  
+
   /** Array of roles - user needs ALL of these */
   requireAllRoles?: string[];
-  
+
   /** Custom permission check function */
   customCheck?: (userPermissions: string[], userRoles: string[]) => boolean;
-  
+
   /** Redirect path when access is denied (default: /access-denied) */
   accessDeniedRedirect?: string;
-  
+
   /** Whether to show loading during RBAC check */
   showRbacLoading?: boolean;
-  
+
   /** Minimum user verification level required */
   requireVerified?: boolean;
-  
+
   /** Whether user must be active */
   requireActive?: boolean;
 }
 
 /**
  * Protected Route Component
- * 
+ *
  * This component checks authentication and authorization before rendering children.
  * Phase 5: Enhanced with comprehensive RBAC support.
  */
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   permission,
   permissions = [],
@@ -63,14 +63,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   roles = [],
   requireAllRoles = [],
   customCheck,
-  accessDeniedRedirect = '/access-denied',
+  accessDeniedRedirect = "/access-denied",
   showRbacLoading = true,
   requireVerified = false,
   requireActive = true,
 }) => {
-  const { 
-    isAuthenticated, 
-    isLoading, 
+  const {
+    isAuthenticated,
+    isLoading,
     rbacLoading,
     user,
     hasPermission,
@@ -82,7 +82,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     permissions: userPermissions,
     roles: userRoles,
   } = useAuth();
-  
+
   const location = useLocation();
 
   // Show loading spinner while checking authentication
@@ -96,13 +96,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // If not authenticated, redirect to login with return path
   if (!isAuthenticated) {
-    return (
-      <Navigate 
-        to="/login" 
-        state={{ from: location }} 
-        replace 
-      />
-    );
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Show loading while RBAC data is being fetched
@@ -119,23 +113,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // User verification check
   if (requireVerified && user && !user.is_verified) {
-    return (
-      <Navigate 
-        to="/verify-account" 
-        state={{ from: location }} 
-        replace 
-      />
-    );
+    return <Navigate to="/verify-account" state={{ from: location }} replace />;
   }
 
   // User active status check
   if (requireActive && user && !user.is_active) {
     return (
-      <Navigate 
-        to="/account-inactive" 
-        state={{ from: location }} 
-        replace 
-      />
+      <Navigate to="/account-inactive" state={{ from: location }} replace />
     );
   }
 
@@ -184,7 +168,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
 
     // All checks must pass (AND logic)
-    return checks.every(check => check);
+    return checks.every((check) => check);
   };
 
   // Check RBAC permissions
@@ -193,11 +177,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // If access denied, redirect to access denied page
   if (!hasAccess) {
     return (
-      <Navigate 
+      <Navigate
         to={accessDeniedRedirect}
-        state={{ 
+        state={{
           from: location,
-          reason: 'insufficient_permissions',
+          reason: "insufficient_permissions",
           requiredPermissions: [
             ...(permission ? [permission] : []),
             ...permissions,
@@ -208,8 +192,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             ...roles,
             ...requireAllRoles,
           ],
-        }} 
-        replace 
+        }}
+        replace
       />
     );
   }

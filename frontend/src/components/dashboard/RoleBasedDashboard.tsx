@@ -1,12 +1,12 @@
 /**
  * Role-based Dashboard Components for ZentraQMS Frontend
- * 
+ *
  * These components provide differentiated dashboard experiences
  * based on user roles and permissions.
  */
 
-import React from 'react';
-import { PermissionGate } from '../common/PermissionGate';
+import React from "react";
+import { PermissionGate } from "../common/PermissionGate";
 
 /**
  * KPI Card Component
@@ -15,7 +15,7 @@ interface KPICardProps {
   title: string;
   value: string | number;
   change?: string;
-  changeType?: 'positive' | 'negative' | 'neutral';
+  changeType?: "positive" | "negative" | "neutral";
   icon: string;
   iconColor: string;
   link?: string;
@@ -27,22 +27,26 @@ const KPICard: React.FC<KPICardProps> = ({
   title,
   value,
   change,
-  changeType = 'neutral',
+  changeType = "neutral",
   icon,
   iconColor,
   link,
   permission,
   permissions,
 }) => {
-  const changeColorClass = 
-    changeType === 'positive' ? 'text-success' : 
-    changeType === 'negative' ? 'text-danger' : 
-    'text-muted';
+  const changeColorClass =
+    changeType === "positive"
+      ? "text-success"
+      : changeType === "negative"
+        ? "text-danger"
+        : "text-muted";
 
-  const changeIcon = 
-    changeType === 'positive' ? 'ri-arrow-right-up-line' : 
-    changeType === 'negative' ? 'ri-arrow-right-down-line' : 
-    'ri-subtract-line';
+  const changeIcon =
+    changeType === "positive"
+      ? "ri-arrow-right-up-line"
+      : changeType === "negative"
+        ? "ri-arrow-right-down-line"
+        : "ri-subtract-line";
 
   const cardContent = (
     <div className="card card-animate">
@@ -74,7 +78,9 @@ const KPICard: React.FC<KPICardProps> = ({
             )}
           </div>
           <div className="avatar-sm flex-shrink-0">
-            <span className={`avatar-title bg-${iconColor}-subtle rounded fs-3`}>
+            <span
+              className={`avatar-title bg-${iconColor}-subtle rounded fs-3`}
+            >
               <i className={`${icon} text-${iconColor}`}></i>
             </span>
           </div>
@@ -104,7 +110,8 @@ export const SuperAdminDashboard: React.FC = () => {
         <div className="col-12">
           <div className="alert alert-success alert-border-left" role="alert">
             <i className="ri-shield-check-line me-3 align-middle"></i>
-            <strong>Panel de Super Administrador</strong> - Acceso completo al sistema
+            <strong>Panel de Super Administrador</strong> - Acceso completo al
+            sistema
           </div>
         </div>
       </div>
@@ -173,7 +180,9 @@ export const SuperAdminDashboard: React.FC = () => {
                     </div>
                     <div>
                       <h5 className="mb-1">Base de Datos</h5>
-                      <span className="badge bg-success-subtle text-success">Operativa</span>
+                      <span className="badge bg-success-subtle text-success">
+                        Operativa
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -186,7 +195,9 @@ export const SuperAdminDashboard: React.FC = () => {
                     </div>
                     <div>
                       <h5 className="mb-1">Servidor Web</h5>
-                      <span className="badge bg-success-subtle text-success">Operativo</span>
+                      <span className="badge bg-success-subtle text-success">
+                        Operativo
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -205,7 +216,10 @@ export const SuperAdminDashboard: React.FC = () => {
                   <i className="ri-user-add-line me-1"></i>
                   Crear Usuario
                 </a>
-                <a href="/configuracion/sistema" className="btn btn-outline-secondary">
+                <a
+                  href="/configuracion/sistema"
+                  className="btn btn-outline-secondary"
+                >
                   <i className="ri-settings-3-line me-1"></i>
                   Configuración Sistema
                 </a>
@@ -248,7 +262,7 @@ export const AdminDashboard: React.FC = () => {
             icon="ri-file-list-3-line"
             iconColor="success"
             link="/procesos"
-            permissions={['processes.read', 'processes.*']}
+            permissions={["processes.read", "processes.*"]}
           />
         </div>
         <div className="col-xl-3 col-md-6">
@@ -260,7 +274,7 @@ export const AdminDashboard: React.FC = () => {
             icon="ri-search-eye-line"
             iconColor="warning"
             link="/auditorias"
-            permissions={['audits.read', 'audits.*']}
+            permissions={["audits.read", "audits.*"]}
           />
         </div>
         <div className="col-xl-3 col-md-6">
@@ -272,7 +286,7 @@ export const AdminDashboard: React.FC = () => {
             icon="ri-book-open-line"
             iconColor="info"
             link="/normograma"
-            permissions={['documents.read', 'documents.*']}
+            permissions={["documents.read", "documents.*"]}
           />
         </div>
         <div className="col-xl-3 col-md-6">
@@ -284,7 +298,7 @@ export const AdminDashboard: React.FC = () => {
             icon="ri-user-line"
             iconColor="primary"
             link="/configuracion/usuarios"
-            permissions={['users.read', 'users.*']}
+            permissions={["users.read", "users.*"]}
           />
         </div>
       </div>
@@ -302,7 +316,8 @@ export const CoordinatorDashboard: React.FC = () => {
         <div className="col-12">
           <div className="alert alert-warning alert-border-left" role="alert">
             <i className="ri-user-star-line me-3 align-middle"></i>
-            <strong>Panel de Coordinador</strong> - Gestión de procesos y auditorías
+            <strong>Panel de Coordinador</strong> - Gestión de procesos y
+            auditorías
           </div>
         </div>
       </div>
@@ -364,7 +379,8 @@ export const AuditorDashboard: React.FC = () => {
         <div className="col-12">
           <div className="alert alert-secondary alert-border-left" role="alert">
             <i className="ri-search-eye-line me-3 align-middle"></i>
-            <strong>Panel de Auditor</strong> - Gestión de auditorías y hallazgos
+            <strong>Panel de Auditor</strong> - Gestión de auditorías y
+            hallazgos
           </div>
         </div>
       </div>
@@ -428,7 +444,8 @@ export const ReadOnlyDashboard: React.FC = () => {
         <div className="col-12">
           <div className="alert alert-light alert-border-left" role="alert">
             <i className="ri-eye-line me-3 align-middle"></i>
-            <strong>Panel de Consulta</strong> - Acceso de solo lectura al sistema QMS
+            <strong>Panel de Consulta</strong> - Acceso de solo lectura al
+            sistema QMS
           </div>
         </div>
       </div>
@@ -482,8 +499,9 @@ export const ReadOnlyDashboard: React.FC = () => {
               </div>
               <h5>Acceso de Solo Lectura</h5>
               <p className="text-muted">
-                Tu cuenta tiene permisos de consulta. Puedes visualizar información pero no realizar modificaciones.
-                Si necesitas permisos adicionales, contacta a tu administrador.
+                Tu cuenta tiene permisos de consulta. Puedes visualizar
+                información pero no realizar modificaciones. Si necesitas
+                permisos adicionales, contacta a tu administrador.
               </p>
               <div className="mt-3">
                 <a href="/normograma" className="btn btn-primary me-2">

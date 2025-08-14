@@ -1,10 +1,10 @@
 /**
  * WizardContainer Component for ZentraQMS
- * 
+ *
  * Based on Velzon React Admin Template
  * Adapted for Organization Configuration Wizard
  */
-import React, { useState, useCallback, ReactNode } from 'react';
+import React, { useState, useCallback, ReactNode } from "react";
 // Removed classnames dependency - using template literals instead
 
 // Types
@@ -35,97 +35,115 @@ const WizardContainer: React.FC<WizardContainerProps> = ({
   onComplete,
   showProgress = true,
   allowSkipSteps = false,
-  className = ""
+  className = "",
 }) => {
   // State management
   const [activeTab, setActiveTab] = useState<number>(1);
   const [progressValue, setProgressValue] = useState<number>(0);
   const [passedSteps, setPassedSteps] = useState<number[]>([1]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [validationErrors, setValidationErrors] = useState<Record<number, string>>({});
+  const [validationErrors, setValidationErrors] = useState<
+    Record<number, string>
+  >({});
 
   // Calculate progress percentage
-  const calculateProgress = useCallback((stepNumber: number): number => {
-    return ((stepNumber - 1) / (steps.length - 1)) * 100;
-  }, [steps.length]);
+  const calculateProgress = useCallback(
+    (stepNumber: number): number => {
+      return ((stepNumber - 1) / (steps.length - 1)) * 100;
+    },
+    [steps.length],
+  );
 
   // Validate current step
-  const validateStep = useCallback((stepId: number): boolean => {
-    const step = steps.find(s => s.id === stepId);
-    if (!step?.validation) return true;
-    
-    try {
-      const isValid = step.validation();
-      if (!isValid) {
-        setValidationErrors(prev => ({
+  const validateStep = useCallback(
+    (stepId: number): boolean => {
+      const step = steps.find((s) => s.id === stepId);
+      if (!step?.validation) return true;
+
+      try {
+        const isValid = step.validation();
+        if (!isValid) {
+          setValidationErrors((prev) => ({
+            ...prev,
+            [stepId]: "Por favor complete todos los campos requeridos",
+          }));
+        } else {
+          setValidationErrors((prev) => {
+            const { [stepId]: removed, ...rest } = prev;
+            return rest;
+          });
+        }
+        return isValid;
+      } catch (error) {
+        console.error("Validation error:", error);
+        setValidationErrors((prev) => ({
           ...prev,
-          [stepId]: 'Por favor complete todos los campos requeridos'
+          [stepId]: "Error en la validación",
         }));
-      } else {
-        setValidationErrors(prev => {
-          const { [stepId]: removed, ...rest } = prev;
-          return rest;
-        });
+        return false;
       }
-      return isValid;
-    } catch (error) {
-      console.error('Validation error:', error);
-      setValidationErrors(prev => ({
-        ...prev,
-        [stepId]: 'Error en la validación'
-      }));
-      return false;
-    }
-  }, [steps]);
+    },
+    [steps],
+  );
 
   // Handle step navigation
-  const navigateToStep = useCallback(async (targetStep: number, skipValidation = false) => {
-    // Prevent navigation if already loading
-    if (loading) return;
+  const navigateToStep = useCallback(
+    async (targetStep: number, skipValidation = false) => {
+      // Prevent navigation if already loading
+      if (loading) return;
 
-    // Validate current step before moving forward (unless skipping validation)
-    if (targetStep > activeTab && !skipValidation) {
-      if (!validateStep(activeTab)) {
+      // Validate current step before moving forward (unless skipping validation)
+      if (targetStep > activeTab && !skipValidation) {
+        if (!validateStep(activeTab)) {
+          return;
+        }
+      }
+
+      // Check if step is allowed to be accessed
+      if (!allowSkipSteps && targetStep > Math.max(...passedSteps) + 1) {
         return;
       }
-    }
 
-    // Check if step is allowed to be accessed
-    if (!allowSkipSteps && targetStep > Math.max(...passedSteps) + 1) {
-      return;
-    }
+      setLoading(true);
 
-    setLoading(true);
-    
-    try {
-      const currentStep = steps.find(s => s.id === activeTab);
-      
-      // Execute onNext or onPrevious callbacks if defined
-      if (targetStep > activeTab && currentStep?.onNext) {
-        await currentStep.onNext();
-      } else if (targetStep < activeTab && currentStep?.onPrevious) {
-        await currentStep.onPrevious();
+      try {
+        const currentStep = steps.find((s) => s.id === activeTab);
+
+        // Execute onNext or onPrevious callbacks if defined
+        if (targetStep > activeTab && currentStep?.onNext) {
+          await currentStep.onNext();
+        } else if (targetStep < activeTab && currentStep?.onPrevious) {
+          await currentStep.onPrevious();
+        }
+
+        // Update state
+        setActiveTab(targetStep);
+        setProgressValue(calculateProgress(targetStep));
+
+        // Add step to passed steps if moving forward
+        if (targetStep > activeTab) {
+          setPassedSteps((prev) => [...new Set([...prev, targetStep])]);
+        }
+      } catch (error) {
+        console.error("Navigation error:", error);
+        setValidationErrors((prev) => ({
+          ...prev,
+          [activeTab]: "Error al procesar el paso",
+        }));
+      } finally {
+        setLoading(false);
       }
-
-      // Update state
-      setActiveTab(targetStep);
-      setProgressValue(calculateProgress(targetStep));
-      
-      // Add step to passed steps if moving forward
-      if (targetStep > activeTab) {
-        setPassedSteps(prev => [...new Set([...prev, targetStep])]);
-      }
-      
-    } catch (error) {
-      console.error('Navigation error:', error);
-      setValidationErrors(prev => ({
-        ...prev,
-        [activeTab]: 'Error al procesar el paso'
-      }));
-    } finally {
-      setLoading(false);
-    }
-  }, [activeTab, allowSkipSteps, calculateProgress, loading, passedSteps, steps, validateStep]);
+    },
+    [
+      activeTab,
+      allowSkipSteps,
+      calculateProgress,
+      loading,
+      passedSteps,
+      steps,
+      validateStep,
+    ],
+  );
 
   // Handle next step
   const handleNext = useCallback(() => {
@@ -146,17 +164,17 @@ const WizardContainer: React.FC<WizardContainerProps> = ({
   // Handle wizard completion
   const handleComplete = useCallback(async () => {
     if (!validateStep(activeTab)) return;
-    
+
     setLoading(true);
     try {
       if (onComplete) {
         await onComplete({});
       }
     } catch (error) {
-      console.error('Completion error:', error);
-      setValidationErrors(prev => ({
+      console.error("Completion error:", error);
+      setValidationErrors((prev) => ({
         ...prev,
-        [activeTab]: 'Error al completar la configuración'
+        [activeTab]: "Error al completar la configuración",
       }));
     } finally {
       setLoading(false);
@@ -164,7 +182,7 @@ const WizardContainer: React.FC<WizardContainerProps> = ({
   }, [activeTab, onComplete, validateStep]);
 
   // Get current step
-  const currentStep = steps.find(s => s.id === activeTab);
+  const currentStep = steps.find((s) => s.id === activeTab);
 
   return (
     <div className="page-content">
@@ -175,9 +193,7 @@ const WizardContainer: React.FC<WizardContainerProps> = ({
               <div className="card-header">
                 <div className="text-center pt-3 pb-4 mb-1">
                   <h4 className="card-title mb-2">{title}</h4>
-                  {subtitle && (
-                    <p className="text-muted mb-0">{subtitle}</p>
-                  )}
+                  {subtitle && <p className="text-muted mb-0">{subtitle}</p>}
                 </div>
               </div>
 
@@ -187,30 +203,43 @@ const WizardContainer: React.FC<WizardContainerProps> = ({
                   {showProgress && (
                     <div className="progress-nav mb-4">
                       <div className="progress mb-3" style={{ height: "2px" }}>
-                        <div 
-                          className="progress-bar" 
+                        <div
+                          className="progress-bar"
                           style={{ width: `${progressValue}%` }}
                         ></div>
                       </div>
 
-                      <ul className="nav nav-pills progress-bar-tab custom-nav" role="tablist">
+                      <ul
+                        className="nav nav-pills progress-bar-tab custom-nav"
+                        role="tablist"
+                      >
                         {steps.map((step) => (
                           <li key={step.id} className="nav-item">
                             <button
                               type="button"
                               className={`nav-link rounded-pill position-relative ${
-                                activeTab === step.id ? 'active' : ''
+                                activeTab === step.id ? "active" : ""
                               } ${
-                                passedSteps.includes(step.id) && activeTab !== step.id ? 'done' : ''
+                                passedSteps.includes(step.id) &&
+                                activeTab !== step.id
+                                  ? "done"
+                                  : ""
                               } ${
-                                !allowSkipSteps && step.id > Math.max(...passedSteps) + 1 ? 'disabled' : ''
+                                !allowSkipSteps &&
+                                step.id > Math.max(...passedSteps) + 1
+                                  ? "disabled"
+                                  : ""
                               }`.trim()}
                               onClick={() => {
-                                if (allowSkipSteps || passedSteps.includes(step.id) || step.id <= Math.max(...passedSteps) + 1) {
+                                if (
+                                  allowSkipSteps ||
+                                  passedSteps.includes(step.id) ||
+                                  step.id <= Math.max(...passedSteps) + 1
+                                ) {
                                   navigateToStep(step.id, step.id < activeTab);
                                 }
                               }}
-                              style={{ cursor: 'pointer' }}
+                              style={{ cursor: "pointer" }}
                               disabled={loading}
                             >
                               {step.id}
@@ -229,9 +258,9 @@ const WizardContainer: React.FC<WizardContainerProps> = ({
                   {/* Step Content */}
                   <div className="tab-content">
                     {steps.map((step) => (
-                      <div 
-                        key={step.id} 
-                        className={`tab-pane ${activeTab === step.id ? 'active show' : ''}`}
+                      <div
+                        key={step.id}
+                        className={`tab-pane ${activeTab === step.id ? "active show" : ""}`}
                       >
                         <div className="step-content">
                           {/* Step Header */}
@@ -244,16 +273,17 @@ const WizardContainer: React.FC<WizardContainerProps> = ({
 
                           {/* Validation Error */}
                           {validationErrors[step.id] && (
-                            <div className="alert alert-danger d-flex align-items-center" role="alert">
+                            <div
+                              className="alert alert-danger d-flex align-items-center"
+                              role="alert"
+                            >
                               <i className="ri-error-warning-line me-2"></i>
                               {validationErrors[step.id]}
                             </div>
                           )}
 
                           {/* Step Component */}
-                          <div className="step-component">
-                            {step.component}
-                          </div>
+                          <div className="step-component">{step.component}</div>
 
                           {/* Navigation Buttons */}
                           <div className="d-flex align-items-center gap-3 mt-4">

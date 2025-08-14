@@ -73,7 +73,7 @@ def user_login_failed_handler(sender, credentials, request, **kwargs):
         request: The HTTP request
         **kwargs: Additional keyword arguments
     """
-    email = credentials.get('username') or credentials.get('email')
+    email = credentials.get("username") or credentials.get("email")
     ip_address = get_client_ip(request)
 
     if email:
@@ -90,14 +90,20 @@ def user_login_failed_handler(sender, credentials, request, **kwargs):
             )
 
             if user.is_account_locked():
-                logger.warning(f"Account locked due to too many failed attempts: {email}")
+                logger.warning(
+                    f"Account locked due to too many failed attempts: {email}"
+                )
 
         except User.DoesNotExist:
             # Log failed attempt for non-existent user
-            logger.warning(f"Failed login attempt for non-existent user: {email} from IP: {ip_address}")
+            logger.warning(
+                f"Failed login attempt for non-existent user: {email} from IP: {ip_address}"
+            )
 
     else:
-        logger.warning(f"Failed login attempt with missing credentials from IP: {ip_address}")
+        logger.warning(
+            f"Failed login attempt with missing credentials from IP: {ip_address}"
+        )
 
 
 # TODO: Add more signals in future phases

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -14,7 +14,8 @@ const Footer: React.FC = () => {
           </div>
           <div className="col-sm-6">
             <div className="text-sm-end d-none d-sm-block">
-              Desarrollado por Zentratek.com con ❤️ para la Excelencia Organizacional
+              Desarrollado por Zentratek.com con ❤️ para la Excelencia
+              Organizacional
             </div>
           </div>
         </div>

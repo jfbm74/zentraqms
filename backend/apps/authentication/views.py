@@ -21,10 +21,14 @@ from .serializers import (
     LogoutSerializer,
     UserSerializer,
 )
-from apps.common.utils import create_success_response, create_error_response, get_client_ip
+from apps.common.utils import (
+    create_success_response,
+    create_error_response,
+    get_client_ip,
+)
 
 User = get_user_model()
-logger = logging.getLogger('authentication')
+logger = logging.getLogger("authentication")
 
 
 class LoginView(APIView):
@@ -51,8 +55,7 @@ class LoginView(APIView):
         """
         try:
             serializer = self.serializer_class(
-                data=request.data,
-                context={'request': request}
+                data=request.data, context={"request": request}
             )
 
             if serializer.is_valid():
@@ -66,31 +69,31 @@ class LoginView(APIView):
 
                 return create_success_response(
                     data={
-                        'access': validated_data['access'],
-                        'refresh': validated_data['refresh'],
-                        'user': validated_data['user']
+                        "access": validated_data["access"],
+                        "refresh": validated_data["refresh"],
+                        "user": validated_data["user"],
                     },
-                    message='Login exitoso.'
+                    message="Login exitoso.",
                 )
             else:
                 # Log failed login attempt
-                email = request.data.get('email', 'Unknown')
+                email = request.data.get("email", "Unknown")
                 logger.warning(
                     f"Failed login attempt for email: {email} "
                     f"from IP: {get_client_ip(request)}"
                 )
 
                 return create_error_response(
-                    message='Credenciales inválidas.',
+                    message="Credenciales inválidas.",
                     errors=serializer.errors,
-                    status_code=status.HTTP_400_BAD_REQUEST
+                    status_code=status.HTTP_400_BAD_REQUEST,
                 )
 
         except Exception as e:
             logger.error(f"Login error: {str(e)}")
             return create_error_response(
-                message='Error interno del servidor.',
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                message="Error interno del servidor.",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
@@ -119,18 +122,19 @@ class TokenRefreshView(BaseTokenRefreshView):
                 logger.info(f"Token refreshed for IP: {get_client_ip(request)}")
 
                 return create_success_response(
-                    data=response.data,
-                    message='Token actualizado exitosamente.'
+                    data=response.data, message="Token actualizado exitosamente."
                 )
             else:
-                logger.warning(f"Failed token refresh from IP: {get_client_ip(request)}")
+                logger.warning(
+                    f"Failed token refresh from IP: {get_client_ip(request)}"
+                )
                 return response
 
         except Exception as e:
             logger.error(f"Token refresh error: {str(e)}")
             return create_error_response(
-                message='Error al actualizar el token.',
-                status_code=status.HTTP_400_BAD_REQUEST
+                message="Error al actualizar el token.",
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
 
 
@@ -167,21 +171,20 @@ class LogoutView(APIView):
                 )
 
                 return create_success_response(
-                    data=result,
-                    message='Sesión cerrada exitosamente.'
+                    data=result, message="Sesión cerrada exitosamente."
                 )
             else:
                 return create_error_response(
-                    message='Token de actualización inválido.',
+                    message="Token de actualización inválido.",
                     errors=serializer.errors,
-                    status_code=status.HTTP_400_BAD_REQUEST
+                    status_code=status.HTTP_400_BAD_REQUEST,
                 )
 
         except Exception as e:
             logger.error(f"Logout error for user {request.user.email}: {str(e)}")
             return create_error_response(
-                message='Error al cerrar sesión.',
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                message="Error al cerrar sesión.",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
@@ -211,19 +214,20 @@ class CurrentUserView(APIView):
 
             # Add additional data for frontend
             user_data = serializer.data
-            user_data['roles'] = []  # Empty for now, will be populated in RBAC phase
-            user_data['permissions'] = []  # Empty for now, will be populated in RBAC phase
+            user_data["roles"] = []  # Empty for now, will be populated in RBAC phase
+            user_data["permissions"] = (
+                []
+            )  # Empty for now, will be populated in RBAC phase
 
             return create_success_response(
-                data=user_data,
-                message='Datos del usuario obtenidos exitosamente.'
+                data=user_data, message="Datos del usuario obtenidos exitosamente."
             )
 
         except Exception as e:
             logger.error(f"Error getting user data for {request.user.email}: {str(e)}")
             return create_error_response(
-                message='Error al obtener datos del usuario.',
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                message="Error al obtener datos del usuario.",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
@@ -249,8 +253,8 @@ class ChangePasswordView(APIView):
         """
         # TODO: Implement in Phase 2
         return create_error_response(
-            message='Esta funcionalidad estará disponible en la siguiente fase.',
-            status_code=status.HTTP_501_NOT_IMPLEMENTED
+            message="Esta funcionalidad estará disponible en la siguiente fase.",
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
         )
 
 
@@ -258,7 +262,8 @@ class ChangePasswordView(APIView):
 # Function-based views (alternatives)
 # ================================
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes([AllowAny])
 def login_function_view(request):
     """
@@ -268,17 +273,17 @@ def login_function_view(request):
     It uses the LoginSerializer instead of CustomTokenObtainPairSerializer.
     """
     try:
-        serializer = LoginSerializer(data=request.data, context={'request': request})
+        serializer = LoginSerializer(data=request.data, context={"request": request})
 
         if serializer.is_valid():
-            user = serializer.validated_data['user']
+            user = serializer.validated_data["user"]
 
             # Generate tokens
             refresh = RefreshToken.for_user(user)
 
             # Update last login
             user.last_login = timezone.now()
-            user.save(update_fields=['last_login'])
+            user.save(update_fields=["last_login"])
 
             # Update IP if available
             ip_address = get_client_ip(request)
@@ -286,37 +291,38 @@ def login_function_view(request):
                 user.update_last_login_ip(ip_address)
 
             response_data = {
-                'access': str(refresh.access_token),
-                'refresh': str(refresh),
-                'user': UserSerializer(user).data
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+                "user": UserSerializer(user).data,
             }
 
-            logger.info(f"Successful login for user: {user.email} from IP: {ip_address}")
-
-            return create_success_response(
-                data=response_data,
-                message='Login exitoso.'
+            logger.info(
+                f"Successful login for user: {user.email} from IP: {ip_address}"
             )
 
+            return create_success_response(data=response_data, message="Login exitoso.")
+
         else:
-            email = request.data.get('email', 'Unknown')
-            logger.warning(f"Failed login attempt for email: {email} from IP: {get_client_ip(request)}")
+            email = request.data.get("email", "Unknown")
+            logger.warning(
+                f"Failed login attempt for email: {email} from IP: {get_client_ip(request)}"
+            )
 
             return create_error_response(
-                message='Credenciales inválidas.',
+                message="Credenciales inválidas.",
                 errors=serializer.errors,
-                status_code=status.HTTP_400_BAD_REQUEST
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
 
     except Exception as e:
         logger.error(f"Login error: {str(e)}")
         return create_error_response(
-            message='Error interno del servidor.',
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            message="Error interno del servidor.",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def user_profile_view(request):
     """
@@ -327,15 +333,14 @@ def user_profile_view(request):
     try:
         serializer = UserSerializer(request.user)
         return create_success_response(
-            data=serializer.data,
-            message='Perfil obtenido exitosamente.'
+            data=serializer.data, message="Perfil obtenido exitosamente."
         )
 
     except Exception as e:
         logger.error(f"Error getting profile for {request.user.email}: {str(e)}")
         return create_error_response(
-            message='Error al obtener el perfil.',
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            message="Error al obtener el perfil.",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -343,7 +348,8 @@ def user_profile_view(request):
 # Health check and status views
 # ================================
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @permission_classes([AllowAny])
 def auth_health_check(request):
     """
@@ -353,12 +359,12 @@ def auth_health_check(request):
     """
     return create_success_response(
         data={
-            'service': 'authentication',
-            'status': 'healthy',
-            'timestamp': timezone.now().isoformat(),
-            'version': '1.2.0'
+            "service": "authentication",
+            "status": "healthy",
+            "timestamp": timezone.now().isoformat(),
+            "version": "1.2.0",
         },
-        message='Servicio de autenticación funcionando correctamente.'
+        message="Servicio de autenticación funcionando correctamente.",
     )
 
 
@@ -366,110 +372,116 @@ def auth_health_check(request):
 # RBAC Authentication Views
 # ================================
 
+
 class UserPermissionsView(APIView):
     """
     View for getting current user's permissions.
-    
+
     GET /api/auth/permissions/ - Returns user's permissions
     """
-    
+
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request):
         """
         Get current user's permissions.
-        
+
         Returns:
             Response: User permissions organized by resource
         """
         try:
             user = request.user
-            
+
             # Get user permissions using enhanced helper method
             permission_tree = user.get_permission_tree()
             permissions_list = user.get_all_permissions()
-            
+
             response_data = {
-                'user_id': str(user.id),
-                'user_email': user.email,
-                'permissions_by_resource': permission_tree,
-                'permissions_list': list(permissions_list),
-                'total_permissions': len(permissions_list)
+                "user_id": str(user.id),
+                "user_email": user.email,
+                "permissions_by_resource": permission_tree,
+                "permissions_list": list(permissions_list),
+                "total_permissions": len(permissions_list),
             }
-            
+
             return create_success_response(
                 data=response_data,
-                message='Permisos del usuario obtenidos exitosamente.'
+                message="Permisos del usuario obtenidos exitosamente.",
             )
-            
+
         except Exception as e:
-            logger.error(f"Error getting user permissions for {request.user.email}: {e}")
+            logger.error(
+                f"Error getting user permissions for {request.user.email}: {e}"
+            )
             return create_error_response(
-                message='Error al obtener permisos del usuario.',
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                message="Error al obtener permisos del usuario.",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
 class UserRolesView(APIView):
     """
     View for getting current user's roles.
-    
+
     GET /api/auth/roles/ - Returns user's roles
     """
-    
+
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request):
         """
         Get current user's roles.
-        
+
         Returns:
             Response: User roles with details
         """
         try:
             user = request.user
-            
+
             # Get user roles using RBAC system
             from apps.authorization.models import UserRole
             from django.utils import timezone
-            
-            user_roles = UserRole.objects.filter(
-                user=user,
-                is_active=True,
-                role__is_active=True
-            ).exclude(
-                expires_at__lt=timezone.now()
-            ).select_related('role')
-            
+
+            user_roles = (
+                UserRole.objects.filter(user=user, is_active=True, role__is_active=True)
+                .exclude(expires_at__lt=timezone.now())
+                .select_related("role")
+            )
+
             roles_data = []
             for user_role in user_roles:
-                roles_data.append({
-                    'id': str(user_role.role.id),
-                    'code': user_role.role.code,
-                    'name': user_role.role.name,
-                    'description': user_role.role.description,
-                    'is_system': user_role.role.is_system,
-                    'assigned_at': user_role.assigned_at,
-                    'expires_at': user_role.expires_at,
-                    'assigned_by': user_role.assigned_by.email if user_role.assigned_by else None
-                })
-            
+                roles_data.append(
+                    {
+                        "id": str(user_role.role.id),
+                        "code": user_role.role.code,
+                        "name": user_role.role.name,
+                        "description": user_role.role.description,
+                        "is_system": user_role.role.is_system,
+                        "assigned_at": user_role.assigned_at,
+                        "expires_at": user_role.expires_at,
+                        "assigned_by": (
+                            user_role.assigned_by.email
+                            if user_role.assigned_by
+                            else None
+                        ),
+                    }
+                )
+
             response_data = {
-                'user_id': str(user.id),
-                'user_email': user.email,
-                'roles': roles_data,
-                'total_roles': len(roles_data),
-                'role_codes': [role['code'] for role in roles_data]
+                "user_id": str(user.id),
+                "user_email": user.email,
+                "roles": roles_data,
+                "total_roles": len(roles_data),
+                "role_codes": [role["code"] for role in roles_data],
             }
-            
+
             return create_success_response(
-                data=response_data,
-                message='Roles del usuario obtenidos exitosamente.'
+                data=response_data, message="Roles del usuario obtenidos exitosamente."
             )
-            
+
         except Exception as e:
             logger.error(f"Error getting user roles for {request.user.email}: {e}")
             return create_error_response(
-                message='Error al obtener roles del usuario.',
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                message="Error al obtener roles del usuario.",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )

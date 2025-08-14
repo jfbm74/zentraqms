@@ -1,8 +1,13 @@
-import { renderHook, act } from '@testing-library/react'
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { useAuth, useAuthWithLoading, useUserProfile, useRoleAccess } from '../useAuth'
-import { mockUser } from '../../test/utils'
-import { AuthError, AuthErrorType } from '../../types/auth.types'
+import { renderHook, act } from "@testing-library/react";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
+import {
+  useAuth,
+  useAuthWithLoading,
+  useUserProfile,
+  useRoleAccess,
+} from "../useAuth";
+import { mockUser } from "../../test/utils";
+import { AuthError, AuthErrorType } from "../../types/auth.types";
 
 // Mock AuthContext
 const mockAuthContext = {
@@ -18,7 +23,7 @@ const mockAuthContext = {
   getAccessToken: vi.fn(),
   getRefreshToken: vi.fn(),
   isTokenExpired: vi.fn(),
-  
+
   // RBAC state (Phase 5)
   permissions: [],
   roles: [],
@@ -26,7 +31,7 @@ const mockAuthContext = {
   rbacLoading: false,
   rbacError: null,
   rbacLastUpdated: null,
-  
+
   // RBAC methods (Phase 5)
   hasPermission: vi.fn(),
   hasAnyPermission: vi.fn(),
@@ -37,19 +42,19 @@ const mockAuthContext = {
   getResourcePermissions: vi.fn(),
   refreshPermissions: vi.fn(),
   clearRbacError: vi.fn(),
-}
+};
 
-vi.mock('../../contexts/AuthContext', () => ({
-  useAuthContext: () => mockAuthContext
-}))
+vi.mock("../../contexts/AuthContext", () => ({
+  useAuthContext: () => mockAuthContext,
+}));
 
 // Mock console.error
-const mockConsoleError = vi.fn()
-Object.defineProperty(console, 'error', { value: mockConsoleError })
+const mockConsoleError = vi.fn();
+Object.defineProperty(console, "error", { value: mockConsoleError });
 
-describe('useAuth', () => {
+describe("useAuth", () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.clearAllMocks();
     // Reset mock context to defaults
     Object.assign(mockAuthContext, {
       isAuthenticated: false,
@@ -64,7 +69,7 @@ describe('useAuth', () => {
       getAccessToken: vi.fn(),
       getRefreshToken: vi.fn(),
       isTokenExpired: vi.fn(),
-      
+
       // RBAC state (Phase 5)
       permissions: [],
       roles: [],
@@ -72,7 +77,7 @@ describe('useAuth', () => {
       rbacLoading: false,
       rbacError: null,
       rbacLastUpdated: null,
-      
+
       // RBAC methods (Phase 5)
       hasPermission: vi.fn(),
       hasAnyPermission: vi.fn(),
@@ -83,818 +88,941 @@ describe('useAuth', () => {
       getResourcePermissions: vi.fn(),
       refreshPermissions: vi.fn(),
       clearRbacError: vi.fn(),
-    })
-  })
+    });
+  });
 
   afterEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
-  describe('Basic functionality', () => {
-    it('should return auth state from context', () => {
-      mockAuthContext.isAuthenticated = true
-      mockAuthContext.isLoading = false
-      mockAuthContext.user = mockUser
-      mockAuthContext.error = null
+  describe("Basic functionality", () => {
+    it("should return auth state from context", () => {
+      mockAuthContext.isAuthenticated = true;
+      mockAuthContext.isLoading = false;
+      mockAuthContext.user = mockUser;
+      mockAuthContext.error = null;
 
-      const { result } = renderHook(() => useAuth())
+      const { result } = renderHook(() => useAuth());
 
-      expect(result.current.isAuthenticated).toBe(true)
-      expect(result.current.isLoading).toBe(false)
-      expect(result.current.user).toEqual(mockUser)
-      expect(result.current.error).toBeNull()
-    })
+      expect(result.current.isAuthenticated).toBe(true);
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.user).toEqual(mockUser);
+      expect(result.current.error).toBeNull();
+    });
 
-    it('should provide auth actions from context', () => {
-      const { result } = renderHook(() => useAuth())
+    it("should provide auth actions from context", () => {
+      const { result } = renderHook(() => useAuth());
 
-      expect(typeof result.current.login).toBe('function')
-      expect(typeof result.current.logout).toBe('function')
-      expect(typeof result.current.refreshToken).toBe('function')
-      expect(typeof result.current.getCurrentUser).toBe('function')
-      expect(typeof result.current.clearError).toBe('function')
-    })
-  })
+      expect(typeof result.current.login).toBe("function");
+      expect(typeof result.current.logout).toBe("function");
+      expect(typeof result.current.refreshToken).toBe("function");
+      expect(typeof result.current.getCurrentUser).toBe("function");
+      expect(typeof result.current.clearError).toBe("function");
+    });
+  });
 
-  describe('User utility methods', () => {
-    describe('getUserFullName', () => {
-      it('should return full name when user has first and last name', () => {
-        mockAuthContext.user = mockUser
+  describe("User utility methods", () => {
+    describe("getUserFullName", () => {
+      it("should return full name when user has first and last name", () => {
+        mockAuthContext.user = mockUser;
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.getUserFullName()).toBe('Admin User')
-      })
+        expect(result.current.getUserFullName()).toBe("Admin User");
+      });
 
-      it('should return email when user has no names', () => {
-        mockAuthContext.user = { ...mockUser, first_name: '', last_name: '' }
+      it("should return email when user has no names", () => {
+        mockAuthContext.user = { ...mockUser, first_name: "", last_name: "" };
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.getUserFullName()).toBe(mockUser.email)
-      })
+        expect(result.current.getUserFullName()).toBe(mockUser.email);
+      });
 
-      it('should return empty string when no user', () => {
-        mockAuthContext.user = null
+      it("should return empty string when no user", () => {
+        mockAuthContext.user = null;
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.getUserFullName()).toBe('')
-      })
+        expect(result.current.getUserFullName()).toBe("");
+      });
 
-      it('should handle partial names correctly', () => {
-        mockAuthContext.user = { ...mockUser, first_name: 'Admin', last_name: '' }
+      it("should handle partial names correctly", () => {
+        mockAuthContext.user = {
+          ...mockUser,
+          first_name: "Admin",
+          last_name: "",
+        };
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.getUserFullName()).toBe('Admin')
-      })
-    })
+        expect(result.current.getUserFullName()).toBe("Admin");
+      });
+    });
 
-    describe('getUserInitials', () => {
-      it('should return initials from first and last name', () => {
-        mockAuthContext.user = mockUser
+    describe("getUserInitials", () => {
+      it("should return initials from first and last name", () => {
+        mockAuthContext.user = mockUser;
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.getUserInitials()).toBe('AU')
-      })
+        expect(result.current.getUserInitials()).toBe("AU");
+      });
 
-      it('should return first letter of email when no names', () => {
-        mockAuthContext.user = { ...mockUser, first_name: '', last_name: '' }
+      it("should return first letter of email when no names", () => {
+        mockAuthContext.user = { ...mockUser, first_name: "", last_name: "" };
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.getUserInitials()).toBe('A')
-      })
+        expect(result.current.getUserInitials()).toBe("A");
+      });
 
-      it('should return empty string when no user', () => {
-        mockAuthContext.user = null
+      it("should return empty string when no user", () => {
+        mockAuthContext.user = null;
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.getUserInitials()).toBe('')
-      })
+        expect(result.current.getUserInitials()).toBe("");
+      });
 
-      it('should handle partial names correctly', () => {
-        mockAuthContext.user = { ...mockUser, first_name: 'Admin', last_name: '' }
+      it("should handle partial names correctly", () => {
+        mockAuthContext.user = {
+          ...mockUser,
+          first_name: "Admin",
+          last_name: "",
+        };
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.getUserInitials()).toBe('A')
-      })
-    })
+        expect(result.current.getUserInitials()).toBe("A");
+      });
+    });
 
-    describe('getUserDisplayName', () => {
-      it('should return full name when different from email', () => {
-        mockAuthContext.user = mockUser
+    describe("getUserDisplayName", () => {
+      it("should return full name when different from email", () => {
+        mockAuthContext.user = mockUser;
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.getUserDisplayName()).toBe('Admin User')
-      })
+        expect(result.current.getUserDisplayName()).toBe("Admin User");
+      });
 
-      it('should return email when no names available', () => {
-        mockAuthContext.user = { ...mockUser, first_name: '', last_name: '' }
+      it("should return email when no names available", () => {
+        mockAuthContext.user = { ...mockUser, first_name: "", last_name: "" };
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.getUserDisplayName()).toBe(mockUser.email)
-      })
+        expect(result.current.getUserDisplayName()).toBe(mockUser.email);
+      });
 
-      it('should return empty string when no user', () => {
-        mockAuthContext.user = null
+      it("should return empty string when no user", () => {
+        mockAuthContext.user = null;
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.getUserDisplayName()).toBe('')
-      })
-    })
+        expect(result.current.getUserDisplayName()).toBe("");
+      });
+    });
 
-    describe('isUserActive', () => {
-      it('should return true when user is active and verified', () => {
-        mockAuthContext.user = { ...mockUser, is_active: true, is_verified: true }
+    describe("isUserActive", () => {
+      it("should return true when user is active and verified", () => {
+        mockAuthContext.user = {
+          ...mockUser,
+          is_active: true,
+          is_verified: true,
+        };
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.isUserActive()).toBe(true)
-      })
+        expect(result.current.isUserActive()).toBe(true);
+      });
 
-      it('should return false when user is not active', () => {
-        mockAuthContext.user = { ...mockUser, is_active: false, is_verified: true }
+      it("should return false when user is not active", () => {
+        mockAuthContext.user = {
+          ...mockUser,
+          is_active: false,
+          is_verified: true,
+        };
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.isUserActive()).toBe(false)
-      })
+        expect(result.current.isUserActive()).toBe(false);
+      });
 
-      it('should return false when user is not verified', () => {
-        mockAuthContext.user = { ...mockUser, is_active: true, is_verified: false }
+      it("should return false when user is not verified", () => {
+        mockAuthContext.user = {
+          ...mockUser,
+          is_active: true,
+          is_verified: false,
+        };
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.isUserActive()).toBe(false)
-      })
+        expect(result.current.isUserActive()).toBe(false);
+      });
 
-      it('should return false when no user', () => {
-        mockAuthContext.user = null
+      it("should return false when no user", () => {
+        mockAuthContext.user = null;
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.isUserActive()).toBe(false)
-      })
-    })
+        expect(result.current.isUserActive()).toBe(false);
+      });
+    });
 
-    describe('isUserStaff', () => {
-      it('should return true when user is staff', () => {
-        mockAuthContext.user = { ...mockUser, is_staff: true }
+    describe("isUserStaff", () => {
+      it("should return true when user is staff", () => {
+        mockAuthContext.user = { ...mockUser, is_staff: true };
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.isUserStaff()).toBe(true)
-      })
+        expect(result.current.isUserStaff()).toBe(true);
+      });
 
-      it('should return false when user is not staff', () => {
-        mockAuthContext.user = { ...mockUser, is_staff: false }
+      it("should return false when user is not staff", () => {
+        mockAuthContext.user = { ...mockUser, is_staff: false };
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.isUserStaff()).toBe(false)
-      })
+        expect(result.current.isUserStaff()).toBe(false);
+      });
 
-      it('should return false when no user', () => {
-        mockAuthContext.user = null
+      it("should return false when no user", () => {
+        mockAuthContext.user = null;
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.isUserStaff()).toBe(false)
-      })
-    })
-  })
+        expect(result.current.isUserStaff()).toBe(false);
+      });
+    });
+  });
 
-  describe('Role and permission methods', () => {
+  describe("Role and permission methods", () => {
     const userWithRoles = {
       ...mockUser,
-    }
+    };
 
-    describe('hasRole', () => {
-      it('should return true when user has the role', () => {
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.roles = ['admin', 'editor']
-        mockAuthContext.hasRole.mockImplementation((role: string) => ['admin', 'editor'].includes(role))
+    describe("hasRole", () => {
+      it("should return true when user has the role", () => {
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.roles = ["admin", "editor"];
+        mockAuthContext.hasRole.mockImplementation((role: string) =>
+          ["admin", "editor"].includes(role),
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.hasRole('admin')).toBe(true)
-        expect(result.current.hasRole('editor')).toBe(true)
-      })
+        expect(result.current.hasRole("admin")).toBe(true);
+        expect(result.current.hasRole("editor")).toBe(true);
+      });
 
-      it('should return false when user does not have the role', () => {
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.roles = ['admin', 'editor']
-        mockAuthContext.hasRole.mockImplementation((role: string) => ['admin', 'editor'].includes(role))
+      it("should return false when user does not have the role", () => {
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.roles = ["admin", "editor"];
+        mockAuthContext.hasRole.mockImplementation((role: string) =>
+          ["admin", "editor"].includes(role),
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.hasRole('superuser')).toBe(false)
-      })
+        expect(result.current.hasRole("superuser")).toBe(false);
+      });
 
-      it('should return false when no user', () => {
-        mockAuthContext.user = null
-        mockAuthContext.roles = []
-        mockAuthContext.hasRole.mockReturnValue(false)
+      it("should return false when no user", () => {
+        mockAuthContext.user = null;
+        mockAuthContext.roles = [];
+        mockAuthContext.hasRole.mockReturnValue(false);
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.hasRole('admin')).toBe(false)
-      })
+        expect(result.current.hasRole("admin")).toBe(false);
+      });
 
-      it('should return false when user has no roles', () => {
-        mockAuthContext.user = mockUser
-        mockAuthContext.roles = []
-        mockAuthContext.hasRole.mockReturnValue(false)
+      it("should return false when user has no roles", () => {
+        mockAuthContext.user = mockUser;
+        mockAuthContext.roles = [];
+        mockAuthContext.hasRole.mockReturnValue(false);
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.hasRole('admin')).toBe(false)
-      })
-    })
+        expect(result.current.hasRole("admin")).toBe(false);
+      });
+    });
 
-    describe('hasPermission', () => {
-      it('should return true when user has the permission', () => {
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.permissions = ['read_posts', 'write_posts', 'delete_posts']
-        mockAuthContext.hasPermission.mockImplementation((perm: string) => 
-          ['read_posts', 'write_posts', 'delete_posts'].includes(perm))
+    describe("hasPermission", () => {
+      it("should return true when user has the permission", () => {
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.permissions = [
+          "read_posts",
+          "write_posts",
+          "delete_posts",
+        ];
+        mockAuthContext.hasPermission.mockImplementation((perm: string) =>
+          ["read_posts", "write_posts", "delete_posts"].includes(perm),
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.hasPermission('read_posts')).toBe(true)
-        expect(result.current.hasPermission('write_posts')).toBe(true)
-      })
+        expect(result.current.hasPermission("read_posts")).toBe(true);
+        expect(result.current.hasPermission("write_posts")).toBe(true);
+      });
 
-      it('should return false when user does not have the permission', () => {
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.permissions = ['read_posts', 'write_posts', 'delete_posts']
-        mockAuthContext.hasPermission.mockImplementation((perm: string) => 
-          ['read_posts', 'write_posts', 'delete_posts'].includes(perm))
+      it("should return false when user does not have the permission", () => {
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.permissions = [
+          "read_posts",
+          "write_posts",
+          "delete_posts",
+        ];
+        mockAuthContext.hasPermission.mockImplementation((perm: string) =>
+          ["read_posts", "write_posts", "delete_posts"].includes(perm),
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.hasPermission('admin_panel')).toBe(false)
-      })
+        expect(result.current.hasPermission("admin_panel")).toBe(false);
+      });
 
-      it('should return false when no user', () => {
-        mockAuthContext.user = null
-        mockAuthContext.permissions = []
-        mockAuthContext.hasPermission.mockReturnValue(false)
+      it("should return false when no user", () => {
+        mockAuthContext.user = null;
+        mockAuthContext.permissions = [];
+        mockAuthContext.hasPermission.mockReturnValue(false);
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.hasPermission('read_posts')).toBe(false)
-      })
+        expect(result.current.hasPermission("read_posts")).toBe(false);
+      });
 
-      it('should return false when user has no permissions', () => {
-        mockAuthContext.user = mockUser
-        mockAuthContext.permissions = []
-        mockAuthContext.hasPermission.mockReturnValue(false)
+      it("should return false when user has no permissions", () => {
+        mockAuthContext.user = mockUser;
+        mockAuthContext.permissions = [];
+        mockAuthContext.hasPermission.mockReturnValue(false);
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.hasPermission('read_posts')).toBe(false)
-      })
-    })
+        expect(result.current.hasPermission("read_posts")).toBe(false);
+      });
+    });
 
-    describe('hasAnyRole', () => {
-      it('should return true when user has any of the roles', () => {
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.roles = ['admin', 'editor']
-        mockAuthContext.hasAnyRole.mockImplementation((roles: string[]) => 
-          roles.some(role => ['admin', 'editor'].includes(role)))
+    describe("hasAnyRole", () => {
+      it("should return true when user has any of the roles", () => {
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.roles = ["admin", "editor"];
+        mockAuthContext.hasAnyRole.mockImplementation((roles: string[]) =>
+          roles.some((role) => ["admin", "editor"].includes(role)),
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.hasAnyRole(['admin', 'superuser'])).toBe(true)
-        expect(result.current.hasAnyRole(['editor', 'moderator'])).toBe(true)
-      })
+        expect(result.current.hasAnyRole(["admin", "superuser"])).toBe(true);
+        expect(result.current.hasAnyRole(["editor", "moderator"])).toBe(true);
+      });
 
-      it('should return false when user has none of the roles', () => {
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.roles = ['admin', 'editor']
-        mockAuthContext.hasAnyRole.mockImplementation((roles: string[]) => 
-          roles.some(role => ['admin', 'editor'].includes(role)))
+      it("should return false when user has none of the roles", () => {
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.roles = ["admin", "editor"];
+        mockAuthContext.hasAnyRole.mockImplementation((roles: string[]) =>
+          roles.some((role) => ["admin", "editor"].includes(role)),
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.hasAnyRole(['superuser', 'moderator'])).toBe(false)
-      })
+        expect(result.current.hasAnyRole(["superuser", "moderator"])).toBe(
+          false,
+        );
+      });
 
-      it('should return false when roles array is empty', () => {
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.roles = ['admin', 'editor']
-        mockAuthContext.hasAnyRole.mockReturnValue(false)
+      it("should return false when roles array is empty", () => {
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.roles = ["admin", "editor"];
+        mockAuthContext.hasAnyRole.mockReturnValue(false);
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.hasAnyRole([])).toBe(false)
-      })
+        expect(result.current.hasAnyRole([])).toBe(false);
+      });
 
-      it('should return false when no user', () => {
-        mockAuthContext.user = null
-        mockAuthContext.roles = []
-        mockAuthContext.hasAnyRole.mockReturnValue(false)
+      it("should return false when no user", () => {
+        mockAuthContext.user = null;
+        mockAuthContext.roles = [];
+        mockAuthContext.hasAnyRole.mockReturnValue(false);
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.hasAnyRole(['admin'])).toBe(false)
-      })
-    })
+        expect(result.current.hasAnyRole(["admin"])).toBe(false);
+      });
+    });
 
-    describe('hasAnyPermission', () => {
-      it('should return true when user has any of the permissions', () => {
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.permissions = ['read_posts', 'write_posts', 'delete_posts']
-        mockAuthContext.hasAnyPermission.mockImplementation((perms: string[]) => 
-          perms.some(perm => ['read_posts', 'write_posts', 'delete_posts'].includes(perm)))
+    describe("hasAnyPermission", () => {
+      it("should return true when user has any of the permissions", () => {
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.permissions = [
+          "read_posts",
+          "write_posts",
+          "delete_posts",
+        ];
+        mockAuthContext.hasAnyPermission.mockImplementation((perms: string[]) =>
+          perms.some((perm) =>
+            ["read_posts", "write_posts", "delete_posts"].includes(perm),
+          ),
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.hasAnyPermission(['read_posts', 'admin_panel'])).toBe(true)
-        expect(result.current.hasAnyPermission(['write_posts', 'moderate_posts'])).toBe(true)
-      })
+        expect(
+          result.current.hasAnyPermission(["read_posts", "admin_panel"]),
+        ).toBe(true);
+        expect(
+          result.current.hasAnyPermission(["write_posts", "moderate_posts"]),
+        ).toBe(true);
+      });
 
-      it('should return false when user has none of the permissions', () => {
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.permissions = ['read_posts', 'write_posts', 'delete_posts']
-        mockAuthContext.hasAnyPermission.mockImplementation((perms: string[]) => 
-          perms.some(perm => ['read_posts', 'write_posts', 'delete_posts'].includes(perm)))
+      it("should return false when user has none of the permissions", () => {
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.permissions = [
+          "read_posts",
+          "write_posts",
+          "delete_posts",
+        ];
+        mockAuthContext.hasAnyPermission.mockImplementation((perms: string[]) =>
+          perms.some((perm) =>
+            ["read_posts", "write_posts", "delete_posts"].includes(perm),
+          ),
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.hasAnyPermission(['admin_panel', 'moderate_posts'])).toBe(false)
-      })
+        expect(
+          result.current.hasAnyPermission(["admin_panel", "moderate_posts"]),
+        ).toBe(false);
+      });
 
-      it('should return false when permissions array is empty', () => {
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.permissions = ['read_posts', 'write_posts', 'delete_posts']
-        mockAuthContext.hasAnyPermission.mockReturnValue(false)
+      it("should return false when permissions array is empty", () => {
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.permissions = [
+          "read_posts",
+          "write_posts",
+          "delete_posts",
+        ];
+        mockAuthContext.hasAnyPermission.mockReturnValue(false);
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.hasAnyPermission([])).toBe(false)
-      })
+        expect(result.current.hasAnyPermission([])).toBe(false);
+      });
 
-      it('should return false when no user', () => {
-        mockAuthContext.user = null
-        mockAuthContext.permissions = []
-        mockAuthContext.hasAnyPermission.mockReturnValue(false)
+      it("should return false when no user", () => {
+        mockAuthContext.user = null;
+        mockAuthContext.permissions = [];
+        mockAuthContext.hasAnyPermission.mockReturnValue(false);
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.hasAnyPermission(['read_posts'])).toBe(false)
-      })
-    })
-  })
+        expect(result.current.hasAnyPermission(["read_posts"])).toBe(false);
+      });
+    });
+  });
 
-  describe('Access control methods', () => {
+  describe("Access control methods", () => {
     const userWithRoles = {
       ...mockUser,
-      roles: ['admin', 'editor'],
-      permissions: ['read_posts', 'write_posts'],
-      is_staff: true
-    }
+      roles: ["admin", "editor"],
+      permissions: ["read_posts", "write_posts"],
+      is_staff: true,
+    };
 
-    describe('canAccess', () => {
-      it('should return true when authenticated and no requirements', () => {
-        mockAuthContext.isAuthenticated = true
-        mockAuthContext.user = userWithRoles
+    describe("canAccess", () => {
+      it("should return true when authenticated and no requirements", () => {
+        mockAuthContext.isAuthenticated = true;
+        mockAuthContext.user = userWithRoles;
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.canAccess()).toBe(true)
-      })
+        expect(result.current.canAccess()).toBe(true);
+      });
 
-      it('should return false when not authenticated', () => {
-        mockAuthContext.isAuthenticated = false
-        mockAuthContext.user = null
+      it("should return false when not authenticated", () => {
+        mockAuthContext.isAuthenticated = false;
+        mockAuthContext.user = null;
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.canAccess(['admin'])).toBe(false)
-      })
+        expect(result.current.canAccess(["admin"])).toBe(false);
+      });
 
-      it('should return true when user has all required roles', () => {
-        mockAuthContext.isAuthenticated = true
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.roles = ['admin', 'editor']
-        mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) => 
-          roles.every(role => ['admin', 'editor'].includes(role)))
+      it("should return true when user has all required roles", () => {
+        mockAuthContext.isAuthenticated = true;
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.roles = ["admin", "editor"];
+        mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) =>
+          roles.every((role) => ["admin", "editor"].includes(role)),
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.canAccess(['admin'])).toBe(true)
-        expect(result.current.canAccess(['admin', 'editor'])).toBe(true)
-      })
+        expect(result.current.canAccess(["admin"])).toBe(true);
+        expect(result.current.canAccess(["admin", "editor"])).toBe(true);
+      });
 
-      it('should return false when user does not have all required roles', () => {
-        mockAuthContext.isAuthenticated = true
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.roles = ['admin', 'editor']
-        mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) => 
-          roles.every(role => ['admin', 'editor'].includes(role)))
+      it("should return false when user does not have all required roles", () => {
+        mockAuthContext.isAuthenticated = true;
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.roles = ["admin", "editor"];
+        mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) =>
+          roles.every((role) => ["admin", "editor"].includes(role)),
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.canAccess(['admin', 'superuser'])).toBe(false)
-      })
+        expect(result.current.canAccess(["admin", "superuser"])).toBe(false);
+      });
 
-      it('should return true when user has all required permissions', () => {
-        mockAuthContext.isAuthenticated = true
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.permissions = ['read_posts', 'write_posts']
-        mockAuthContext.hasAllPermissions.mockImplementation((perms: string[]) => 
-          perms.every(perm => ['read_posts', 'write_posts'].includes(perm)))
+      it("should return true when user has all required permissions", () => {
+        mockAuthContext.isAuthenticated = true;
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.permissions = ["read_posts", "write_posts"];
+        mockAuthContext.hasAllPermissions.mockImplementation(
+          (perms: string[]) =>
+            perms.every((perm) => ["read_posts", "write_posts"].includes(perm)),
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.canAccess(undefined, ['read_posts'])).toBe(true)
-        expect(result.current.canAccess(undefined, ['read_posts', 'write_posts'])).toBe(true)
-      })
+        expect(result.current.canAccess(undefined, ["read_posts"])).toBe(true);
+        expect(
+          result.current.canAccess(undefined, ["read_posts", "write_posts"]),
+        ).toBe(true);
+      });
 
-      it('should return false when user does not have all required permissions', () => {
-        mockAuthContext.isAuthenticated = true
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.permissions = ['read_posts', 'write_posts']
-        mockAuthContext.hasAllPermissions.mockImplementation((perms: string[]) => 
-          perms.every(perm => ['read_posts', 'write_posts'].includes(perm)))
+      it("should return false when user does not have all required permissions", () => {
+        mockAuthContext.isAuthenticated = true;
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.permissions = ["read_posts", "write_posts"];
+        mockAuthContext.hasAllPermissions.mockImplementation(
+          (perms: string[]) =>
+            perms.every((perm) => ["read_posts", "write_posts"].includes(perm)),
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.canAccess(undefined, ['read_posts', 'admin_panel'])).toBe(false)
-      })
+        expect(
+          result.current.canAccess(undefined, ["read_posts", "admin_panel"]),
+        ).toBe(false);
+      });
 
-      it('should return true when user has both required roles and permissions', () => {
-        mockAuthContext.isAuthenticated = true
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.roles = ['admin', 'editor']
-        mockAuthContext.permissions = ['read_posts', 'write_posts']
-        mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) => 
-          roles.every(role => ['admin', 'editor'].includes(role)))
-        mockAuthContext.hasAllPermissions.mockImplementation((perms: string[]) => 
-          perms.every(perm => ['read_posts', 'write_posts'].includes(perm)))
+      it("should return true when user has both required roles and permissions", () => {
+        mockAuthContext.isAuthenticated = true;
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.roles = ["admin", "editor"];
+        mockAuthContext.permissions = ["read_posts", "write_posts"];
+        mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) =>
+          roles.every((role) => ["admin", "editor"].includes(role)),
+        );
+        mockAuthContext.hasAllPermissions.mockImplementation(
+          (perms: string[]) =>
+            perms.every((perm) => ["read_posts", "write_posts"].includes(perm)),
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.canAccess(['admin'], ['read_posts'])).toBe(true)
-      })
-    })
+        expect(result.current.canAccess(["admin"], ["read_posts"])).toBe(true);
+      });
+    });
 
-    describe('isAdmin', () => {
-      it('should return true when user is staff', () => {
-        mockAuthContext.user = { ...userWithRoles, is_staff: true }
+    describe("isAdmin", () => {
+      it("should return true when user is staff", () => {
+        mockAuthContext.user = { ...userWithRoles, is_staff: true };
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.isAdmin()).toBe(true)
-      })
+        expect(result.current.isAdmin()).toBe(true);
+      });
 
-      it('should return true when user has admin role', () => {
-        mockAuthContext.user = { ...userWithRoles, is_staff: false }
-        mockAuthContext.hasRole.mockImplementation((role: string) => role === 'admin')
+      it("should return true when user has admin role", () => {
+        mockAuthContext.user = { ...userWithRoles, is_staff: false };
+        mockAuthContext.hasRole.mockImplementation(
+          (role: string) => role === "admin",
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.isAdmin()).toBe(true)
-      })
+        expect(result.current.isAdmin()).toBe(true);
+      });
 
-      it('should return true when user has administrator role', () => {
-        mockAuthContext.user = { ...userWithRoles, is_staff: false }
-        mockAuthContext.hasRole.mockImplementation((role: string) => role === 'administrator')
+      it("should return true when user has administrator role", () => {
+        mockAuthContext.user = { ...userWithRoles, is_staff: false };
+        mockAuthContext.hasRole.mockImplementation(
+          (role: string) => role === "administrator",
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.isAdmin()).toBe(true)
-      })
+        expect(result.current.isAdmin()).toBe(true);
+      });
 
-      it('should return false when user is not admin', () => {
-        mockAuthContext.user = { ...userWithRoles, is_staff: false }
-        mockAuthContext.hasRole.mockReturnValue(false)
+      it("should return false when user is not admin", () => {
+        mockAuthContext.user = { ...userWithRoles, is_staff: false };
+        mockAuthContext.hasRole.mockReturnValue(false);
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.isAdmin()).toBe(false)
-      })
+        expect(result.current.isAdmin()).toBe(false);
+      });
 
-      it('should return false when no user', () => {
-        mockAuthContext.user = null
+      it("should return false when no user", () => {
+        mockAuthContext.user = null;
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.isAdmin()).toBe(false)
-      })
-    })
+        expect(result.current.isAdmin()).toBe(false);
+      });
+    });
 
-    describe('isSuperUser', () => {
-      it('should return true when user has superuser role', () => {
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.hasRole.mockImplementation((role: string) => role === 'superuser')
+    describe("isSuperUser", () => {
+      it("should return true when user has superuser role", () => {
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.hasRole.mockImplementation(
+          (role: string) => role === "superuser",
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.isSuperUser()).toBe(true)
-      })
+        expect(result.current.isSuperUser()).toBe(true);
+      });
 
-      it('should return true when user has super_admin role', () => {
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.hasRole.mockImplementation((role: string) => role === 'super_admin')
+      it("should return true when user has super_admin role", () => {
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.hasRole.mockImplementation(
+          (role: string) => role === "super_admin",
+        );
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.isSuperUser()).toBe(true)
-      })
+        expect(result.current.isSuperUser()).toBe(true);
+      });
 
-      it('should return false when user does not have superuser role', () => {
-        mockAuthContext.user = userWithRoles
-        mockAuthContext.hasRole.mockReturnValue(false)
+      it("should return false when user does not have superuser role", () => {
+        mockAuthContext.user = userWithRoles;
+        mockAuthContext.hasRole.mockReturnValue(false);
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.isSuperUser()).toBe(false)
-      })
+        expect(result.current.isSuperUser()).toBe(false);
+      });
 
-      it('should return false when no user', () => {
-        mockAuthContext.user = null
-        mockAuthContext.hasRole.mockReturnValue(false)
+      it("should return false when no user", () => {
+        mockAuthContext.user = null;
+        mockAuthContext.hasRole.mockReturnValue(false);
 
-        const { result } = renderHook(() => useAuth())
+        const { result } = renderHook(() => useAuth());
 
-        expect(result.current.isSuperUser()).toBe(false)
-      })
-    })
-  })
+        expect(result.current.isSuperUser()).toBe(false);
+      });
+    });
+  });
 
-  describe('Login and logout', () => {
-    it('should call login from context', async () => {
-      const credentials = { email: 'test@test.com', password: 'password' }
-      mockAuthContext.login.mockResolvedValue(undefined)
+  describe("Login and logout", () => {
+    it("should call login from context", async () => {
+      const credentials = { email: "test@test.com", password: "password" };
+      mockAuthContext.login.mockResolvedValue(undefined);
 
-      const { result } = renderHook(() => useAuth())
+      const { result } = renderHook(() => useAuth());
 
       await act(async () => {
-        await result.current.login(credentials)
-      })
+        await result.current.login(credentials);
+      });
 
-      expect(mockAuthContext.login).toHaveBeenCalledWith(credentials)
-    })
+      expect(mockAuthContext.login).toHaveBeenCalledWith(credentials);
+    });
 
-    it('should handle login errors', async () => {
-      const credentials = { email: 'test@test.com', password: 'password' }
+    it("should handle login errors", async () => {
+      const credentials = { email: "test@test.com", password: "password" };
       const authError: AuthError = {
         type: AuthErrorType.INVALID_CREDENTIALS,
-        message: 'Invalid credentials'
-      }
-      mockAuthContext.login.mockRejectedValue(authError)
+        message: "Invalid credentials",
+      };
+      mockAuthContext.login.mockRejectedValue(authError);
 
-      const { result } = renderHook(() => useAuth())
+      const { result } = renderHook(() => useAuth());
 
-      await expect(act(async () => {
-        await result.current.login(credentials)
-      })).rejects.toEqual(authError)
+      await expect(
+        act(async () => {
+          await result.current.login(credentials);
+        }),
+      ).rejects.toEqual(authError);
 
-      expect(mockConsoleError).toHaveBeenCalledWith('[useAuth] Login failed:', authError)
-    })
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        "[useAuth] Login failed:",
+        authError,
+      );
+    });
 
-    it('should call logout from context', async () => {
-      mockAuthContext.logout.mockResolvedValue(undefined)
+    it("should call logout from context", async () => {
+      mockAuthContext.logout.mockResolvedValue(undefined);
 
-      const { result } = renderHook(() => useAuth())
-
-      await act(async () => {
-        await result.current.logout()
-      })
-
-      expect(mockAuthContext.logout).toHaveBeenCalled()
-    })
-
-    it('should handle logout errors gracefully', async () => {
-      const logoutError = new Error('Logout failed')
-      mockAuthContext.logout.mockRejectedValue(logoutError)
-
-      const { result } = renderHook(() => useAuth())
+      const { result } = renderHook(() => useAuth());
 
       await act(async () => {
-        await result.current.logout()
-      })
+        await result.current.logout();
+      });
 
-      expect(mockConsoleError).toHaveBeenCalledWith('[useAuth] Logout failed:', logoutError)
-    })
-  })
+      expect(mockAuthContext.logout).toHaveBeenCalled();
+    });
 
-  describe('Token methods', () => {
-    it('should return access token from context', () => {
-      mockAuthContext.getAccessToken.mockReturnValue('mock-access-token')
+    it("should handle logout errors gracefully", async () => {
+      const logoutError = new Error("Logout failed");
+      mockAuthContext.logout.mockRejectedValue(logoutError);
 
-      const { result } = renderHook(() => useAuth())
+      const { result } = renderHook(() => useAuth());
 
-      expect(result.current.getAccessToken()).toBe('mock-access-token')
-    })
+      await act(async () => {
+        await result.current.logout();
+      });
 
-    it('should return refresh token from context', () => {
-      mockAuthContext.getRefreshToken.mockReturnValue('mock-refresh-token')
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        "[useAuth] Logout failed:",
+        logoutError,
+      );
+    });
+  });
 
-      const { result } = renderHook(() => useAuth())
+  describe("Token methods", () => {
+    it("should return access token from context", () => {
+      mockAuthContext.getAccessToken.mockReturnValue("mock-access-token");
 
-      expect(result.current.getRefreshToken()).toBe('mock-refresh-token')
-    })
+      const { result } = renderHook(() => useAuth());
 
-    it('should check if token is expired', () => {
-      mockAuthContext.isTokenExpired.mockReturnValue(false)
+      expect(result.current.getAccessToken()).toBe("mock-access-token");
+    });
 
-      const { result } = renderHook(() => useAuth())
+    it("should return refresh token from context", () => {
+      mockAuthContext.getRefreshToken.mockReturnValue("mock-refresh-token");
 
-      expect(result.current.isTokenExpired('token')).toBe(false)
-      expect(mockAuthContext.isTokenExpired).toHaveBeenCalledWith('token')
-    })
-  })
-})
+      const { result } = renderHook(() => useAuth());
 
-describe('useAuthWithLoading', () => {
+      expect(result.current.getRefreshToken()).toBe("mock-refresh-token");
+    });
+
+    it("should check if token is expired", () => {
+      mockAuthContext.isTokenExpired.mockReturnValue(false);
+
+      const { result } = renderHook(() => useAuth());
+
+      expect(result.current.isTokenExpired("token")).toBe(false);
+      expect(mockAuthContext.isTokenExpired).toHaveBeenCalledWith("token");
+    });
+  });
+});
+
+describe("useAuthWithLoading", () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.clearAllMocks();
     Object.assign(mockAuthContext, {
       isAuthenticated: false,
       isLoading: false,
       user: null,
       error: null,
-    })
-  })
+    });
+  });
 
-  it('should return isInitializing true when loading and not authenticated', () => {
-    mockAuthContext.isLoading = true
-    mockAuthContext.isAuthenticated = false
-    mockAuthContext.error = null
+  it("should return isInitializing true when loading and not authenticated", () => {
+    mockAuthContext.isLoading = true;
+    mockAuthContext.isAuthenticated = false;
+    mockAuthContext.error = null;
 
-    const { result } = renderHook(() => useAuthWithLoading())
+    const { result } = renderHook(() => useAuthWithLoading());
 
-    expect(result.current.isInitializing).toBe(true)
-    expect(result.current.isLoginRequired).toBe(false)
-  })
+    expect(result.current.isInitializing).toBe(true);
+    expect(result.current.isLoginRequired).toBe(false);
+  });
 
-  it('should return isLoginRequired true when not loading and not authenticated', () => {
-    mockAuthContext.isLoading = false
-    mockAuthContext.isAuthenticated = false
-    mockAuthContext.error = null
+  it("should return isLoginRequired true when not loading and not authenticated", () => {
+    mockAuthContext.isLoading = false;
+    mockAuthContext.isAuthenticated = false;
+    mockAuthContext.error = null;
 
-    const { result } = renderHook(() => useAuthWithLoading())
+    const { result } = renderHook(() => useAuthWithLoading());
 
-    expect(result.current.isInitializing).toBe(false)
-    expect(result.current.isLoginRequired).toBe(true)
-  })
+    expect(result.current.isInitializing).toBe(false);
+    expect(result.current.isLoginRequired).toBe(true);
+  });
 
-  it('should return both false when authenticated', () => {
-    mockAuthContext.isLoading = false
-    mockAuthContext.isAuthenticated = true
-    mockAuthContext.error = null
+  it("should return both false when authenticated", () => {
+    mockAuthContext.isLoading = false;
+    mockAuthContext.isAuthenticated = true;
+    mockAuthContext.error = null;
 
-    const { result } = renderHook(() => useAuthWithLoading())
+    const { result } = renderHook(() => useAuthWithLoading());
 
-    expect(result.current.isInitializing).toBe(false)
-    expect(result.current.isLoginRequired).toBe(false)
-  })
-})
+    expect(result.current.isInitializing).toBe(false);
+    expect(result.current.isLoginRequired).toBe(false);
+  });
+});
 
-describe('useUserProfile', () => {
+describe("useUserProfile", () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.clearAllMocks();
     Object.assign(mockAuthContext, {
       user: null,
       getCurrentUser: vi.fn(),
       isLoading: false,
       error: null,
-    })
-  })
+    });
+  });
 
-  it('should return user profile data', () => {
-    mockAuthContext.user = mockUser
+  it("should return user profile data", () => {
+    mockAuthContext.user = mockUser;
 
-    const { result } = renderHook(() => useUserProfile())
+    const { result } = renderHook(() => useUserProfile());
 
-    expect(result.current.user).toEqual(mockUser)
-    expect(result.current.isProfileComplete).toBe(true)
-  })
+    expect(result.current.user).toEqual(mockUser);
+    expect(result.current.isProfileComplete).toBe(true);
+  });
 
-  it('should return isProfileComplete false when profile is incomplete', () => {
-    mockAuthContext.user = { ...mockUser, first_name: '', department: '' }
+  it("should return isProfileComplete false when profile is incomplete", () => {
+    mockAuthContext.user = { ...mockUser, first_name: "", department: "" };
 
-    const { result } = renderHook(() => useUserProfile())
+    const { result } = renderHook(() => useUserProfile());
 
-    expect(result.current.isProfileComplete).toBe(false)
-  })
+    expect(result.current.isProfileComplete).toBe(false);
+  });
 
-  it('should refresh profile', async () => {
-    mockAuthContext.getCurrentUser.mockResolvedValue(undefined)
+  it("should refresh profile", async () => {
+    mockAuthContext.getCurrentUser.mockResolvedValue(undefined);
 
-    const { result } = renderHook(() => useUserProfile())
+    const { result } = renderHook(() => useUserProfile());
 
     await act(async () => {
-      await result.current.refreshProfile()
-    })
+      await result.current.refreshProfile();
+    });
 
-    expect(mockAuthContext.getCurrentUser).toHaveBeenCalled()
-  })
+    expect(mockAuthContext.getCurrentUser).toHaveBeenCalled();
+  });
 
-  it('should handle refresh profile errors', async () => {
-    const error = new Error('Refresh failed')
-    mockAuthContext.getCurrentUser.mockRejectedValue(error)
+  it("should handle refresh profile errors", async () => {
+    const error = new Error("Refresh failed");
+    mockAuthContext.getCurrentUser.mockRejectedValue(error);
 
-    const { result } = renderHook(() => useUserProfile())
+    const { result } = renderHook(() => useUserProfile());
 
-    await expect(act(async () => {
-      await result.current.refreshProfile()
-    })).rejects.toThrow('Refresh failed')
-  })
-})
+    await expect(
+      act(async () => {
+        await result.current.refreshProfile();
+      }),
+    ).rejects.toThrow("Refresh failed");
+  });
+});
 
-describe('useRoleAccess', () => {
+describe("useRoleAccess", () => {
   const userWithRoles = {
     ...mockUser,
-    roles: ['admin', 'editor'],
-    permissions: ['read_posts', 'write_posts']
-  }
+    roles: ["admin", "editor"],
+    permissions: ["read_posts", "write_posts"],
+  };
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.clearAllMocks();
     Object.assign(mockAuthContext, {
       isAuthenticated: true,
       user: userWithRoles,
-    })
-  })
+    });
+  });
 
-  it('should return access control information', () => {
-    mockAuthContext.roles = ['admin', 'editor']
-    mockAuthContext.permissions = ['read_posts', 'write_posts']
-    mockAuthContext.hasRole.mockImplementation((role: string) => ['admin', 'editor'].includes(role))
-    mockAuthContext.hasPermission.mockImplementation((perm: string) => ['read_posts', 'write_posts'].includes(perm))
-    mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) => 
-      roles.every(role => ['admin', 'editor'].includes(role)))
-    mockAuthContext.hasAllPermissions.mockImplementation((perms: string[]) => 
-      perms.every(perm => ['read_posts', 'write_posts'].includes(perm)))
+  it("should return access control information", () => {
+    mockAuthContext.roles = ["admin", "editor"];
+    mockAuthContext.permissions = ["read_posts", "write_posts"];
+    mockAuthContext.hasRole.mockImplementation((role: string) =>
+      ["admin", "editor"].includes(role),
+    );
+    mockAuthContext.hasPermission.mockImplementation((perm: string) =>
+      ["read_posts", "write_posts"].includes(perm),
+    );
+    mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) =>
+      roles.every((role) => ["admin", "editor"].includes(role)),
+    );
+    mockAuthContext.hasAllPermissions.mockImplementation((perms: string[]) =>
+      perms.every((perm) => ["read_posts", "write_posts"].includes(perm)),
+    );
 
-    const { result } = renderHook(() => useRoleAccess(['admin'], ['read_posts']))
+    const { result } = renderHook(() =>
+      useRoleAccess(["admin"], ["read_posts"]),
+    );
 
-    expect(result.current.hasAccess).toBe(true)
-    expect(result.current.hasAllRoles).toBe(true)
-    expect(result.current.hasAllPermissions).toBe(true)
-    expect(result.current.isAuthenticated).toBe(true)
-  })
+    expect(result.current.hasAccess).toBe(true);
+    expect(result.current.hasAllRoles).toBe(true);
+    expect(result.current.hasAllPermissions).toBe(true);
+    expect(result.current.isAuthenticated).toBe(true);
+  });
 
-  it('should return false when user does not have required roles', () => {
-    mockAuthContext.roles = ['admin', 'editor']
-    mockAuthContext.permissions = ['read_posts', 'write_posts']
-    mockAuthContext.hasRole.mockImplementation((role: string) => ['admin', 'editor'].includes(role))
-    mockAuthContext.hasPermission.mockImplementation((perm: string) => ['read_posts', 'write_posts'].includes(perm))
-    mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) => 
-      roles.every(role => ['admin', 'editor'].includes(role)))
-    mockAuthContext.hasAllPermissions.mockImplementation((perms: string[]) => 
-      perms.every(perm => ['read_posts', 'write_posts'].includes(perm)))
+  it("should return false when user does not have required roles", () => {
+    mockAuthContext.roles = ["admin", "editor"];
+    mockAuthContext.permissions = ["read_posts", "write_posts"];
+    mockAuthContext.hasRole.mockImplementation((role: string) =>
+      ["admin", "editor"].includes(role),
+    );
+    mockAuthContext.hasPermission.mockImplementation((perm: string) =>
+      ["read_posts", "write_posts"].includes(perm),
+    );
+    mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) =>
+      roles.every((role) => ["admin", "editor"].includes(role)),
+    );
+    mockAuthContext.hasAllPermissions.mockImplementation((perms: string[]) =>
+      perms.every((perm) => ["read_posts", "write_posts"].includes(perm)),
+    );
 
-    const { result } = renderHook(() => useRoleAccess(['superuser'], ['read_posts']))
+    const { result } = renderHook(() =>
+      useRoleAccess(["superuser"], ["read_posts"]),
+    );
 
-    expect(result.current.hasAccess).toBe(false)
-    expect(result.current.hasAllRoles).toBe(false)
-    expect(result.current.hasAllPermissions).toBe(true)
-  })
+    expect(result.current.hasAccess).toBe(false);
+    expect(result.current.hasAllRoles).toBe(false);
+    expect(result.current.hasAllPermissions).toBe(true);
+  });
 
-  it('should return false when user does not have required permissions', () => {
-    mockAuthContext.roles = ['admin', 'editor']
-    mockAuthContext.permissions = ['read_posts', 'write_posts']
-    mockAuthContext.hasRole.mockImplementation((role: string) => ['admin', 'editor'].includes(role))
-    mockAuthContext.hasPermission.mockImplementation((perm: string) => ['read_posts', 'write_posts'].includes(perm))
-    mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) => 
-      roles.every(role => ['admin', 'editor'].includes(role)))
-    mockAuthContext.hasAllPermissions.mockImplementation((perms: string[]) => 
-      perms.every(perm => ['read_posts', 'write_posts'].includes(perm)))
+  it("should return false when user does not have required permissions", () => {
+    mockAuthContext.roles = ["admin", "editor"];
+    mockAuthContext.permissions = ["read_posts", "write_posts"];
+    mockAuthContext.hasRole.mockImplementation((role: string) =>
+      ["admin", "editor"].includes(role),
+    );
+    mockAuthContext.hasPermission.mockImplementation((perm: string) =>
+      ["read_posts", "write_posts"].includes(perm),
+    );
+    mockAuthContext.hasAllRoles.mockImplementation((roles: string[]) =>
+      roles.every((role) => ["admin", "editor"].includes(role)),
+    );
+    mockAuthContext.hasAllPermissions.mockImplementation((perms: string[]) =>
+      perms.every((perm) => ["read_posts", "write_posts"].includes(perm)),
+    );
 
-    const { result } = renderHook(() => useRoleAccess(['admin'], ['admin_panel']))
+    const { result } = renderHook(() =>
+      useRoleAccess(["admin"], ["admin_panel"]),
+    );
 
-    expect(result.current.hasAccess).toBe(false)
-    expect(result.current.hasAllRoles).toBe(true)
-    expect(result.current.hasAllPermissions).toBe(false)
-  })
+    expect(result.current.hasAccess).toBe(false);
+    expect(result.current.hasAllRoles).toBe(true);
+    expect(result.current.hasAllPermissions).toBe(false);
+  });
 
-  it('should provide hasAnyRole and hasAnyPermission functions', () => {
-    mockAuthContext.roles = ['admin', 'editor']
-    mockAuthContext.permissions = ['read_posts', 'write_posts']
-    mockAuthContext.hasAnyRole.mockImplementation((roles: string[]) => 
-      roles.some(role => ['admin', 'editor'].includes(role)))
-    mockAuthContext.hasAnyPermission.mockImplementation((perms: string[]) => 
-      perms.some(perm => ['read_posts', 'write_posts'].includes(perm)))
+  it("should provide hasAnyRole and hasAnyPermission functions", () => {
+    mockAuthContext.roles = ["admin", "editor"];
+    mockAuthContext.permissions = ["read_posts", "write_posts"];
+    mockAuthContext.hasAnyRole.mockImplementation((roles: string[]) =>
+      roles.some((role) => ["admin", "editor"].includes(role)),
+    );
+    mockAuthContext.hasAnyPermission.mockImplementation((perms: string[]) =>
+      perms.some((perm) => ["read_posts", "write_posts"].includes(perm)),
+    );
 
-    const { result } = renderHook(() => useRoleAccess())
+    const { result } = renderHook(() => useRoleAccess());
 
-    expect(result.current.hasAnyRole(['admin', 'superuser'])).toBe(true)
-    expect(result.current.hasAnyRole(['superuser', 'moderator'])).toBe(false)
-    expect(result.current.hasAnyPermission(['read_posts', 'admin_panel'])).toBe(true)
-    expect(result.current.hasAnyPermission(['admin_panel', 'moderate_posts'])).toBe(false)
-  })
-})
+    expect(result.current.hasAnyRole(["admin", "superuser"])).toBe(true);
+    expect(result.current.hasAnyRole(["superuser", "moderator"])).toBe(false);
+    expect(result.current.hasAnyPermission(["read_posts", "admin_panel"])).toBe(
+      true,
+    );
+    expect(
+      result.current.hasAnyPermission(["admin_panel", "moderate_posts"]),
+    ).toBe(false);
+  });
+});

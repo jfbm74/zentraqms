@@ -1,18 +1,18 @@
 /**
  * Higher-order component for authentication protection
- * 
+ *
  * This HOC wraps components that require authentication and handles
  * loading states and authentication checks automatically.
  */
 
-import React from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import React from "react";
+import { useAuth } from "../../hooks/useAuth";
 
 /**
  * Higher-order component for auth protection
  */
 export const withAuth = <P extends object>(
-  Component: React.ComponentType<P>
+  Component: React.ComponentType<P>,
 ): React.FC<P> => {
   return function AuthProtectedComponent(props: P) {
     const { isAuthenticated, isLoading } = useAuth();

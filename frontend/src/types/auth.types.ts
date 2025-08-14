@@ -1,11 +1,11 @@
 /**
  * Authentication Types for ZentraQMS Frontend
- * 
+ *
  * This module defines all TypeScript types and interfaces related to
  * authentication, including request/response types, token handling, and auth state.
  */
 
-import { User } from './user.types';
+import { User } from "./user.types";
 
 /**
  * Login request payload
@@ -100,7 +100,7 @@ export interface AuthState {
   user: User | null;
   tokens: TokenPair | null;
   error: string | null;
-  
+
   // RBAC state (Phase 5)
   permissions: string[];
   roles: string[];
@@ -120,7 +120,7 @@ export interface AuthContextType extends AuthState {
   refreshToken: () => Promise<void>;
   getCurrentUser: () => Promise<void>;
   clearError: () => void;
-  
+
   // RBAC methods (Phase 5)
   hasPermission: (permission: string) => boolean;
   hasAnyPermission: (permissions: string[]) => boolean;
@@ -131,7 +131,7 @@ export interface AuthContextType extends AuthState {
   getResourcePermissions: (resource: string) => string[];
   refreshPermissions: () => Promise<void>;
   clearRbacError: () => void;
-  
+
   // Utility methods
   isTokenExpired: (token?: string) => boolean;
   getAccessToken: () => string | null;
@@ -151,26 +151,26 @@ export interface LoginFormData {
  * Authentication event types for custom events
  */
 export enum AuthEventType {
-  LOGIN_SUCCESS = 'auth:login_success',
-  LOGIN_FAILED = 'auth:login_failed',
-  LOGOUT = 'auth:logout',
-  TOKEN_REFRESHED = 'auth:token_refreshed',
-  TOKEN_EXPIRED = 'auth:token_expired',
-  SESSION_EXPIRED = 'auth:session_expired',
+  LOGIN_SUCCESS = "auth:login_success",
+  LOGIN_FAILED = "auth:login_failed",
+  LOGOUT = "auth:logout",
+  TOKEN_REFRESHED = "auth:token_refreshed",
+  TOKEN_EXPIRED = "auth:token_expired",
+  SESSION_EXPIRED = "auth:session_expired",
 }
 
 /**
  * Authentication errors enum
  */
 export enum AuthErrorType {
-  INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
-  ACCOUNT_LOCKED = 'ACCOUNT_LOCKED',
-  ACCOUNT_INACTIVE = 'ACCOUNT_INACTIVE',
-  TOKEN_EXPIRED = 'TOKEN_EXPIRED',
-  TOKEN_INVALID = 'TOKEN_INVALID',
-  RATE_LIMITED = 'RATE_LIMITED',
-  NETWORK_ERROR = 'NETWORK_ERROR',
-  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
+  INVALID_CREDENTIALS = "INVALID_CREDENTIALS",
+  ACCOUNT_LOCKED = "ACCOUNT_LOCKED",
+  ACCOUNT_INACTIVE = "ACCOUNT_INACTIVE",
+  TOKEN_EXPIRED = "TOKEN_EXPIRED",
+  TOKEN_INVALID = "TOKEN_INVALID",
+  RATE_LIMITED = "RATE_LIMITED",
+  NETWORK_ERROR = "NETWORK_ERROR",
+  UNKNOWN_ERROR = "UNKNOWN_ERROR",
 }
 
 /**
@@ -197,23 +197,23 @@ export interface TokenPayload {
   exp: number; // Expiration timestamp
   iat: number; // Issued at timestamp
   jti: string; // JWT ID
-  token_type: 'access' | 'refresh';
+  token_type: "access" | "refresh";
 }
 
 /**
  * Storage keys for authentication data
  */
 export enum StorageKeys {
-  ACCESS_TOKEN = 'access_token',
-  REFRESH_TOKEN = 'refresh_token',
-  USER_DATA = 'user_data',
-  REMEMBER_ME = 'remember_me',
-  
+  ACCESS_TOKEN = "access_token",
+  REFRESH_TOKEN = "refresh_token",
+  USER_DATA = "user_data",
+  REMEMBER_ME = "remember_me",
+
   // RBAC storage keys (Phase 5)
-  USER_PERMISSIONS = 'user_permissions',
-  USER_ROLES = 'user_roles',
-  PERMISSIONS_BY_RESOURCE = 'permissions_by_resource',
-  RBAC_CACHE_TIMESTAMP = 'rbac_cache_timestamp',
+  USER_PERMISSIONS = "user_permissions",
+  USER_ROLES = "user_roles",
+  PERMISSIONS_BY_RESOURCE = "permissions_by_resource",
+  RBAC_CACHE_TIMESTAMP = "rbac_cache_timestamp",
 }
 
 /**
@@ -240,11 +240,11 @@ export const DEFAULT_AUTH_CONFIG: AuthConfig = {
  * Password strength levels (for future password change functionality)
  */
 export enum PasswordStrength {
-  VERY_WEAK = 'very_weak',
-  WEAK = 'weak',
-  MODERATE = 'moderate',
-  STRONG = 'strong',
-  VERY_STRONG = 'very_strong',
+  VERY_WEAK = "very_weak",
+  WEAK = "weak",
+  MODERATE = "moderate",
+  STRONG = "strong",
+  VERY_STRONG = "very_strong",
 }
 
 /**
@@ -263,11 +263,11 @@ export interface PasswordRequirements {
  * Account status enum (for user management)
  */
 export enum AccountStatus {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  LOCKED = 'locked',
-  PENDING_VERIFICATION = 'pending_verification',
-  SUSPENDED = 'suspended',
+  ACTIVE = "active",
+  INACTIVE = "inactive",
+  LOCKED = "locked",
+  PENDING_VERIFICATION = "pending_verification",
+  SUSPENDED = "suspended",
 }
 
 /**
@@ -296,31 +296,35 @@ export interface SessionInfo {
 /**
  * Type guards for authentication responses
  */
-export const isLoginResponse = (response: unknown): response is LoginResponse => {
+export const isLoginResponse = (
+  response: unknown,
+): response is LoginResponse => {
   return (
     response &&
-    typeof response.success === 'boolean' &&
+    typeof response.success === "boolean" &&
     response.success &&
     response.data &&
-    typeof response.data.access === 'string' &&
-    typeof response.data.refresh === 'string' &&
+    typeof response.data.access === "string" &&
+    typeof response.data.refresh === "string" &&
     response.data.user
   );
 };
 
-export const isApiErrorResponse = (response: unknown): response is ApiErrorResponse => {
+export const isApiErrorResponse = (
+  response: unknown,
+): response is ApiErrorResponse => {
   return (
     response &&
     response.success === false &&
     response.error &&
-    typeof response.error.message === 'string'
+    typeof response.error.message === "string"
   );
 };
 
 export const isTokenPair = (tokens: unknown): tokens is TokenPair => {
   return (
     tokens &&
-    typeof tokens.access === 'string' &&
-    typeof tokens.refresh === 'string'
+    typeof tokens.access === "string" &&
+    typeof tokens.refresh === "string"
   );
 };

@@ -1,6 +1,6 @@
 /**
  * User Types for ZentraQMS Frontend
- * 
+ *
  * This module defines all TypeScript types and interfaces related to
  * user data, profiles, roles, and permissions.
  */
@@ -22,11 +22,11 @@ export interface User {
   identification?: string;
   last_login?: string; // ISO date string
   date_joined: string; // ISO date string
-  
+
   // RBAC fields (Phase 5 - Populated from backend)
   roles: string[]; // Role codes: ["admin", "coordinador"]
   permissions: string[]; // Permission codes: ["documents.create", "users.read"]
-  
+
   // Optional profile fields
   profile_picture?: string;
   bio?: string;
@@ -128,13 +128,13 @@ export interface Position {
  * Position levels enum
  */
 export enum PositionLevel {
-  ENTRY = 'entry',
-  JUNIOR = 'junior',
-  SENIOR = 'senior',
-  LEAD = 'lead',
-  MANAGER = 'manager',
-  DIRECTOR = 'director',
-  EXECUTIVE = 'executive',
+  ENTRY = "entry",
+  JUNIOR = "junior",
+  SENIOR = "senior",
+  LEAD = "lead",
+  MANAGER = "manager",
+  DIRECTOR = "director",
+  EXECUTIVE = "executive",
 }
 
 /**
@@ -155,11 +155,11 @@ export interface UserActivity {
  * User preferences interface
  */
 export interface UserPreferences {
-  theme: 'light' | 'dark' | 'system';
+  theme: "light" | "dark" | "system";
   language: string;
   timezone: string;
   date_format: string;
-  time_format: '12h' | '24h';
+  time_format: "12h" | "24h";
   notifications: {
     email: boolean;
     desktop: boolean;
@@ -202,11 +202,11 @@ export interface UserFilters {
  * User status enum
  */
 export enum UserStatus {
-  ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  PENDING = 'pending',
-  SUSPENDED = 'suspended',
-  ARCHIVED = 'archived',
+  ACTIVE = "active",
+  INACTIVE = "inactive",
+  PENDING = "pending",
+  SUSPENDED = "suspended",
+  ARCHIVED = "archived",
 }
 
 /**
@@ -254,12 +254,15 @@ export interface UserSession {
 /**
  * Utility type for user display name
  */
-export type UserDisplayName = Pick<User, 'first_name' | 'last_name' | 'email'>;
+export type UserDisplayName = Pick<User, "first_name" | "last_name" | "email">;
 
 /**
  * Utility type for user basic info
  */
-export type UserBasicInfo = Pick<User, 'id' | 'email' | 'first_name' | 'last_name' | 'is_active'>;
+export type UserBasicInfo = Pick<
+  User,
+  "id" | "email" | "first_name" | "last_name" | "is_active"
+>;
 
 /**
  * Utility functions for user data
@@ -269,9 +272,11 @@ export const getUserFullName = (user: User): string => {
 };
 
 export const getUserInitials = (user: User): string => {
-  const firstInitial = user.first_name?.[0] || '';
-  const lastInitial = user.last_name?.[0] || '';
-  return (firstInitial + lastInitial).toUpperCase() || user.email[0].toUpperCase();
+  const firstInitial = user.first_name?.[0] || "";
+  const lastInitial = user.last_name?.[0] || "";
+  return (
+    (firstInitial + lastInitial).toUpperCase() || user.email[0].toUpperCase()
+  );
 };
 
 export const getUserDisplayName = (user: User): string => {
@@ -292,11 +297,23 @@ export const isUserStaff = (user: User): boolean => {
  */
 export const getUserAvatarColor = (user: User): string => {
   const colors = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
-    '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43',
-    '#FF6348', '#2ED573', '#3742FA', '#F368E0', '#FFA502',
+    "#FF6B6B",
+    "#4ECDC4",
+    "#45B7D1",
+    "#96CEB4",
+    "#FECA57",
+    "#FF9FF3",
+    "#54A0FF",
+    "#5F27CD",
+    "#00D2D3",
+    "#FF9F43",
+    "#FF6348",
+    "#2ED573",
+    "#3742FA",
+    "#F368E0",
+    "#FFA502",
   ];
-  
+
   const initials = getUserInitials(user);
   const charCode = initials.charCodeAt(0) + (initials.charCodeAt(1) || 0);
   return colors[charCode % colors.length];
@@ -308,15 +325,17 @@ export const getUserAvatarColor = (user: User): string => {
 export const isUser = (obj: unknown): obj is User => {
   return (
     obj &&
-    typeof obj.id === 'string' &&
-    typeof obj.email === 'string' &&
-    typeof obj.first_name === 'string' &&
-    typeof obj.last_name === 'string' &&
-    typeof obj.is_active === 'boolean'
+    typeof obj.id === "string" &&
+    typeof obj.email === "string" &&
+    typeof obj.first_name === "string" &&
+    typeof obj.last_name === "string" &&
+    typeof obj.is_active === "boolean"
   );
 };
 
-export const isUserListResponse = (response: unknown): response is UserListResponse => {
+export const isUserListResponse = (
+  response: unknown,
+): response is UserListResponse => {
   return (
     response &&
     response.success === true &&

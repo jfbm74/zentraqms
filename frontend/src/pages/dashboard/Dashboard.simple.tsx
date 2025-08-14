@@ -1,5 +1,5 @@
-import React from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import React from "react";
+import { useAuth } from "../../hooks/useAuth";
 
 const SimpleDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -13,7 +13,7 @@ const SimpleDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-      
+
       <div className="row">
         <div className="col-xl-12">
           <div className="card">

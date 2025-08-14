@@ -31,20 +31,20 @@ class UserModelTests(TestCase):
     def setUp(self):
         """Set up test data."""
         self.user_data = {
-            'email': 'test@example.com',
-            'first_name': 'Test',
-            'last_name': 'User',
-            'password': 'TestPass123!',
+            "email": "test@example.com",
+            "first_name": "Test",
+            "last_name": "User",
+            "password": "TestPass123!",
         }
 
     def test_create_user(self):
         """Test creating a regular user."""
         user = User.objects.create_user(**self.user_data)
 
-        self.assertEqual(user.email, 'test@example.com')
-        self.assertEqual(user.first_name, 'Test')
-        self.assertEqual(user.last_name, 'User')
-        self.assertTrue(user.check_password('TestPass123!'))
+        self.assertEqual(user.email, "test@example.com")
+        self.assertEqual(user.first_name, "Test")
+        self.assertEqual(user.last_name, "User")
+        self.assertTrue(user.check_password("TestPass123!"))
         self.assertTrue(user.is_active)
         self.assertFalse(user.is_verified)
         self.assertFalse(user.is_staff)
@@ -55,7 +55,7 @@ class UserModelTests(TestCase):
         """Test creating a superuser."""
         user = User.objects.create_superuser(**self.user_data)
 
-        self.assertEqual(user.email, 'test@example.com')
+        self.assertEqual(user.email, "test@example.com")
         self.assertTrue(user.is_active)
         self.assertTrue(user.is_verified)
         self.assertTrue(user.is_staff)
@@ -64,26 +64,26 @@ class UserModelTests(TestCase):
     def test_user_string_representation(self):
         """Test user string representation."""
         user = User.objects.create_user(**self.user_data)
-        self.assertEqual(str(user), 'test@example.com')
+        self.assertEqual(str(user), "test@example.com")
 
     def test_user_full_name_property(self):
         """Test user full_name property."""
         user = User.objects.create_user(**self.user_data)
-        self.assertEqual(user.full_name, 'Test User')
+        self.assertEqual(user.full_name, "Test User")
 
         # Test with empty names
-        user.first_name = ''
-        user.last_name = ''
-        self.assertEqual(user.full_name, 'test@example.com')
+        user.first_name = ""
+        user.last_name = ""
+        self.assertEqual(user.full_name, "test@example.com")
 
     def test_user_short_name_property(self):
         """Test user short_name property."""
         user = User.objects.create_user(**self.user_data)
-        self.assertEqual(user.short_name, 'Test')
+        self.assertEqual(user.short_name, "Test")
 
         # Test with empty first name
-        user.first_name = ''
-        self.assertEqual(user.short_name, 'test@example.com')
+        user.first_name = ""
+        self.assertEqual(user.short_name, "test@example.com")
 
     def test_can_login_method(self):
         """Test user can_login method."""
@@ -159,10 +159,10 @@ class UserModelTests(TestCase):
     def test_email_normalization(self):
         """Test email normalization on save."""
         user_data = self.user_data.copy()
-        user_data['email'] = 'TEST@EXAMPLE.COM'
+        user_data["email"] = "TEST@EXAMPLE.COM"
 
         user = User.objects.create_user(**user_data)
-        self.assertEqual(user.email, 'test@example.com')
+        self.assertEqual(user.email, "test@example.com")
 
     def test_unique_email_constraint(self):
         """Test email uniqueness constraint."""
@@ -180,8 +180,8 @@ class UserModelTests(TestCase):
         self.assertFalse(user.has_organizational_info())
 
         # Add organizational info
-        user.department = 'IT'
-        user.position = 'Developer'
+        user.department = "IT"
+        user.position = "Developer"
         user.save()
 
         self.assertTrue(user.has_organizational_info())
@@ -191,15 +191,15 @@ class UserModelTests(TestCase):
         user = User.objects.create_user(**self.user_data)
 
         # With full name
-        self.assertEqual(user.get_display_name(), 'Test User')
+        self.assertEqual(user.get_display_name(), "Test User")
 
         # With only first name
-        user.last_name = ''
-        self.assertEqual(user.get_display_name(), 'Test')
+        user.last_name = ""
+        self.assertEqual(user.get_display_name(), "Test")
 
         # With no names
-        user.first_name = ''
-        self.assertEqual(user.get_display_name(), 'test@example.com')
+        user.first_name = ""
+        self.assertEqual(user.get_display_name(), "test@example.com")
 
 
 class UserManagerTests(TestCase):
@@ -210,20 +210,20 @@ class UserManagerTests(TestCase):
     def test_create_user_without_email(self):
         """Test creating user without email raises error."""
         with self.assertRaises(ValueError):
-            User.objects.create_user(email='', password='testpass')
+            User.objects.create_user(email="", password="testpass")
 
     def test_create_user_invalid_email(self):
         """Test creating user with invalid email raises error."""
         with self.assertRaises(ValidationError):
-            User.objects.create_user(email='invalid-email', password='testpass')
+            User.objects.create_user(email="invalid-email", password="testpass")
 
     def test_create_superuser_permissions(self):
         """Test superuser creation with proper permissions."""
         user = User.objects.create_superuser(
-            email='admin@example.com',
-            password='adminpass',
-            first_name='Admin',
-            last_name='User'
+            email="admin@example.com",
+            password="adminpass",
+            first_name="Admin",
+            last_name="User",
         )
 
         self.assertTrue(user.is_staff)
@@ -235,57 +235,53 @@ class UserManagerTests(TestCase):
         """Test superuser creation with invalid flags raises error."""
         with self.assertRaises(ValueError):
             User.objects.create_superuser(
-                email='admin@example.com',
-                password='adminpass',
-                is_staff=False
+                email="admin@example.com", password="adminpass", is_staff=False
             )
 
         with self.assertRaises(ValueError):
             User.objects.create_superuser(
-                email='admin@example.com',
-                password='adminpass',
-                is_superuser=False
+                email="admin@example.com", password="adminpass", is_superuser=False
             )
 
     def test_get_by_natural_key(self):
         """Test getting user by natural key (email)."""
         user = User.objects.create_user(
-            email='test@example.com',
-            password='testpass',
-            first_name='Test',
-            last_name='User'
+            email="test@example.com",
+            password="testpass",
+            first_name="Test",
+            last_name="User",
         )
 
         # Test case insensitive lookup
-        retrieved_user = User.objects.get_by_natural_key('TEST@EXAMPLE.COM')
+        retrieved_user = User.objects.get_by_natural_key("TEST@EXAMPLE.COM")
         self.assertEqual(user, retrieved_user)
 
     def test_manager_querysets(self):
         """Test custom manager querysets."""
         # Create test users
         active_user = User.objects.create_user(
-            email='active@example.com',
-            password='testpass',
-            first_name='Active',
-            last_name='User',
+            email="active@example.com",
+            password="testpass",
+            first_name="Active",
+            last_name="User",
             is_active=True,
-            is_verified=True
+            is_verified=True,
         )
 
         inactive_user = User.objects.create_user(
-            email='inactive@example.com',
-            password='testpass',
-            first_name='Inactive',
-            last_name='User',
-            is_active=False
+            email="inactive@example.com",
+            password="testpass",
+            first_name="Inactive",
+            last_name="User",
+            is_active=False,
         )
 
         staff_user = User.objects.create_user(
-            email='staff@example.com',
-            password='testpass',
-            first_name='Staff',
-            last_name='User',
-            is_staff=True
+            email="staff@example.com",
+            password="testpass",
+            first_name="Staff",
+            last_name="User",
+            is_staff=True,
         )
 
         # Test active users queryset
@@ -315,24 +311,24 @@ class ValidatorTests(TestCase):
 
         # Valid passwords should not raise exception
         valid_passwords = [
-            'TestPass123!',
-            'MySecure@Pass2024',
-            'Admin#Password1',
+            "TestPass123!",
+            "MySecure@Pass2024",
+            "Admin#Password1",
         ]
 
         for password in valid_passwords:
             try:
                 validator.validate(password)
             except ValidationError:
-                self.fail(f'Valid password {password} raised ValidationError')
+                self.fail(f"Valid password {password} raised ValidationError")
 
         # Invalid passwords should raise exception
         invalid_passwords = [
-            'short',  # Too short
-            'alllowercase123!',  # No uppercase
-            'ALLUPPERCASE123!',  # No lowercase
-            'NoNumbers!',  # No digits
-            'NoSpecialChars123',  # No special characters
+            "short",  # Too short
+            "alllowercase123!",  # No uppercase
+            "ALLUPPERCASE123!",  # No lowercase
+            "NoNumbers!",  # No digits
+            "NoSpecialChars123",  # No special characters
         ]
 
         for password in invalid_passwords:
@@ -345,82 +341,85 @@ class ValidatorTests(TestCase):
 
         # Create a mock user
         class MockUser:
-            email = 'john.doe@example.com'
-            first_name = 'John'
-            last_name = 'Doe'
+            email = "john.doe@example.com"
+            first_name = "John"
+            last_name = "Doe"
 
         user = MockUser()
 
         # Password containing user info should raise error
         with self.assertRaises(ValidationError):
-            validator.validate('JohnPassword123!', user)
+            validator.validate("JohnPassword123!", user)
 
         with self.assertRaises(ValidationError):
-            validator.validate('DoePassword123!', user)
+            validator.validate("DoePassword123!", user)
 
     def test_colombian_phone_validator(self):
         """Test Colombian phone number validator."""
         # Valid phone numbers
         valid_phones = [
-            '3001234567',
-            '+573001234567',
-            '573001234567',
-            '016041234',  # Landline
-            '+57016041234',
+            "3001234567",
+            "+573001234567",
+            "573001234567",
+            "016041234",  # Landline
+            "+57016041234",
         ]
 
         for phone in valid_phones:
             try:
                 validate_colombian_phone(phone)
             except ValidationError:
-                self.fail(f'Valid phone {phone} raised ValidationError')
+                self.fail(f"Valid phone {phone} raised ValidationError")
 
         # Invalid phone numbers
         invalid_phones = [
-            '123',  # Too short
-            '+1234567890',  # Wrong country code
-            'abc1234567',  # Non-numeric characters
+            "123",  # Too short
+            "+1234567890",  # Wrong country code
+            "abc1234567",  # Non-numeric characters
         ]
 
         for phone in invalid_phones:
-            with self.assertRaises(ValidationError, msg=f"Phone {phone} should be invalid but passed validation"):
+            with self.assertRaises(
+                ValidationError,
+                msg=f"Phone {phone} should be invalid but passed validation",
+            ):
                 validate_colombian_phone(phone)
 
     def test_unique_email_validator(self):
         """Test unique email validator."""
         # Create a user
         User.objects.create_user(
-            email='existing@example.com',
-            password='testpass',
-            first_name='Existing',
-            last_name='User'
+            email="existing@example.com",
+            password="testpass",
+            first_name="Existing",
+            last_name="User",
         )
 
         # Existing email should raise error
         with self.assertRaises(ValidationError):
-            validate_unique_email_case_insensitive('existing@example.com')
+            validate_unique_email_case_insensitive("existing@example.com")
 
         # Case insensitive check
         with self.assertRaises(ValidationError):
-            validate_unique_email_case_insensitive('EXISTING@EXAMPLE.COM')
+            validate_unique_email_case_insensitive("EXISTING@EXAMPLE.COM")
 
         # New email should not raise error
         try:
-            validate_unique_email_case_insensitive('new@example.com')
+            validate_unique_email_case_insensitive("new@example.com")
         except ValidationError:
-            self.fail('New email raised ValidationError')
+            self.fail("New email raised ValidationError")
 
     def test_password_confirmation_validator(self):
         """Test password confirmation validator."""
         # Matching passwords should not raise error
         try:
-            validate_password_confirmation('testpass', 'testpass')
+            validate_password_confirmation("testpass", "testpass")
         except ValidationError:
-            self.fail('Matching passwords raised ValidationError')
+            self.fail("Matching passwords raised ValidationError")
 
         # Non-matching passwords should raise error
         with self.assertRaises(ValidationError):
-            validate_password_confirmation('testpass1', 'testpass2')
+            validate_password_confirmation("testpass1", "testpass2")
 
 
 class ModelMetaTests(TestCase):
@@ -433,39 +432,39 @@ class ModelMetaTests(TestCase):
         meta = User._meta
 
         # Check table name
-        self.assertEqual(meta.db_table, 'auth_user')
+        self.assertEqual(meta.db_table, "auth_user")
 
         # Check verbose names (should be in Spanish)
-        self.assertEqual(str(meta.verbose_name), 'Usuario')
-        self.assertEqual(str(meta.verbose_name_plural), 'Usuarios')
+        self.assertEqual(str(meta.verbose_name), "Usuario")
+        self.assertEqual(str(meta.verbose_name_plural), "Usuarios")
 
         # Check ordering
-        self.assertEqual(meta.ordering, ['email'])
+        self.assertEqual(meta.ordering, ["email"])
 
         # Check indexes
         index_fields = [index.fields for index in meta.indexes]
-        self.assertIn(['email'], index_fields)
-        self.assertIn(['is_active', 'is_verified'], index_fields)
+        self.assertIn(["email"], index_fields)
+        self.assertIn(["is_active", "is_verified"], index_fields)
 
     def test_username_field_configuration(self):
         """Test username field configuration."""
-        self.assertEqual(User.USERNAME_FIELD, 'email')
-        self.assertEqual(User.REQUIRED_FIELDS, ['first_name', 'last_name'])
+        self.assertEqual(User.USERNAME_FIELD, "email")
+        self.assertEqual(User.REQUIRED_FIELDS, ["first_name", "last_name"])
 
     def test_model_field_properties(self):
         """Test model field properties."""
         user = User.objects.create_user(
-            email='test@example.com',
-            password='testpass',
-            first_name='Test',
-            last_name='User'
+            email="test@example.com",
+            password="testpass",
+            first_name="Test",
+            last_name="User",
         )
 
         # Check UUID field
         self.assertIsInstance(user.id, uuid.UUID)
 
         # Check email field uniqueness
-        email_field = User._meta.get_field('email')
+        email_field = User._meta.get_field("email")
         self.assertTrue(email_field.unique)
 
         # Check default values

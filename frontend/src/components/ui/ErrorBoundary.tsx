@@ -1,11 +1,11 @@
 /**
  * Error Boundary Component for ZentraQMS Frontend
- * 
+ *
  * React Error Boundary for catching JavaScript errors anywhere in the child component tree.
  * Provides a fallback UI with Velzon styling when errors occur.
  */
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from "react";
 
 interface Props {
   children: ReactNode;
@@ -19,7 +19,7 @@ interface State {
 
 /**
  * Error Boundary Component
- * 
+ *
  * Catches JavaScript errors anywhere in the child component tree,
  * logs those errors, and displays a fallback UI instead of crashing.
  */
@@ -29,7 +29,7 @@ class ErrorBoundary extends Component<Props, State> {
     this.state = {
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
     };
   }
 
@@ -38,17 +38,17 @@ class ErrorBoundary extends Component<Props, State> {
     return {
       hasError: true,
       error,
-      errorInfo: null
+      errorInfo: null,
     };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error details for debugging
-    console.error('[ErrorBoundary] Caught an error:', error, errorInfo);
-    
+    console.error("[ErrorBoundary] Caught an error:", error, errorInfo);
+
     this.setState({
       error,
-      errorInfo
+      errorInfo,
     });
 
     // Here you could also log the error to an error reporting service
@@ -60,7 +60,7 @@ class ErrorBoundary extends Component<Props, State> {
     this.setState({
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
     });
   };
 
@@ -82,39 +82,42 @@ class ErrorBoundary extends Component<Props, State> {
                     <div className="mb-4">
                       <i className="ri-error-warning-line display-4 text-danger"></i>
                     </div>
-                    
-                    <h4 className="text-danger mb-3">
-                      ¡Ups! Algo salió mal
-                    </h4>
-                    
+
+                    <h4 className="text-danger mb-3">¡Ups! Algo salió mal</h4>
+
                     <p className="text-muted mb-4">
-                      Se ha producido un error inesperado en la aplicación. 
-                      Nuestro equipo ha sido notificado y está trabajando para solucionarlo.
+                      Se ha producido un error inesperado en la aplicación.
+                      Nuestro equipo ha sido notificado y está trabajando para
+                      solucionarlo.
                     </p>
 
                     {/* Error details for development */}
-                    {process.env.NODE_ENV === 'development' && this.state.error && (
-                      <div className="text-start mb-4">
-                        <div className="alert alert-danger">
-                          <h6 className="alert-heading">Detalles del Error (Desarrollo):</h6>
-                          <hr />
-                          <p className="mb-2">
-                            <strong>Error:</strong> {this.state.error.toString()}
-                          </p>
-                          {this.state.errorInfo && (
-                            <details className="mt-2">
-                              <summary className="mb-2">Stack Trace</summary>
-                              <pre className="small">
-                                {this.state.errorInfo.componentStack}
-                              </pre>
-                            </details>
-                          )}
+                    {process.env.NODE_ENV === "development" &&
+                      this.state.error && (
+                        <div className="text-start mb-4">
+                          <div className="alert alert-danger">
+                            <h6 className="alert-heading">
+                              Detalles del Error (Desarrollo):
+                            </h6>
+                            <hr />
+                            <p className="mb-2">
+                              <strong>Error:</strong>{" "}
+                              {this.state.error.toString()}
+                            </p>
+                            {this.state.errorInfo && (
+                              <details className="mt-2">
+                                <summary className="mb-2">Stack Trace</summary>
+                                <pre className="small">
+                                  {this.state.errorInfo.componentStack}
+                                </pre>
+                              </details>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
                     <div className="d-flex gap-2 justify-content-center">
-                      <button 
+                      <button
                         type="button"
                         className="btn btn-success"
                         onClick={this.handleRetry}
@@ -122,8 +125,8 @@ class ErrorBoundary extends Component<Props, State> {
                         <i className="ri-refresh-line me-1"></i>
                         Intentar de Nuevo
                       </button>
-                      
-                      <button 
+
+                      <button
                         type="button"
                         className="btn btn-outline-primary"
                         onClick={this.handleReload}

@@ -1,19 +1,19 @@
 /**
  * Login Page for ZentraQMS Frontend
- * 
+ *
  * Adapted from Velzon template with ZentraQMS authentication integration.
  * Uses React Hook Form for form validation and our custom auth system.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { toast } from 'react-toastify';
-import { useAuth } from '../../hooks/useAuth';
-import { LoginFormData } from '../../types/auth.types';
-import { RBACService } from '../../services/rbac.service';
-import logoLight from '../../assets/images/logo-light.png';
-import authBg from '../../assets/images/auth-one-bg.jpg';
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate, useLocation, Link } from "../../utils/SimpleRouter";
+import { useForm } from "react-hook-form";
+import { toast } from "react-toastify";
+import { useAuth } from "../../hooks/useAuth";
+import { LoginFormData } from "../../types/auth.types";
+import { RBACService } from "../../services/rbac.service";
+import logoLight from "../../assets/images/logo-light.png";
+import authBg from "../../assets/images/auth-one-bg.jpg";
 
 /**
  * Type for React Router location state
@@ -29,19 +29,19 @@ interface LocationState {
  */
 const loginValidationRules = {
   email: {
-    required: 'El correo electrónico es requerido',
+    required: "El correo electrónico es requerido",
     pattern: {
       value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-      message: 'Ingrese un correo electrónico válido'
-    }
+      message: "Ingrese un correo electrónico válido",
+    },
   },
   password: {
-    required: 'La contraseña es requerida',
+    required: "La contraseña es requerida",
     minLength: {
       value: 6,
-      message: 'La contraseña debe tener al menos 6 caracteres'
-    }
-  }
+      message: "La contraseña debe tener al menos 6 caracteres",
+    },
+  },
 };
 
 /**
@@ -50,24 +50,25 @@ const loginValidationRules = {
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isLoading, error, clearError, isAuthenticated, roles } = useAuth();
+  const { login, isLoading, error, clearError, isAuthenticated, roles } =
+    useAuth();
 
   // State for password visibility
   const [showPassword, setShowPassword] = useState(false);
-  
+
   // Form management with React Hook Form
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     setValue,
-    watch
+    watch,
   } = useForm<LoginFormData>({
     defaultValues: {
-      email: import.meta.env.DEV ? 'admin@zentraqms.com' : '',
-      password: import.meta.env.DEV ? '123456' : '',
-      remember: false
-    }
+      email: import.meta.env.DEV ? "admin@zentraqms.com" : "",
+      password: import.meta.env.DEV ? "123456" : "",
+      remember: false,
+    },
   });
 
   /**
@@ -76,7 +77,7 @@ const LoginPage: React.FC = () => {
   const getRedirectUrl = useCallback((): string => {
     // If there's a specific path requested, use it
     const requestedPath = (location.state as LocationState)?.from?.pathname;
-    if (requestedPath && requestedPath !== '/login') {
+    if (requestedPath && requestedPath !== "/login") {
       return requestedPath;
     }
 
@@ -87,7 +88,7 @@ const LoginPage: React.FC = () => {
     }
 
     // Default fallback
-    return '/dashboard';
+    return "/dashboard";
   }, [location.state, roles]);
 
   /**
@@ -96,29 +97,29 @@ const LoginPage: React.FC = () => {
   const onSubmit = async (data: LoginFormData) => {
     try {
       clearError();
-      
+
       await login({
         email: data.email,
-        password: data.password
+        password: data.password,
       });
 
       // Success message with role-based redirection info
-      toast.success('¡Bienvenido! Has iniciado sesión correctamente.');
-      
+      toast.success("¡Bienvenido! Has iniciado sesión correctamente.");
+
       // The useEffect will handle the redirection once authentication state updates
     } catch (error: unknown) {
-      console.error('[LoginPage] Login failed:', error);
-      
+      console.error("[LoginPage] Login failed:", error);
+
       // Show specific error messages
       const errorResponse = error as { response?: { status?: number } };
       if (errorResponse.response?.status === 401) {
-        toast.error('Credenciales inválidas. Verifica tu email y contraseña.');
+        toast.error("Credenciales inválidas. Verifica tu email y contraseña.");
       } else if (errorResponse.response?.status === 403) {
-        toast.error('Tu cuenta está desactivada. Contacta al administrador.');
+        toast.error("Tu cuenta está desactivada. Contacta al administrador.");
       } else if (!errorResponse.response) {
-        toast.error('Error de conexión. Verifica tu conexión a internet.');
+        toast.error("Error de conexión. Verifica tu conexión a internet.");
       } else {
-        toast.error('Error al iniciar sesión. Intenta nuevamente.');
+        toast.error("Error al iniciar sesión. Intenta nuevamente.");
       }
     }
   };
@@ -127,12 +128,12 @@ const LoginPage: React.FC = () => {
    * Handle demo login
    */
   const handleDemoLogin = async () => {
-    setValue('email', 'admin@zentraqms.com');
-    setValue('password', '123456');
-    
+    setValue("email", "admin@zentraqms.com");
+    setValue("password", "123456");
+
     // Clear any existing errors
     clearError();
-    
+
     // Trigger form submission
     handleSubmit(onSubmit)();
   };
@@ -144,7 +145,7 @@ const LoginPage: React.FC = () => {
   useEffect(() => {
     if (isAuthenticated) {
       const redirectUrl = getRedirectUrl();
-      
+
       // Small delay to ensure RBAC data is loaded
       setTimeout(() => {
         navigate(redirectUrl, { replace: true });
@@ -170,24 +171,25 @@ const LoginPage: React.FC = () => {
    * Set page title
    */
   useEffect(() => {
-    document.title = 'Iniciar Sesión | ZentraQMS - Sistema de Gestión de Calidad';
+    document.title =
+      "Iniciar Sesión | ZentraQMS - Sistema de Gestión de Calidad";
   }, []);
 
   return (
     <div className="auth-page-wrapper pt-5">
       {/* Background with overlay */}
-      <div 
-        className="auth-one-bg-position auth-one-bg" 
+      <div
+        className="auth-one-bg-position auth-one-bg"
         style={{ backgroundImage: `url(${authBg})` }}
       >
         <div className="bg-overlay"></div>
-        
+
         {/* Decorative shape */}
         <div className="shape">
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            version="1.1" 
-            xmlnsXlink="http://www.w3.org/1999/xlink" 
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            version="1.1"
+            xmlnsXlink="http://www.w3.org/1999/xlink"
             viewBox="0 0 1440 120"
           >
             <path d="M 0,36 C 144,53.6 432,123.2 720,124 C 1008,124.8 1296,56.8 1440,40L1440 140L0 140z"></path>
@@ -242,9 +244,9 @@ const LoginPage: React.FC = () => {
                             Correo Electrónico
                           </label>
                           <input
-                            {...register('email', loginValidationRules.email)}
+                            {...register("email", loginValidationRules.email)}
                             type="email"
-                            className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                            className={`form-control ${errors.email ? "is-invalid" : ""}`}
                             id="email"
                             placeholder="Ingrese su correo electrónico"
                             autoComplete="email"
@@ -260,8 +262,8 @@ const LoginPage: React.FC = () => {
                         {/* Password Field */}
                         <div className="mb-3">
                           <div className="float-end">
-                            <Link 
-                              to="/auth/forgot-password" 
+                            <Link
+                              to="/auth/forgot-password"
                               className="text-muted text-decoration-underline"
                             >
                               ¿Olvidó su contraseña?
@@ -272,9 +274,12 @@ const LoginPage: React.FC = () => {
                           </label>
                           <div className="position-relative auth-pass-inputgroup mb-3">
                             <input
-                              {...register('password', loginValidationRules.password)}
-                              type={showPassword ? 'text' : 'password'}
-                              className={`form-control pe-5 ${errors.password ? 'is-invalid' : ''}`}
+                              {...register(
+                                "password",
+                                loginValidationRules.password,
+                              )}
+                              type={showPassword ? "text" : "password"}
+                              className={`form-control pe-5 ${errors.password ? "is-invalid" : ""}`}
                               id="password"
                               placeholder="Ingrese su contraseña"
                               autoComplete="current-password"
@@ -285,7 +290,9 @@ const LoginPage: React.FC = () => {
                               onClick={() => setShowPassword(!showPassword)}
                               style={{ zIndex: 10 }}
                             >
-                              <i className={`ri-eye-${showPassword ? 'off' : 'fill'} align-middle`}></i>
+                              <i
+                                className={`ri-eye-${showPassword ? "off" : "fill"} align-middle`}
+                              ></i>
                             </button>
                             {errors.password && (
                               <div className="invalid-feedback">
@@ -298,12 +305,15 @@ const LoginPage: React.FC = () => {
                         {/* Remember Me */}
                         <div className="form-check">
                           <input
-                            {...register('remember')}
+                            {...register("remember")}
                             className="form-check-input"
                             type="checkbox"
                             id="auth-remember-check"
                           />
-                          <label className="form-check-label" htmlFor="auth-remember-check">
+                          <label
+                            className="form-check-label"
+                            htmlFor="auth-remember-check"
+                          >
                             Recordarme
                           </label>
                         </div>
@@ -316,8 +326,13 @@ const LoginPage: React.FC = () => {
                             disabled={isSubmitting || isLoading}
                           >
                             {(isSubmitting || isLoading) && (
-                              <div className="spinner-border spinner-border-sm me-2" role="status">
-                                <span className="visually-hidden">Cargando...</span>
+                              <div
+                                className="spinner-border spinner-border-sm me-2"
+                                role="status"
+                              >
+                                <span className="visually-hidden">
+                                  Cargando...
+                                </span>
                               </div>
                             )}
                             Iniciar Sesión
@@ -345,25 +360,25 @@ const LoginPage: React.FC = () => {
                             </h5>
                           </div>
                           <div>
-                            <button 
+                            <button
                               type="button"
-                              className="btn btn-light btn-icon me-2" 
+                              className="btn btn-light btn-icon me-2"
                               disabled
                               title="Próximamente"
                             >
                               <i className="ri-microsoft-fill fs-16"></i>
                             </button>
-                            <button 
+                            <button
                               type="button"
-                              className="btn btn-light btn-icon me-2" 
+                              className="btn btn-light btn-icon me-2"
                               disabled
                               title="Próximamente"
                             >
                               <i className="ri-google-fill fs-16"></i>
                             </button>
-                            <button 
+                            <button
                               type="button"
-                              className="btn btn-light btn-icon" 
+                              className="btn btn-light btn-icon"
                               disabled
                               title="Próximamente"
                             >
@@ -379,9 +394,9 @@ const LoginPage: React.FC = () => {
                 {/* Registration Link */}
                 <div className="mt-4 text-center">
                   <p className="mb-0 text-white-50">
-                    ¿No tiene una cuenta?{' '}
-                    <Link 
-                      to="/auth/register" 
+                    ¿No tiene una cuenta?{" "}
+                    <Link
+                      to="/auth/register"
                       className="fw-semibold text-primary text-decoration-underline"
                     >
                       Solicitar Acceso
@@ -392,9 +407,9 @@ const LoginPage: React.FC = () => {
                 {/* Help Section */}
                 <div className="mt-3 text-center">
                   <p className="mb-0 text-white-50 small">
-                    ¿Necesita ayuda?{' '}
-                    <Link 
-                      to="/support" 
+                    ¿Necesita ayuda?{" "}
+                    <Link
+                      to="/support"
                       className="text-white text-decoration-underline"
                     >
                       Contactar Soporte
@@ -414,9 +429,8 @@ const LoginPage: React.FC = () => {
             <div className="col-lg-12">
               <div className="text-center">
                 <p className="mb-0 text-muted">
-                  &copy; {new Date().getFullYear()} ZentraQMS. 
-                  Desarrollado por Zentratek con{' '}
-                  <i className="mdi mdi-heart text-danger"></i>{' '}
+                  &copy; {new Date().getFullYear()} ZentraQMS. Desarrollado por
+                  Zentratek con <i className="mdi mdi-heart text-danger"></i>{" "}
                   para la Excelencia en Calidad
                 </p>
               </div>

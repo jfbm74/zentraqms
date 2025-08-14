@@ -25,7 +25,7 @@ class CustomUserCreationForm(UserCreationForm):
 
     class Meta:
         model = User
-        fields = ('email', 'first_name', 'last_name')
+        fields = ("email", "first_name", "last_name")
 
     def clean_email(self):
         """
@@ -37,13 +37,11 @@ class CustomUserCreationForm(UserCreationForm):
         Raises:
             ValidationError: If email already exists
         """
-        email = self.cleaned_data.get('email')
+        email = self.cleaned_data.get("email")
         if email:
             email = email.lower().strip()
             if User.objects.filter(email__iexact=email).exists():
-                raise ValidationError(
-                    _('Ya existe un usuario con este email.')
-                )
+                raise ValidationError(_("Ya existe un usuario con este email."))
         return email
 
 
@@ -56,7 +54,7 @@ class CustomUserChangeForm(UserChangeForm):
 
     class Meta:
         model = User
-        fields = '__all__'
+        fields = "__all__"
 
     def clean_email(self):
         """
@@ -68,17 +66,17 @@ class CustomUserChangeForm(UserChangeForm):
         Raises:
             ValidationError: If email already exists for another user
         """
-        email = self.cleaned_data.get('email')
+        email = self.cleaned_data.get("email")
         if email:
             email = email.lower().strip()
             # Check if email exists for another user
-            existing_user = User.objects.filter(
-                email__iexact=email
-            ).exclude(pk=self.instance.pk).first()
+            existing_user = (
+                User.objects.filter(email__iexact=email)
+                .exclude(pk=self.instance.pk)
+                .first()
+            )
             if existing_user:
-                raise ValidationError(
-                    _('Ya existe otro usuario con este email.')
-                )
+                raise ValidationError(_("Ya existe otro usuario con este email."))
         return email
 
 
@@ -98,127 +96,153 @@ class UserAdmin(BaseUserAdmin):
 
     # List display configuration
     list_display = [
-        'email',
-        'full_name',
-        'department',
-        'position',
-        'is_active',
-        'is_verified',
-        'is_staff',
-        'date_joined',
-        'last_login',
-        'account_status',
+        "email",
+        "full_name",
+        "department",
+        "position",
+        "is_active",
+        "is_verified",
+        "is_staff",
+        "date_joined",
+        "last_login",
+        "account_status",
     ]
 
-    list_display_links = ['email', 'full_name']
+    list_display_links = ["email", "full_name"]
 
     # List filters
     list_filter = [
-        'is_active',
-        'is_verified',
-        'is_staff',
-        'is_superuser',
-        'date_joined',
-        'last_login',
-        'department',
+        "is_active",
+        "is_verified",
+        "is_staff",
+        "is_superuser",
+        "date_joined",
+        "last_login",
+        "department",
     ]
 
     # Search fields
     search_fields = [
-        'email',
-        'first_name',
-        'last_name',
-        'department',
-        'position',
+        "email",
+        "first_name",
+        "last_name",
+        "department",
+        "position",
     ]
 
     # Ordering
-    ordering = ['email']
+    ordering = ["email"]
 
     # Fields for add form
     add_fieldsets = (
-        (None, {
-            'classes': ('wide',),
-            'fields': ('email', 'password1', 'password2'),
-        }),
-        (_('Personal Info'), {
-            'fields': ('first_name', 'last_name', 'phone_number'),
-        }),
-        (_('Organizational Info'), {
-            'fields': ('department', 'position'),
-        }),
-        (_('Permissions'), {
-            'fields': ('is_active', 'is_verified'),
-        }),
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": ("email", "password1", "password2"),
+            },
+        ),
+        (
+            _("Personal Info"),
+            {
+                "fields": ("first_name", "last_name", "phone_number"),
+            },
+        ),
+        (
+            _("Organizational Info"),
+            {
+                "fields": ("department", "position"),
+            },
+        ),
+        (
+            _("Permissions"),
+            {
+                "fields": ("is_active", "is_verified"),
+            },
+        ),
     )
 
     # Fields for change form
     fieldsets = (
-        (None, {
-            'fields': ('email', 'password')
-        }),
-        (_('Personal Info'), {
-            'fields': (
-                'first_name',
-                'last_name',
-                'phone_number',
-            )
-        }),
-        (_('Organizational Info'), {
-            'fields': (
-                'department',
-                'position',
-            )
-        }),
-        (_('Permissions'), {
-            'fields': (
-                'is_active',
-                'is_verified',
-                'is_staff',
-                'is_superuser',
-                'groups',
-                'user_permissions',
-            ),
-        }),
-        (_('Important dates'), {
-            'fields': (
-                'last_login',
-                'date_joined',
-                'updated_at',
-            )
-        }),
-        (_('Security Info'), {
-            'fields': (
-                'failed_login_attempts',
-                'locked_until',
-                'last_login_ip',
-            ),
-            'classes': ('collapse',),
-        }),
-        (_('Audit Info'), {
-            'fields': (
-                'created_by',
-            ),
-            'classes': ('collapse',),
-        }),
+        (None, {"fields": ("email", "password")}),
+        (
+            _("Personal Info"),
+            {
+                "fields": (
+                    "first_name",
+                    "last_name",
+                    "phone_number",
+                )
+            },
+        ),
+        (
+            _("Organizational Info"),
+            {
+                "fields": (
+                    "department",
+                    "position",
+                )
+            },
+        ),
+        (
+            _("Permissions"),
+            {
+                "fields": (
+                    "is_active",
+                    "is_verified",
+                    "is_staff",
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                ),
+            },
+        ),
+        (
+            _("Important dates"),
+            {
+                "fields": (
+                    "last_login",
+                    "date_joined",
+                    "updated_at",
+                )
+            },
+        ),
+        (
+            _("Security Info"),
+            {
+                "fields": (
+                    "failed_login_attempts",
+                    "locked_until",
+                    "last_login_ip",
+                ),
+                "classes": ("collapse",),
+            },
+        ),
+        (
+            _("Audit Info"),
+            {
+                "fields": ("created_by",),
+                "classes": ("collapse",),
+            },
+        ),
     )
 
     # Read-only fields
     readonly_fields = [
-        'date_joined',
-        'updated_at',
-        'last_login',
-        'last_login_ip',
-        'failed_login_attempts',
+        "date_joined",
+        "updated_at",
+        "last_login",
+        "last_login_ip",
+        "failed_login_attempts",
     ]
 
     # Custom actions
     actions = [
-        'verify_users',
-        'unverify_users',
-        'unlock_users',
-        'activate_users',
-        'deactivate_users',
+        "verify_users",
+        "unverify_users",
+        "unlock_users",
+        "activate_users",
+        "deactivate_users",
     ]
 
     def account_status(self, obj):
@@ -233,26 +257,23 @@ class UserAdmin(BaseUserAdmin):
         """
         if obj.is_account_locked():
             return format_html(
-                '<span style="color: red; font-weight: bold;">' +
-                '🔒 Bloqueado</span>'
+                '<span style="color: red; font-weight: bold;">' + "🔒 Bloqueado</span>"
             )
         elif not obj.is_active:
             return format_html(
-                '<span style="color: orange; font-weight: bold;">' +
-                '⏸️ Inactivo</span>'
+                '<span style="color: orange; font-weight: bold;">' + "⏸️ Inactivo</span>"
             )
         elif not obj.is_verified:
             return format_html(
-                '<span style="color: blue; font-weight: bold;">' +
-                '📧 No verificado</span>'
+                '<span style="color: blue; font-weight: bold;">'
+                + "📧 No verificado</span>"
             )
         else:
             return format_html(
-                '<span style="color: green; font-weight: bold;">' +
-                '✅ Activo</span>'
+                '<span style="color: green; font-weight: bold;">' + "✅ Activo</span>"
             )
 
-    account_status.short_description = _('Estado de la cuenta')
+    account_status.short_description = _("Estado de la cuenta")
 
     def get_queryset(self, request):
         """
@@ -264,7 +285,7 @@ class UserAdmin(BaseUserAdmin):
         Returns:
             QuerySet: Optimized queryset
         """
-        return super().get_queryset(request).select_related('created_by')
+        return super().get_queryset(request).select_related("created_by")
 
     def save_model(self, request, obj, form, change):
         """
@@ -292,12 +313,10 @@ class UserAdmin(BaseUserAdmin):
         """
         updated = queryset.update(is_verified=True)
         self.message_user(
-            request,
-            _('%(count)d usuarios han sido verificados.') %
-            {'count': updated}
+            request, _("%(count)d usuarios han sido verificados.") % {"count": updated}
         )
 
-    verify_users.short_description = _('Verificar usuarios seleccionados')
+    verify_users.short_description = _("Verificar usuarios seleccionados")
 
     def unverify_users(self, request, queryset):
         """
@@ -310,11 +329,11 @@ class UserAdmin(BaseUserAdmin):
         updated = queryset.update(is_verified=False)
         self.message_user(
             request,
-            _('%(count)d usuarios han sido marcados como no ' +
-              'verificados.') % {'count': updated}
+            _("%(count)d usuarios han sido marcados como no " + "verificados.")
+            % {"count": updated},
         )
 
-    unverify_users.short_description = _('Marcar como no verificados')
+    unverify_users.short_description = _("Marcar como no verificados")
 
     def unlock_users(self, request, queryset):
         """
@@ -331,12 +350,10 @@ class UserAdmin(BaseUserAdmin):
                 count += 1
 
         self.message_user(
-            request,
-            _('%(count)d cuentas han sido desbloqueadas.') %
-            {'count': count}
+            request, _("%(count)d cuentas han sido desbloqueadas.") % {"count": count}
         )
 
-    unlock_users.short_description = _('Desbloquear cuentas seleccionadas')
+    unlock_users.short_description = _("Desbloquear cuentas seleccionadas")
 
     def activate_users(self, request, queryset):
         """
@@ -348,12 +365,10 @@ class UserAdmin(BaseUserAdmin):
         """
         updated = queryset.update(is_active=True)
         self.message_user(
-            request,
-            _('%(count)d usuarios han sido activados.') %
-            {'count': updated}
+            request, _("%(count)d usuarios han sido activados.") % {"count": updated}
         )
 
-    activate_users.short_description = _('Activar usuarios seleccionados')
+    activate_users.short_description = _("Activar usuarios seleccionados")
 
     def deactivate_users(self, request, queryset):
         """
@@ -367,20 +382,16 @@ class UserAdmin(BaseUserAdmin):
         superusers = queryset.filter(is_superuser=True)
         if superusers.exists():
             self.message_user(
-                request,
-                _('No se pueden desactivar superusuarios.'),
-                level='ERROR'
+                request, _("No se pueden desactivar superusuarios."), level="ERROR"
             )
             return
 
         updated = queryset.update(is_active=False)
         self.message_user(
-            request,
-            _('%(count)d usuarios han sido desactivados.') %
-            {'count': updated}
+            request, _("%(count)d usuarios han sido desactivados.") % {"count": updated}
         )
 
-    deactivate_users.short_description = _('Desactivar usuarios seleccionados')
+    deactivate_users.short_description = _("Desactivar usuarios seleccionados")
 
     def has_delete_permission(self, request, obj=None):
         """
@@ -411,15 +422,17 @@ class UserAdmin(BaseUserAdmin):
 
         # If not superuser, make critical fields readonly
         if not request.user.is_superuser:
-            readonly_fields.extend([
-                'is_superuser',
-                'groups',
-                'user_permissions',
-            ])
+            readonly_fields.extend(
+                [
+                    "is_superuser",
+                    "groups",
+                    "user_permissions",
+                ]
+            )
 
         # If editing existing user, make creation audit fields readonly
         if obj:
-            readonly_fields.append('created_by')
+            readonly_fields.append("created_by")
 
         return readonly_fields
 

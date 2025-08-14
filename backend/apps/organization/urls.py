@@ -10,15 +10,14 @@ from .views import OrganizationViewSet, LocationViewSet, SectorTemplateViewSet
 
 # Create a router and register viewsets
 router = DefaultRouter()
-router.register(r'organizations', OrganizationViewSet, basename='organization')
-router.register(r'locations', LocationViewSet, basename='location')
-router.register(r'sector-templates', SectorTemplateViewSet, basename='sectortemplate')
+router.register(r"organizations", OrganizationViewSet, basename="organization")
+router.register(r"locations", LocationViewSet, basename="location")
+router.register(r"sector-templates", SectorTemplateViewSet, basename="sectortemplate")
 
-app_name = 'organization'
+app_name = "organization"
 
 urlpatterns = [
     # Include router URLs
-    path('', include(router.urls)),
-    
+    path("", include(router.urls)),
     # Additional custom endpoints can be added here if needed
 ]

@@ -24,6 +24,7 @@ class UserRoleSimpleSerializer(serializers.Serializer):
     """
     Simple serializer for user roles in UserSerializer.
     """
+
     id = serializers.UUIDField(read_only=True)
     code = serializers.CharField(read_only=True)
     name = serializers.CharField(read_only=True)
@@ -40,7 +41,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     full_name = serializers.ReadOnlyField()
     short_name = serializers.ReadOnlyField()
-    display_name = serializers.ReadOnlyField(source='get_display_name')
+    display_name = serializers.ReadOnlyField(source="get_display_name")
     can_login = serializers.ReadOnlyField()
     is_account_locked = serializers.ReadOnlyField()
     has_organizational_info = serializers.ReadOnlyField()
@@ -49,57 +50,59 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id',
-            'email',
-            'first_name',
-            'last_name',
-            'full_name',
-            'short_name',
-            'display_name',
-            'is_active',
-            'is_verified',
-            'is_staff',
-            'phone_number',
-            'department',
-            'position',
-            'last_login',
-            'date_joined',
-            'updated_at',
-            'can_login',
-            'is_account_locked',
-            'has_organizational_info',
-            'roles',
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "full_name",
+            "short_name",
+            "display_name",
+            "is_active",
+            "is_verified",
+            "is_staff",
+            "phone_number",
+            "department",
+            "position",
+            "last_login",
+            "date_joined",
+            "updated_at",
+            "can_login",
+            "is_account_locked",
+            "has_organizational_info",
+            "roles",
         ]
         read_only_fields = [
-            'id',
-            'last_login',
-            'date_joined',
-            'updated_at',
-            'is_staff',
-            'is_verified',
+            "id",
+            "last_login",
+            "date_joined",
+            "updated_at",
+            "is_staff",
+            "is_verified",
         ]
 
     def get_roles(self, obj):
         """
         Get user roles with basic information.
-        
+
         Returns:
             List of roles with id, code, name, and description
         """
         try:
             # Get active user roles
             from apps.authorization.models import UserRole
+
             user_roles = UserRole.objects.filter(
-                user=obj,
-                is_active=True,
-                role__is_active=True
-            ).select_related('role')
-            
+                user=obj, is_active=True, role__is_active=True
+            ).select_related("role")
+
             # Filter out expired roles
             from django.utils import timezone
+
             active_roles = user_roles.exclude(expires_at__lt=timezone.now())
-            
-            return UserRoleSimpleSerializer([ur.role for ur in active_roles], many=True).data
+
+            return UserRoleSimpleSerializer(
+                [ur.role for ur in active_roles], many=True
+            ).data
         except Exception:
             # Return empty list if there are any issues (e.g., authorization app not available)
             return []
@@ -115,21 +118,21 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(
         write_only=True,
-        style={'input_type': 'password'},
-        help_text='Password must be at least 8 characters with uppercase, lowercase, number, and special character.'
+        style={"input_type": "password"},
+        help_text="Password must be at least 8 characters with uppercase, lowercase, number, and special character.",
     )
 
     password_confirm = serializers.CharField(
         write_only=True,
-        style={'input_type': 'password'},
-        help_text='Must match the password field.'
+        style={"input_type": "password"},
+        help_text="Must match the password field.",
     )
 
     email = serializers.EmailField(
         validators=[
             UniqueValidator(
                 queryset=User.objects.all(),
-                message="Ya existe un usuario con esta dirección de email."
+                message="Ya existe un usuario con esta dirección de email.",
             )
         ]
     )
@@ -138,26 +141,26 @@ class UserCreateSerializer(serializers.ModelSerializer):
         required=False,
         allow_blank=True,
         validators=[validate_colombian_phone],
-        help_text='Colombian phone number format (e.g., 3001234567 or +573001234567)'
+        help_text="Colombian phone number format (e.g., 3001234567 or +573001234567)",
     )
 
     class Meta:
         model = User
         fields = [
-            'id',
-            'email',
-            'password',
-            'password_confirm',
-            'first_name',
-            'last_name',
-            'phone_number',
-            'department',
-            'position',
+            "id",
+            "email",
+            "password",
+            "password_confirm",
+            "first_name",
+            "last_name",
+            "phone_number",
+            "department",
+            "position",
         ]
-        read_only_fields = ['id']
+        read_only_fields = ["id"]
         extra_kwargs = {
-            'first_name': {'required': True},
-            'last_name': {'required': True},
+            "first_name": {"required": True},
+            "last_name": {"required": True},
         }
 
     def validate_email(self, value):
@@ -207,16 +210,16 @@ class UserCreateSerializer(serializers.ModelSerializer):
             serializers.ValidationError: If validation fails
         """
         # Validate password confirmation
-        password = attrs.get('password')
-        password_confirm = attrs.get('password_confirm')
+        password = attrs.get("password")
+        password_confirm = attrs.get("password_confirm")
 
         try:
             validate_password_confirmation(password, password_confirm)
         except DjangoValidationError as e:
-            raise serializers.ValidationError({'password_confirm': list(e.messages)})
+            raise serializers.ValidationError({"password_confirm": list(e.messages)})
 
         # Remove password_confirm from validated data
-        attrs.pop('password_confirm', None)
+        attrs.pop("password_confirm", None)
 
         return attrs
 
@@ -231,13 +234,10 @@ class UserCreateSerializer(serializers.ModelSerializer):
             User: Created user instance
         """
         # Extract password
-        password = validated_data.pop('password')
+        password = validated_data.pop("password")
 
         # Create user instance
-        user = User.objects.create_user(
-            password=password,
-            **validated_data
-        )
+        user = User.objects.create_user(password=password, **validated_data)
 
         return user
 
@@ -254,7 +254,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         validators=[
             UniqueValidator(
                 queryset=User.objects.all(),
-                message="Ya existe un usuario con esta dirección de email."
+                message="Ya existe un usuario con esta dirección de email.",
             )
         ]
     )
@@ -263,18 +263,18 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         required=False,
         allow_blank=True,
         validators=[validate_colombian_phone],
-        help_text='Colombian phone number format (e.g., 3001234567 or +573001234567)'
+        help_text="Colombian phone number format (e.g., 3001234567 or +573001234567)",
     )
 
     class Meta:
         model = User
         fields = [
-            'email',
-            'first_name',
-            'last_name',
-            'phone_number',
-            'department',
-            'position',
+            "email",
+            "first_name",
+            "last_name",
+            "phone_number",
+            "department",
+            "position",
         ]
 
     def validate_email(self, value):
@@ -293,7 +293,11 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         # Check if email is being changed
         if self.instance and self.instance.email != normalized_email:
             # Ensure new email is unique (case insensitive)
-            if User.objects.filter(email__iexact=normalized_email).exclude(pk=self.instance.pk).exists():
+            if (
+                User.objects.filter(email__iexact=normalized_email)
+                .exclude(pk=self.instance.pk)
+                .exists()
+            ):
                 raise serializers.ValidationError(
                     "Ya existe un usuario con esta dirección de email."
                 )
@@ -310,20 +314,20 @@ class PasswordChangeSerializer(serializers.Serializer):
 
     current_password = serializers.CharField(
         write_only=True,
-        style={'input_type': 'password'},
-        help_text='Current password for verification.'
+        style={"input_type": "password"},
+        help_text="Current password for verification.",
     )
 
     new_password = serializers.CharField(
         write_only=True,
-        style={'input_type': 'password'},
-        help_text='New password must be at least 8 characters with uppercase, lowercase, number, and special character.'
+        style={"input_type": "password"},
+        help_text="New password must be at least 8 characters with uppercase, lowercase, number, and special character.",
     )
 
     new_password_confirm = serializers.CharField(
         write_only=True,
-        style={'input_type': 'password'},
-        help_text='Must match the new password field.'
+        style={"input_type": "password"},
+        help_text="Must match the new password field.",
     )
 
     def validate_current_password(self, value):
@@ -339,7 +343,7 @@ class PasswordChangeSerializer(serializers.Serializer):
         Raises:
             serializers.ValidationError: If current password is incorrect
         """
-        user = self.context['request'].user
+        user = self.context["request"].user
 
         if not user.check_password(value):
             raise serializers.ValidationError("La contraseña actual es incorrecta.")
@@ -359,7 +363,7 @@ class PasswordChangeSerializer(serializers.Serializer):
         Raises:
             serializers.ValidationError: If password is invalid
         """
-        user = self.context['request'].user
+        user = self.context["request"].user
 
         try:
             validate_password(value, user)
@@ -382,20 +386,22 @@ class PasswordChangeSerializer(serializers.Serializer):
             serializers.ValidationError: If validation fails
         """
         # Validate new password confirmation
-        new_password = attrs.get('new_password')
-        new_password_confirm = attrs.get('new_password_confirm')
+        new_password = attrs.get("new_password")
+        new_password_confirm = attrs.get("new_password_confirm")
 
         try:
             validate_password_confirmation(new_password, new_password_confirm)
         except DjangoValidationError as e:
-            raise serializers.ValidationError({'new_password_confirm': list(e.messages)})
+            raise serializers.ValidationError(
+                {"new_password_confirm": list(e.messages)}
+            )
 
         # Check that new password is different from current
-        current_password = attrs.get('current_password')
+        current_password = attrs.get("current_password")
         if new_password == current_password:
-            raise serializers.ValidationError({
-                'new_password': 'La nueva contraseña debe ser diferente a la actual.'
-            })
+            raise serializers.ValidationError(
+                {"new_password": "La nueva contraseña debe ser diferente a la actual."}
+            )
 
         return attrs
 
@@ -406,11 +412,11 @@ class PasswordChangeSerializer(serializers.Serializer):
         Returns:
             User: Updated user instance
         """
-        user = self.context['request'].user
-        new_password = self.validated_data['new_password']
+        user = self.context["request"].user
+        new_password = self.validated_data["new_password"]
 
         user.set_password(new_password)
-        user.save(update_fields=['password'])
+        user.save(update_fields=["password"])
 
         return user
 
@@ -427,15 +433,15 @@ class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id',
-            'email',
-            'first_name',
-            'last_name',
-            'full_name',
-            'is_active',
-            'is_verified',
-            'department',
-            'position',
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "full_name",
+            "is_active",
+            "is_verified",
+            "department",
+            "position",
         ]
 
 
@@ -447,28 +453,28 @@ class UserDetailSerializer(UserSerializer):
     """
 
     created_by_name = serializers.CharField(
-        source='created_by.get_display_name',
-        read_only=True
+        source="created_by.get_display_name", read_only=True
     )
 
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + [
-            'created_by',
-            'created_by_name',
-            'failed_login_attempts',
-            'last_login_ip',
+            "created_by",
+            "created_by_name",
+            "failed_login_attempts",
+            "last_login_ip",
         ]
         read_only_fields = UserSerializer.Meta.read_only_fields + [
-            'created_by',
-            'created_by_name',
-            'failed_login_attempts',
-            'last_login_ip',
+            "created_by",
+            "created_by_name",
+            "failed_login_attempts",
+            "last_login_ip",
         ]
 
 
 # ================================
 # JWT Authentication Serializers
 # ================================
+
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     """
@@ -478,13 +484,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     additional user information in the JWT token and validates account status.
     """
 
-    username_field = 'email'
+    username_field = "email"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Use email field instead of username
         self.fields[self.username_field] = serializers.EmailField()
-        self.fields['password'] = serializers.CharField(write_only=True)
+        self.fields["password"] = serializers.CharField(write_only=True)
 
     @classmethod
     def get_token(cls, user):
@@ -500,34 +506,35 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token = super().get_token(user)
 
         # Add custom claims
-        token['email'] = user.email
-        token['first_name'] = user.first_name
-        token['last_name'] = user.last_name
-        token['is_verified'] = user.is_verified
-        
+        token["email"] = user.email
+        token["first_name"] = user.first_name
+        token["last_name"] = user.last_name
+        token["is_verified"] = user.is_verified
+
         # Add RBAC information
         try:
             # Get user roles
             from apps.authorization.models import UserRole
             from django.utils import timezone
-            
-            user_roles = UserRole.objects.filter(
-                user=user,
-                is_active=True,
-                role__is_active=True
-            ).exclude(expires_at__lt=timezone.now()).select_related('role')
-            
-            token['roles'] = [ur.role.code for ur in user_roles]
-            
+
+            user_roles = (
+                UserRole.objects.filter(user=user, is_active=True, role__is_active=True)
+                .exclude(expires_at__lt=timezone.now())
+                .select_related("role")
+            )
+
+            token["roles"] = [ur.role.code for ur in user_roles]
+
             # Get user permissions
             from apps.authorization.permissions import PermissionChecker
+
             permissions = PermissionChecker.get_user_permissions(user)
-            token['permissions'] = list(permissions)
-            
+            token["permissions"] = list(permissions)
+
         except Exception:
             # Fallback to empty lists if RBAC is not available
-            token['roles'] = []
-            token['permissions'] = []
+            token["roles"] = []
+            token["permissions"] = []
 
         return token
 
@@ -544,13 +551,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         Raises:
             serializers.ValidationError: If credentials are invalid or account is locked
         """
-        email = attrs.get('email')
-        password = attrs.get('password')
+        email = attrs.get("email")
+        password = attrs.get("password")
 
         if not email or not password:
-            raise serializers.ValidationError({
-                'detail': 'Debe proporcionar email y contraseña.'
-            })
+            raise serializers.ValidationError(
+                {"detail": "Debe proporcionar email y contraseña."}
+            )
 
         # Normalize email
         email = email.lower().strip()
@@ -560,43 +567,45 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             user = User.objects.get(email__iexact=email)
         except User.DoesNotExist:
             # Don't reveal if email exists or not
-            raise serializers.ValidationError({
-                'detail': 'Las credenciales proporcionadas no son válidas.'
-            })
+            raise serializers.ValidationError(
+                {"detail": "Las credenciales proporcionadas no son válidas."}
+            )
 
         # Check if account is locked
         if user.is_account_locked():
             remaining_time = user.locked_until - timezone.now()
             minutes = int(remaining_time.total_seconds() / 60)
-            raise serializers.ValidationError({
-                'detail': f'Cuenta bloqueada. Intente nuevamente en {minutes} minutos.'
-            })
+            raise serializers.ValidationError(
+                {
+                    "detail": f"Cuenta bloqueada. Intente nuevamente en {minutes} minutos."
+                }
+            )
 
         # Check if user is active
         if not user.is_active:
-            raise serializers.ValidationError({
-                'detail': 'Esta cuenta está desactivada.'
-            })
+            raise serializers.ValidationError(
+                {"detail": "Esta cuenta está desactivada."}
+            )
 
         # Check if user can login
         if not user.can_login():
-            raise serializers.ValidationError({
-                'detail': 'No se puede acceder a esta cuenta en este momento.'
-            })
+            raise serializers.ValidationError(
+                {"detail": "No se puede acceder a esta cuenta en este momento."}
+            )
 
         # Authenticate user
         if not user.check_password(password):
             # Increment failed attempts
             user.increment_failed_login()
-            raise serializers.ValidationError({
-                'detail': 'Las credenciales proporcionadas no son válidas.'
-            })
+            raise serializers.ValidationError(
+                {"detail": "Las credenciales proporcionadas no son válidas."}
+            )
 
         # Authentication successful - reset failed attempts
         user.reset_failed_login_attempts()
 
         # Update last login IP if request is available
-        request = self.context.get('request')
+        request = self.context.get("request")
         if request:
             ip_address = get_client_ip(request)
             if ip_address:
@@ -606,9 +615,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         refresh = self.get_token(user)
 
         return {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-            'user': UserSerializer(user).data
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
+            "user": UserSerializer(user).data,
         }
 
 
@@ -648,39 +657,33 @@ class LoginSerializer(serializers.Serializer):
         Raises:
             serializers.ValidationError: If credentials are invalid
         """
-        email = attrs.get('email')
-        password = attrs.get('password')
+        email = attrs.get("email")
+        password = attrs.get("password")
 
         if not email or not password:
-            raise serializers.ValidationError(
-                'Debe proporcionar email y contraseña.'
-            )
+            raise serializers.ValidationError("Debe proporcionar email y contraseña.")
 
         # Try to authenticate
         user = authenticate(
-            request=self.context.get('request'),
-            email=email,
-            password=password
+            request=self.context.get("request"), email=email, password=password
         )
 
         if not user:
             raise serializers.ValidationError(
-                'Las credenciales proporcionadas no son válidas.'
+                "Las credenciales proporcionadas no son válidas."
             )
 
         if not user.is_active:
-            raise serializers.ValidationError(
-                'Esta cuenta está desactivada.'
-            )
+            raise serializers.ValidationError("Esta cuenta está desactivada.")
 
         if user.is_account_locked():
             remaining_time = user.locked_until - timezone.now()
             minutes = int(remaining_time.total_seconds() / 60)
             raise serializers.ValidationError(
-                f'Cuenta bloqueada. Intente nuevamente en {minutes} minutos.'
+                f"Cuenta bloqueada. Intente nuevamente en {minutes} minutos."
             )
 
-        attrs['user'] = user
+        attrs["user"] = user
         return attrs
 
 
@@ -711,7 +714,7 @@ class LogoutSerializer(serializers.Serializer):
             # Try to create RefreshToken object to validate it
             RefreshToken(value)
         except Exception:
-            raise serializers.ValidationError('Token de actualización inválido.')
+            raise serializers.ValidationError("Token de actualización inválido.")
 
         return value
 
@@ -729,7 +732,7 @@ class LogoutSerializer(serializers.Serializer):
         # token = RefreshToken(self.validated_data['refresh_token'])
         # token.blacklist()
 
-        return {'detail': 'Sesión cerrada exitosamente.'}
+        return {"detail": "Sesión cerrada exitosamente."}
 
 
 class TokenRefreshSerializer(serializers.Serializer):
@@ -752,9 +755,11 @@ class TokenRefreshSerializer(serializers.Serializer):
         Returns:
             dict: New access and refresh tokens
         """
-        refresh = RefreshToken(attrs['refresh'])
+        refresh = RefreshToken(attrs["refresh"])
 
         return {
-            'access': str(refresh.access_token),
-            'refresh': str(refresh) if hasattr(refresh, 'set_jti') else attrs['refresh']
+            "access": str(refresh.access_token),
+            "refresh": (
+                str(refresh) if hasattr(refresh, "set_jti") else attrs["refresh"]
+            ),
         }
