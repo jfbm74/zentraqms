@@ -283,7 +283,7 @@ class LocationAPITests(APITestCase):
         self.assertIn("organization", response.data.get("error", {}).get("details", {}))
 
     def test_create_duplicate_main_location(self):
-        """Test creating duplicate main location (should fail)."""
+        """Test creating duplicate main location (should fail) - Fixed."""
         # The existing_location is already marked as principal (first location auto-becomes principal)
         # Try to create another main location for same organization
         duplicate_main_data = {
