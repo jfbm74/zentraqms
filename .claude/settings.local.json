@@ -45,7 +45,9 @@
       "Bash(npm run lint:*)",
       "Bash(docker build:*)",
       "Bash(npm config get:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "Bash(git push:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
     "ask": [],

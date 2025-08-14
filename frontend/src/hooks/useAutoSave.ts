@@ -105,6 +105,22 @@ export const useAutoSave = (
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const savePromiseRef = useRef<Promise<void> | null>(null);
   const lastModifiedRef = useRef<string | null>(null);
+  const stateRef = useRef(state);
+  const currentDataRef = useRef(currentData);
+  const lastSavedDataRef = useRef(lastSavedData);
+
+  // Update refs when state changes
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  useEffect(() => {
+    currentDataRef.current = currentData;
+  }, [currentData]);
+
+  useEffect(() => {
+    lastSavedDataRef.current = lastSavedData;
+  }, [lastSavedData]);
 
   /**
    * Update state helper
@@ -132,12 +148,16 @@ export const useAutoSave = (
    */
   const updateData = useCallback(
     (data: Partial<SaveData>) => {
-      setCurrentData((prev) => ({ ...prev, ...data }));
-      if (!state.hasUnsavedChanges && hasDataChanged()) {
-        updateState({ hasUnsavedChanges: true });
+      const newData = { ...currentData, ...data };
+      setCurrentData(newData);
+      
+      // Check if data actually changed
+      const hasChanges = JSON.stringify(newData) !== JSON.stringify(lastSavedData);
+      if (hasChanges !== state.hasUnsavedChanges) {
+        updateState({ hasUnsavedChanges: hasChanges });
       }
     },
-    [state.hasUnsavedChanges, hasDataChanged, updateState],
+    [currentData, lastSavedData, state.hasUnsavedChanges, updateState],
   );
 
   /**
@@ -212,7 +232,7 @@ export const useAutoSave = (
       }
     } catch (error: unknown) {
       const errorMessage =
-        error.response?.data?.message || "Error al guardar automáticamente";
+        (error as any)?.response?.data?.message || "Error al guardar automáticamente";
 
       updateState({
         isAutoSaving: false,
@@ -366,7 +386,7 @@ export const useAutoSave = (
         }
       } catch (error: unknown) {
         const errorMessage =
-          error.response?.data?.message || "Error al resolver conflicto";
+          (error as any)?.response?.data?.message || "Error al resolver conflicto";
         updateState({ lastError: errorMessage });
 
         if (config.showNotifications) {
@@ -421,13 +441,14 @@ export const useAutoSave = (
       clearInterval(intervalRef.current);
     }
 
-    intervalRef.current = setInterval(async () => {
-      if (hasDataChanged() && !state.isAutoSaving && !state.conflictDetected) {
-        try {
-          await performSave();
-        } catch {
+    intervalRef.current = setInterval(() => {
+      const currentState = stateRef.current;
+      const hasChanges = JSON.stringify(currentDataRef.current) !== JSON.stringify(lastSavedDataRef.current);
+      
+      if (hasChanges && !currentState.isAutoSaving && !currentState.conflictDetected) {
+        performSave().catch(() => {
           // Error is already handled in performSave
-        }
+        });
       }
     }, config.interval);
 
@@ -441,9 +462,6 @@ export const useAutoSave = (
     config.enabled,
     config.interval,
     isAuthenticated,
-    hasDataChanged,
-    state.isAutoSaving,
-    state.conflictDetected,
     performSave,
   ]);
 
@@ -464,7 +482,7 @@ export const useAutoSave = (
     if (hasChanges !== state.hasUnsavedChanges) {
       updateState({ hasUnsavedChanges: hasChanges });
     }
-  }, [hasDataChanged, state.hasUnsavedChanges, updateState]);
+  }, [currentData, lastSavedData, state.hasUnsavedChanges, updateState]);
 
   /**
    * Cleanup on unmount

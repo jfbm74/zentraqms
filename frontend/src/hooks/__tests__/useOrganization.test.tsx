@@ -542,16 +542,16 @@ describe("useOrganization", () => {
         const { result } = renderHook(() => useOrganization());
 
         const digit = result.current.calculateVerificationDigit("900123456");
-        expect(digit).toBe(1);
+        expect(digit).toBe(8);
       });
 
       it("should handle different NIT values", () => {
         const { result } = renderHook(() => useOrganization());
 
         const testCases = [
-          { nit: "830020154", expected: 6 },
+          { nit: "830020154", expected: 2 },
           { nit: "860518614", expected: 7 },
-          { nit: "900359991", expected: 5 },
+          { nit: "900359991", expected: 0 },
         ];
 
         testCases.forEach(({ nit, expected }) => {
@@ -768,11 +768,11 @@ describe("useOrganization", () => {
 describe("calculateNitVerificationDigit", () => {
   it("should calculate correct verification digits", () => {
     const testCases = [
-      { nit: "900123456", expected: 1 },
-      { nit: "830020154", expected: 6 },
+      { nit: "900123456", expected: 8 },
+      { nit: "830020154", expected: 2 },
       { nit: "860518614", expected: 7 },
-      { nit: "900359991", expected: 5 },
-      { nit: "123456789", expected: 1 },
+      { nit: "900359991", expected: 0 },
+      { nit: "123456789", expected: 6 },
     ];
 
     testCases.forEach(({ nit, expected }) => {
@@ -783,7 +783,7 @@ describe("calculateNitVerificationDigit", () => {
 
   it("should handle NITs with non-numeric characters", () => {
     const result = calculateNitVerificationDigit("900.123.456");
-    expect(result).toBe(1);
+    expect(result).toBe(8);
   });
 
   it("should return 0 for NITs shorter than 8 digits", () => {
