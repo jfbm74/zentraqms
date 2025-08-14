@@ -35,7 +35,9 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
 
   frontend:
-    build: ./frontend
+    build: 
+      context: .
+      dockerfile: ./frontend/Dockerfile
     command: npm run dev -- --host 0.0.0.0 --port 3000
     volumes:
       - ./frontend:/app
