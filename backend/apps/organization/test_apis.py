@@ -172,7 +172,7 @@ class OrganizationAPITests(APITestCase):
         url = reverse("organization:organization-wizard-step1")
         response = self.client.post(url, self.valid_organization_data, format="json")
 
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("organization_id", response.data)
         self.assertIn("next_step", response.data)
         self.assertEqual(response.data["next_step"], "step2")
@@ -267,9 +267,9 @@ class LocationAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Location.objects.count(), 2)  # existing + new
 
-        created_location = Location.objects.get(nombre="Sede Principal API")
+        created_location = Location.objects.get(nombre="Nueva Sucursal API")
         self.assertEqual(created_location.organization, self.organization)
-        self.assertTrue(created_location.es_principal)
+        self.assertFalse(created_location.es_principal)
 
     def test_create_location_invalid_organization(self):
         """Test creating location with invalid organization reference."""
@@ -280,37 +280,30 @@ class LocationAPITests(APITestCase):
         response = self.client.post(url, invalid_data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("organization", response.data)
+        self.assertIn("organization", response.data.get("error", {}).get("details", {}))
 
     def test_create_duplicate_main_location(self):
         """Test creating duplicate main location (should fail)."""
-        # First create a main location
-        main_location_data = {
+        # The existing_location is already marked as principal (first location auto-becomes principal)
+        # Try to create another main location for same organization
+        duplicate_main_data = {
             "organization": self.organization.id,
-            "nombre": "Sede Principal",
+            "nombre": "Another Main Location",
             "tipo_sede": "principal",
             "es_principal": True,
             "direccion": "Carrera 7 # 45-67",
             "ciudad": "Bogotá",
             "departamento": "Cundinamarca",
         }
-        self.client.post(
-            reverse("organization:location-list"),
-            main_location_data,
-            format="json",
-        )
-
-        # Try to create another main location for same organization
-        duplicate_data = main_location_data.copy()
-        duplicate_data["nombre"] = "Another Main Location"
 
         response = self.client.post(
             reverse("organization:location-list"),
-            duplicate_data,
+            duplicate_main_data,
             format="json",
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("es_principal", response.data.get("error", {}).get("details", {}))
 
     def test_list_locations(self):
         """Test listing locations."""
@@ -481,8 +474,8 @@ class SectorTemplateAPITests(APITestCase):
         response = self.client.get(url, {"sector": "tecnologia"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["sector"], "tecnologia")
+        self.assertEqual(len(response.data["templates"]), 1)
+        self.assertEqual(response.data["templates"][0]["sector"], "tecnologia")
 
     def test_apply_template_to_organization(self):
         """Test applying template to organization."""

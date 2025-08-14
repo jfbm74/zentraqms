@@ -239,7 +239,9 @@ class OrganizationViewSet(viewsets.ModelViewSet):
                 return Response(
                     {
                         "organization": serializer.data,
+                        "organization_id": serializer.instance.id,
                         "step_completed": True,
+                        "next_step": "step2",
                         "message": message,
                     },
                     status=(
@@ -531,19 +533,35 @@ class LocationViewSet(viewsets.ModelViewSet):
         Args:
             serializer: Serializer instance with validated data
         """
+        from django.db import IntegrityError
+        from rest_framework.exceptions import ValidationError
+        
         # En el futuro, obtener organización del contexto del usuario
         # Por ahora, usar la organización del request o la primera disponible
         organization_id = self.request.data.get("organization")
         if organization_id:
-            organization = get_object_or_404(Organization, id=organization_id)
+            try:
+                organization = Organization.objects.get(id=organization_id)
+            except Organization.DoesNotExist:
+                raise ValidationError({
+                    "organization": [_("Organización no encontrada.")]
+                })
         else:
             organization = Organization.objects.first()
 
-        serializer.save(
-            organization=organization,
-            created_by=self.request.user,
-            updated_by=self.request.user,
-        )
+        try:
+            serializer.save(
+                organization=organization,
+                created_by=self.request.user,
+                updated_by=self.request.user,
+            )
+        except IntegrityError as e:
+            # Check for unique constraint violation on organization_id
+            if "organization_location.organization_id" in str(e) and "UNIQUE constraint failed" in str(e):
+                raise ValidationError({
+                    "es_principal": [_("Ya existe una sede principal para esta organización.")]
+                })
+            raise
 
     def perform_update(self, serializer):
         """
