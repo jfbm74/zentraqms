@@ -269,6 +269,7 @@ class ErrorBoundary extends Component<Props, State> {
 /**
  * HOC for wrapping components with error boundary
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
   errorBoundaryProps?: Omit<Props, "children">,
@@ -315,6 +316,7 @@ export const SimpleErrorFallback: React.FC<{
 /**
  * Error boundary hook for functional components
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useErrorHandler() {
   const [error, setError] = React.useState<Error | null>(null);
 

@@ -51,6 +51,7 @@ export const SimpleRouter: React.FC<SimpleRouterProps> = ({ children }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useNavigate = () => {
   const context = useContext(RouterContext);
   if (!context) {
@@ -59,6 +60,7 @@ export const useNavigate = () => {
   return context.navigate;
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useLocation = () => {
   const context = useContext(RouterContext);
   if (!context) {
