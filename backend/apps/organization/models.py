@@ -430,10 +430,10 @@ class Location(FullBaseModel):
             models.Index(fields=["tipo_sede"]),
         ]
         constraints = [
-            # Asegurar que solo hay una sede principal por organización
+            # Asegurar que solo hay una sede principal por organización activa
             models.UniqueConstraint(
                 fields=["organization"],
-                condition=models.Q(es_principal=True),
+                condition=models.Q(es_principal=True) & models.Q(deleted_at__isnull=True),
                 name="unique_main_location_per_organization",
             ),
         ]
@@ -449,7 +449,7 @@ class Location(FullBaseModel):
 
         # Validar que hay al menos una sede principal por organización
         if self.es_principal:
-            # Verificar si ya existe otra sede principal para esta organización
+            # Verificar si ya existe otra sede principal para esta organización (activa)
             existing_main = (
                 Location.objects.filter(
                     organization=self.organization, es_principal=True

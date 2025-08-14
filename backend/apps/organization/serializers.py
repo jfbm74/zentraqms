@@ -119,11 +119,13 @@ class LocationListSerializer(serializers.ModelSerializer):
     """
 
     direccion_completa = serializers.ReadOnlyField()
+    organization = serializers.SerializerMethodField()
 
     class Meta:
         model = Location
         fields = [
             "id",
+            "organization",
             "nombre",
             "tipo_sede",
             "es_principal",
@@ -134,6 +136,14 @@ class LocationListSerializer(serializers.ModelSerializer):
             "email",
             "is_active",
         ]
+
+    def get_organization(self, obj):
+        """Get organization data."""
+        return {
+            "id": obj.organization.id,
+            "razon_social": obj.organization.razon_social,
+            "nombre_comercial": obj.organization.nombre_comercial,
+        }
 
 
 class OrganizationSerializer(serializers.ModelSerializer):
@@ -336,6 +346,8 @@ class OrganizationListSerializer(serializers.ModelSerializer):
             "id",
             "razon_social",
             "nombre_comercial",
+            "nit",
+            "digito_verificacion",
             "nit_completo",
             "tipo_organizacion",
             "sector_economico",

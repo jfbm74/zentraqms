@@ -10,6 +10,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 from django.db import transaction
 from django.shortcuts import get_object_or_404
 
@@ -275,15 +276,16 @@ class OrganizationViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["post"])
     def calculate_verification_digit(self, request):
         """
-        Calculate verification digit for a given NIT.
+        Calculate verification digit for a given NIT and optionally validate.
 
         Args:
-            request: HTTP request with NIT in body
+            request: HTTP request with NIT in body, optionally with digito_verificacion
 
         Returns:
-            Response: Calculated verification digit
+            Response: Calculated verification digit and validation result
         """
         nit = request.data.get("nit", "")
+        provided_digit = request.data.get("digito_verificacion", "")
 
         if not nit:
             return Response(
@@ -291,14 +293,22 @@ class OrganizationViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            digito = Organization.calcular_digito_verificacion(nit)
-            return Response(
-                {
-                    "nit": nit,
-                    "digito_verificacion": digito,
-                    "nit_completo": f"{nit}-{digito}",
-                }
-            )
+            calculated_digit = Organization.calcular_digito_verificacion(nit)
+            response_data = {
+                "nit": nit,
+                "digito_verificacion": calculated_digit,
+                "nit_completo": f"{nit}-{calculated_digit}",
+            }
+
+            # If a digit was provided, also perform validation
+            if provided_digit:
+                is_valid = str(calculated_digit) == str(provided_digit)
+                response_data.update({
+                    "valid": is_valid,
+                    "message": _("NIT válido") if is_valid else _("NIT inválido - dígito de verificación incorrecto")
+                })
+
+            return Response(response_data)
         except Exception as e:
             return Response(
                 {
@@ -424,6 +434,23 @@ class OrganizationViewSet(viewsets.ModelViewSet):
                 {"error": _("Error durante rollback: {}").format(str(e))},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Soft delete an organization.
+        
+        Args:
+            request: HTTP request object
+            
+        Returns:
+            Response: Empty response with 204 status
+        """
+        instance = self.get_object()
+        instance.deleted_at = timezone.now()
+        instance.deleted_by = request.user
+        instance.is_active = False
+        instance.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class LocationViewSet(viewsets.ModelViewSet):
@@ -658,6 +685,23 @@ class LocationViewSet(viewsets.ModelViewSet):
                 {"error": _("Organización no encontrada.")},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Soft delete a location.
+        
+        Args:
+            request: HTTP request object
+            
+        Returns:
+            Response: Empty response with 204 status
+        """
+        instance = self.get_object()
+        instance.deleted_at = timezone.now()
+        instance.deleted_by = request.user
+        instance.is_active = False
+        instance.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class SectorTemplateViewSet(viewsets.ModelViewSet):

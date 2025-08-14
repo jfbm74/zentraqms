@@ -48,7 +48,7 @@ class OrganizationAPITests(APITestCase):
             "razon_social": "Empresa Test API S.A.S.",
             "nombre_comercial": "Test API Corp",
             "nit": "900123456",
-            "digito_verificacion": "1",
+            "digito_verificacion": "8",
             "tipo_organizacion": "empresa_privada",
             "sector_economico": "tecnologia",
             "tamaño_empresa": "mediana",
@@ -74,6 +74,8 @@ class OrganizationAPITests(APITestCase):
         url = reverse("organization:organization-list")
         response = self.client.post(url, self.valid_organization_data, format="json")
 
+        if response.status_code != status.HTTP_201_CREATED:
+            print(f"Response data: {response.data}")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Organization.objects.count(), 2)  # existing + new
 
@@ -541,7 +543,7 @@ class ValidationAPITests(APITestCase):
         url = reverse("organization:organization-calculate-verification-digit")
 
         # Test valid NIT
-        valid_data = {"nit": "900123456", "digito_verificacion": "1"}
+        valid_data = {"nit": "900123456", "digito_verificacion": "8"}
         response = self.client.post(url, valid_data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
