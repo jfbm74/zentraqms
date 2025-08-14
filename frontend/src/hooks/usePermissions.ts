@@ -1,14 +1,13 @@
 /**
  * usePermissions Hook for ZentraQMS Frontend
- * 
+ *
  * This custom hook provides advanced permission checking utilities
  * and convenience methods for RBAC operations.
  */
 
-import { useMemo, useCallback } from 'react';
-import { useAuth } from './useAuth';
-import { RBACService } from '../services/rbac.service';
-import { PermissionUtils } from '../types/rbac.types';
+import { useMemo, useCallback } from "react";
+import { useAuth } from "./useAuth";
+import { RBACService } from "../services/rbac.service";
 
 /**
  * Permission check options interface
@@ -41,7 +40,7 @@ interface PermissionAnalysis {
   /** Reason for the result */
   reason: string;
   /** Type of match found */
-  matchType?: 'exact' | 'wildcard' | 'superuser' | 'inherited';
+  matchType?: "exact" | "wildcard" | "superuser" | "inherited";
   /** Matched permission pattern */
   matchedPattern?: string;
 }
@@ -89,39 +88,48 @@ interface UserCapabilities {
  */
 interface UsePermissionsReturn {
   // Basic permission checks
-  hasPermission: (permission: string, options?: PermissionCheckOptions) => boolean;
-  hasAnyPermission: (permissions: string[], options?: PermissionCheckOptions) => boolean;
-  hasAllPermissions: (permissions: string[], options?: PermissionCheckOptions) => boolean;
-  
+  hasPermission: (
+    permission: string,
+    options?: PermissionCheckOptions,
+  ) => boolean;
+  hasAnyPermission: (
+    permissions: string[],
+    options?: PermissionCheckOptions,
+  ) => boolean;
+  hasAllPermissions: (
+    permissions: string[],
+    options?: PermissionCheckOptions,
+  ) => boolean;
+
   // Basic role checks
   hasRole: (role: string, options?: RoleCheckOptions) => boolean;
   hasAnyRole: (roles: string[], options?: RoleCheckOptions) => boolean;
   hasAllRoles: (roles: string[], options?: RoleCheckOptions) => boolean;
-  
+
   // Advanced permission analysis
   analyzePermission: (permission: string) => PermissionAnalysis;
   getResourcePermissions: (resource: string) => ResourcePermissions;
   getUserCapabilities: () => UserCapabilities;
-  
+
   // Permission utilities
   canCreate: (resource: string) => boolean;
   canRead: (resource: string) => boolean;
   canUpdate: (resource: string) => boolean;
   canDelete: (resource: string) => boolean;
   canManage: (resource: string) => boolean; // All CRUD operations
-  
+
   // Role utilities
   getPrimaryRole: () => string;
   getRoleHierarchy: () => string[];
   isHigherRoleThan: (role: string) => boolean;
-  
+
   // State
   permissions: string[];
   roles: string[];
   permissionsByResource: Record<string, string[]>;
   isLoading: boolean;
   error: string | null;
-  
+
   // Refresh
   refreshPermissions: () => Promise<void>;
   clearError: () => void;
@@ -160,32 +168,38 @@ export const usePermissions = (): UsePermissionsReturn => {
 
       return authHasPermission(permission);
     },
-    [permissions, roles, authHasPermission]
+    [permissions, roles, authHasPermission],
   );
 
   /**
    * Enhanced any permission check with options
    */
   const hasAnyPermission = useCallback(
-    (checkPermissions: string[], options: PermissionCheckOptions = {}): boolean => {
+    (
+      checkPermissions: string[],
+      options: PermissionCheckOptions = {},
+    ): boolean => {
       const { requireAll = false, customValidator } = options;
 
       if (customValidator) {
         return customValidator(permissions, roles);
       }
 
-      return requireAll 
+      return requireAll
         ? authHasAllPermissions(checkPermissions)
         : authHasAnyPermission(checkPermissions);
     },
-    [permissions, roles, authHasAllPermissions, authHasAnyPermission]
+    [permissions, roles, authHasAllPermissions, authHasAnyPermission],
   );
 
   /**
    * Enhanced all permissions check with options
    */
   const hasAllPermissions = useCallback(
-    (checkPermissions: string[], options: PermissionCheckOptions = {}): boolean => {
+    (
+      checkPermissions: string[],
+      options: PermissionCheckOptions = {},
+    ): boolean => {
       const { customValidator } = options;
 
       if (customValidator) {
@@ -194,7 +208,7 @@ export const usePermissions = (): UsePermissionsReturn => {
 
       return authHasAllPermissions(checkPermissions);
     },
-    [permissions, roles, authHasAllPermissions]
+    [permissions, roles, authHasAllPermissions],
   );
 
   /**
@@ -204,7 +218,7 @@ export const usePermissions = (): UsePermissionsReturn => {
     (role: string): boolean => {
       return authHasRole(role);
     },
-    [authHasRole]
+    [authHasRole],
   );
 
   /**
@@ -214,11 +228,11 @@ export const usePermissions = (): UsePermissionsReturn => {
     (checkRoles: string[], options: RoleCheckOptions = {}): boolean => {
       const { requireAll = false } = options;
 
-      return requireAll 
+      return requireAll
         ? authHasAllRoles(checkRoles)
         : authHasAnyRole(checkRoles);
     },
-    [authHasAllRoles, authHasAnyRole]
+    [authHasAllRoles, authHasAnyRole],
   );
 
   /**
@@ -228,7 +242,7 @@ export const usePermissions = (): UsePermissionsReturn => {
     (checkRoles: string[]): boolean => {
       return authHasAllRoles(checkRoles);
     },
-    [authHasAllRoles]
+    [authHasAllRoles],
   );
 
   /**
@@ -238,7 +252,7 @@ export const usePermissions = (): UsePermissionsReturn => {
     (permission: string): PermissionAnalysis => {
       return RBACService.checkPermissionDetailed(permissions, permission);
     },
-    [permissions]
+    [permissions],
   );
 
   /**
@@ -247,24 +261,28 @@ export const usePermissions = (): UsePermissionsReturn => {
   const getResourcePermissions = useCallback(
     (resource: string): ResourcePermissions => {
       const resourcePerms = permissionsByResource[resource] || [];
-      const actions = resourcePerms.map(perm => PermissionUtils.getAction(perm));
-      
+      const actions = resourcePerms.map((perm) => perm.split(".")[1] || "");
+
       return {
         resource,
         actions,
         hasWildcardAccess: permissions.includes(`${resource}.*`),
-        isSuperUser: permissions.includes('*.all'),
+        isSuperUser: permissions.includes("*.all"),
       };
     },
-    [permissions, permissionsByResource]
+    [permissions, permissionsByResource],
   );
 
   /**
    * Get user capabilities summary
    */
   const getUserCapabilities = useCallback((): UserCapabilities => {
-    const capabilities = RBACService.getUserCapabilities(permissions, roles, permissionsByResource);
-    
+    const capabilities = RBACService.getUserCapabilities(
+      permissions,
+      roles,
+      permissionsByResource,
+    );
+
     return {
       isSuperAdmin: capabilities.isSuperAdmin,
       canManageUsers: capabilities.capabilities.canManageUsers,
@@ -272,15 +290,33 @@ export const usePermissions = (): UsePermissionsReturn => {
       canManageAudits: capabilities.capabilities.canManageAudits,
       canViewReports: capabilities.capabilities.canViewReports,
       canManageSystem: capabilities.capabilities.canManageSystem,
-      canManageDocuments: hasAnyPermission(['documents.create', 'documents.update', 'documents.delete']),
-      canManageIndicators: hasAnyPermission(['indicators.create', 'indicators.update', 'indicators.delete']),
+      canManageDocuments: hasAnyPermission([
+        "documents.create",
+        "documents.update",
+        "documents.delete",
+      ]),
+      canManageIndicators: hasAnyPermission([
+        "indicators.create",
+        "indicators.update",
+        "indicators.delete",
+      ]),
       custom: {
-        canExportData: hasAnyPermission(['reports.export', 'data.export']),
-        canImportData: hasAnyPermission(['data.import']),
-        canManageSettings: hasAnyPermission(['settings.update', 'system.admin']),
-        canViewAuditLogs: hasAnyPermission(['audit_logs.read', 'system.admin']),
-        canManageRoles: hasAnyPermission(['roles.create', 'roles.update', 'roles.delete']),
-        canAssignPermissions: hasAnyPermission(['permissions.assign', 'users.update']),
+        canExportData: hasAnyPermission(["reports.export", "data.export"]),
+        canImportData: hasAnyPermission(["data.import"]),
+        canManageSettings: hasAnyPermission([
+          "settings.update",
+          "system.admin",
+        ]),
+        canViewAuditLogs: hasAnyPermission(["audit_logs.read", "system.admin"]),
+        canManageRoles: hasAnyPermission([
+          "roles.create",
+          "roles.update",
+          "roles.delete",
+        ]),
+        canAssignPermissions: hasAnyPermission([
+          "permissions.assign",
+          "users.update",
+        ]),
       },
     };
   }, [permissions, roles, permissionsByResource, hasAnyPermission]);
@@ -292,7 +328,7 @@ export const usePermissions = (): UsePermissionsReturn => {
     (resource: string): boolean => {
       return hasPermission(`${resource}.create`);
     },
-    [hasPermission]
+    [hasPermission],
   );
 
   /**
@@ -300,9 +336,11 @@ export const usePermissions = (): UsePermissionsReturn => {
    */
   const canRead = useCallback(
     (resource: string): boolean => {
-      return hasPermission(`${resource}.read`) || hasPermission(`${resource}.view`);
+      return (
+        hasPermission(`${resource}.read`) || hasPermission(`${resource}.view`)
+      );
     },
-    [hasPermission]
+    [hasPermission],
   );
 
   /**
@@ -310,9 +348,11 @@ export const usePermissions = (): UsePermissionsReturn => {
    */
   const canUpdate = useCallback(
     (resource: string): boolean => {
-      return hasPermission(`${resource}.update`) || hasPermission(`${resource}.edit`);
+      return (
+        hasPermission(`${resource}.update`) || hasPermission(`${resource}.edit`)
+      );
     },
-    [hasPermission]
+    [hasPermission],
   );
 
   /**
@@ -322,7 +362,7 @@ export const usePermissions = (): UsePermissionsReturn => {
     (resource: string): boolean => {
       return hasPermission(`${resource}.delete`);
     },
-    [hasPermission]
+    [hasPermission],
   );
 
   /**
@@ -330,10 +370,15 @@ export const usePermissions = (): UsePermissionsReturn => {
    */
   const canManage = useCallback(
     (resource: string): boolean => {
-      return hasPermission(`${resource}.*`) || 
-             (canCreate(resource) && canRead(resource) && canUpdate(resource) && canDelete(resource));
+      return (
+        hasPermission(`${resource}.*`) ||
+        (canCreate(resource) &&
+          canRead(resource) &&
+          canUpdate(resource) &&
+          canDelete(resource))
+      );
     },
-    [hasPermission, canCreate, canRead, canUpdate, canDelete]
+    [hasPermission, canCreate, canRead, canUpdate, canDelete],
   );
 
   /**
@@ -348,16 +393,16 @@ export const usePermissions = (): UsePermissionsReturn => {
    */
   const getRoleHierarchy = useCallback((): string[] => {
     const hierarchy = [
-      'guest',
-      'consulta',
-      'auditor', 
-      'coordinador',
-      'admin',
-      'super_admin',
+      "guest",
+      "consulta",
+      "auditor",
+      "coordinador",
+      "admin",
+      "super_admin",
     ];
-    
+
     // Return only roles the user has, ordered by hierarchy
-    return hierarchy.filter(role => roles.includes(role));
+    return hierarchy.filter((role) => roles.includes(role));
   }, [roles]);
 
   /**
@@ -368,79 +413,82 @@ export const usePermissions = (): UsePermissionsReturn => {
       const hierarchy = getRoleHierarchy();
       const userHighestRoleIndex = hierarchy.length - 1;
       const compareRoleIndex = hierarchy.indexOf(role);
-      
+
       return compareRoleIndex !== -1 && userHighestRoleIndex > compareRoleIndex;
     },
-    [getRoleHierarchy]
+    [getRoleHierarchy],
   );
 
   /**
    * Memoized return value
    */
-  const hookValue = useMemo((): UsePermissionsReturn => ({
-    // Basic permission checks
-    hasPermission,
-    hasAnyPermission,
-    hasAllPermissions,
-    
-    // Basic role checks
-    hasRole,
-    hasAnyRole,
-    hasAllRoles,
-    
-    // Advanced permission analysis
-    analyzePermission,
-    getResourcePermissions,
-    getUserCapabilities,
-    
-    // Permission utilities
-    canCreate,
-    canRead,
-    canUpdate,
-    canDelete,
-    canManage,
-    
-    // Role utilities
-    getPrimaryRole,
-    getRoleHierarchy,
-    isHigherRoleThan,
-    
-    // State
-    permissions,
-    roles,
-    permissionsByResource,
-    isLoading: rbacLoading,
-    error: rbacError,
-    
-    // Refresh
-    refreshPermissions,
-    clearError: clearRbacError,
-  }), [
-    hasPermission,
-    hasAnyPermission,
-    hasAllPermissions,
-    hasRole,
-    hasAnyRole,
-    hasAllRoles,
-    analyzePermission,
-    getResourcePermissions,
-    getUserCapabilities,
-    canCreate,
-    canRead,
-    canUpdate,
-    canDelete,
-    canManage,
-    getPrimaryRole,
-    getRoleHierarchy,
-    isHigherRoleThan,
-    permissions,
-    roles,
-    permissionsByResource,
-    rbacLoading,
-    rbacError,
-    refreshPermissions,
-    clearRbacError,
-  ]);
+  const hookValue = useMemo(
+    (): UsePermissionsReturn => ({
+      // Basic permission checks
+      hasPermission,
+      hasAnyPermission,
+      hasAllPermissions,
+
+      // Basic role checks
+      hasRole,
+      hasAnyRole,
+      hasAllRoles,
+
+      // Advanced permission analysis
+      analyzePermission,
+      getResourcePermissions,
+      getUserCapabilities,
+
+      // Permission utilities
+      canCreate,
+      canRead,
+      canUpdate,
+      canDelete,
+      canManage,
+
+      // Role utilities
+      getPrimaryRole,
+      getRoleHierarchy,
+      isHigherRoleThan,
+
+      // State
+      permissions,
+      roles,
+      permissionsByResource,
+      isLoading: rbacLoading,
+      error: rbacError,
+
+      // Refresh
+      refreshPermissions,
+      clearError: clearRbacError,
+    }),
+    [
+      hasPermission,
+      hasAnyPermission,
+      hasAllPermissions,
+      hasRole,
+      hasAnyRole,
+      hasAllRoles,
+      analyzePermission,
+      getResourcePermissions,
+      getUserCapabilities,
+      canCreate,
+      canRead,
+      canUpdate,
+      canDelete,
+      canManage,
+      getPrimaryRole,
+      getRoleHierarchy,
+      isHigherRoleThan,
+      permissions,
+      roles,
+      permissionsByResource,
+      rbacLoading,
+      rbacError,
+      refreshPermissions,
+      clearRbacError,
+    ],
+  );
 
   return hookValue;
 };
@@ -449,20 +497,30 @@ export const usePermissions = (): UsePermissionsReturn => {
  * Hook for specific resource permissions
  */
 export const useResourcePermissions = (resource: string) => {
-  const { getResourcePermissions, canCreate, canRead, canUpdate, canDelete, canManage } = usePermissions();
+  const {
+    getResourcePermissions,
+    canCreate,
+    canRead,
+    canUpdate,
+    canDelete,
+    canManage,
+  } = usePermissions();
 
-  const resourcePermissions = useMemo(() => 
-    getResourcePermissions(resource), 
-    [getResourcePermissions, resource]
+  const resourcePermissions = useMemo(
+    () => getResourcePermissions(resource),
+    [getResourcePermissions, resource],
   );
 
-  const actions = useMemo(() => ({
-    canCreate: canCreate(resource),
-    canRead: canRead(resource),
-    canUpdate: canUpdate(resource),
-    canDelete: canDelete(resource),
-    canManage: canManage(resource),
-  }), [canCreate, canRead, canUpdate, canDelete, canManage, resource]);
+  const actions = useMemo(
+    () => ({
+      canCreate: canCreate(resource),
+      canRead: canRead(resource),
+      canUpdate: canUpdate(resource),
+      canDelete: canDelete(resource),
+      canManage: canManage(resource),
+    }),
+    [canCreate, canRead, canUpdate, canDelete, canManage, resource],
+  );
 
   return {
     ...resourcePermissions,
@@ -474,7 +532,8 @@ export const useResourcePermissions = (resource: string) => {
  * Hook for role-based UI decisions
  */
 export const useRoleBasedUI = () => {
-  const { getPrimaryRole, getRoleHierarchy, getUserCapabilities } = usePermissions();
+  const { getPrimaryRole, getRoleHierarchy, getUserCapabilities } =
+    usePermissions();
 
   const primaryRole = getPrimaryRole();
   const roleHierarchy = getRoleHierarchy();
@@ -489,13 +548,20 @@ export const useRoleBasedUI = () => {
       showSettingsMenu: capabilities.canManageSystem,
       showDocumentsMenu: capabilities.canManageDocuments,
       showIndicatorsMenu: capabilities.canManageIndicators,
-      
+
       // Dashboard variations
-      dashboardType: primaryRole === 'super_admin' ? 'admin' :
-                    primaryRole === 'admin' ? 'admin' :
-                    primaryRole === 'coordinador' ? 'coordinator' :
-                    primaryRole === 'auditor' ? 'auditor' :
-                    primaryRole === 'consulta' ? 'readonly' : 'guest',
+      dashboardType:
+        primaryRole === "super_admin"
+          ? "admin"
+          : primaryRole === "admin"
+            ? "admin"
+            : primaryRole === "coordinador"
+              ? "coordinator"
+              : primaryRole === "auditor"
+                ? "auditor"
+                : primaryRole === "consulta"
+                  ? "readonly"
+                  : "guest",
     };
 
     return config;

@@ -16,20 +16,20 @@ from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from apps.common.utils import get_client_ip
 from .utils import log_security_event
 
-logger = logging.getLogger('authentication')
+logger = logging.getLogger("authentication")
 
 
 # ================================
 # Custom Exception Classes
 # ================================
 
+
 class AuthenticationException(Exception):
     """Base exception class for authentication errors."""
 
-    def __init__(self, message: str, error_code: str = None,
-                 details: dict = None):
+    def __init__(self, message: str, error_code: str = None, details: dict = None):
         self.message = message
-        self.error_code = error_code or 'AUTH_ERROR'
+        self.error_code = error_code or "AUTH_ERROR"
         self.details = details or {}
         super().__init__(self.message)
 
@@ -37,18 +37,15 @@ class AuthenticationException(Exception):
 class AccountLockedException(AuthenticationException):
     """Exception raised when trying to access a locked account."""
 
-    def __init__(self, message: str = None,
-                 locked_until: timezone.datetime = None):
+    def __init__(self, message: str = None, locked_until: timezone.datetime = None):
         self.locked_until = locked_until
         default_message = "Cuenta bloqueada por múltiples intentos fallidos."
         super().__init__(
             message=message or default_message,
-            error_code='ACCOUNT_LOCKED',
+            error_code="ACCOUNT_LOCKED",
             details={
-                'locked_until': (
-                    locked_until.isoformat() if locked_until else None
-                )
-            }
+                "locked_until": (locked_until.isoformat() if locked_until else None)
+            },
         )
 
 
@@ -58,8 +55,7 @@ class AccountInactiveException(AuthenticationException):
     def __init__(self, message: str = None):
         default_message = "Cuenta desactivada. Contacte al administrador."
         super().__init__(
-            message=message or default_message,
-            error_code='ACCOUNT_INACTIVE'
+            message=message or default_message, error_code="ACCOUNT_INACTIVE"
         )
 
 
@@ -70,32 +66,32 @@ class InvalidCredentialsException(AuthenticationException):
         default_message = "Credenciales inválidas."
         super().__init__(
             message=message or default_message,
-            error_code='INVALID_CREDENTIALS',
-            details={'attempts_remaining': attempts_remaining}
+            error_code="INVALID_CREDENTIALS",
+            details={"attempts_remaining": attempts_remaining},
         )
 
 
 class TokenExpiredException(AuthenticationException):
     """Exception raised when a token has expired."""
 
-    def __init__(self, message: str = None, token_type: str = 'access'):
+    def __init__(self, message: str = None, token_type: str = "access"):
         default_message = f"Token {token_type} expirado."
         super().__init__(
             message=message or default_message,
-            error_code='TOKEN_EXPIRED',
-            details={'token_type': token_type}
+            error_code="TOKEN_EXPIRED",
+            details={"token_type": token_type},
         )
 
 
 class TokenInvalidException(AuthenticationException):
     """Exception raised when a token is invalid or malformed."""
 
-    def __init__(self, message: str = None, token_type: str = 'access'):
+    def __init__(self, message: str = None, token_type: str = "access"):
         default_message = f"Token {token_type} inválido."
         super().__init__(
             message=message or default_message,
-            error_code='TOKEN_INVALID',
-            details={'token_type': token_type}
+            error_code="TOKEN_INVALID",
+            details={"token_type": token_type},
         )
 
 
@@ -106,8 +102,8 @@ class RateLimitExceededException(AuthenticationException):
         default_message = "Demasiadas peticiones. Intente más tarde."
         super().__init__(
             message=message or default_message,
-            error_code='RATE_LIMITED',
-            details={'retry_after': retry_after}
+            error_code="RATE_LIMITED",
+            details={"retry_after": retry_after},
         )
 
 
@@ -118,8 +114,8 @@ class SuspiciousActivityException(AuthenticationException):
         default_message = "Actividad sospechosa detectada."
         super().__init__(
             message=message or default_message,
-            error_code='SUSPICIOUS_ACTIVITY',
-            details={'activity_type': activity_type}
+            error_code="SUSPICIOUS_ACTIVITY",
+            details={"activity_type": activity_type},
         )
 
 
@@ -130,14 +126,15 @@ class PermissionDeniedException(AuthenticationException):
         default_message = "Permisos insuficientes para esta acción."
         super().__init__(
             message=message or default_message,
-            error_code='PERMISSION_DENIED',
-            details={'required_permission': required_permission}
+            error_code="PERMISSION_DENIED",
+            details={"required_permission": required_permission},
         )
 
 
 # ================================
 # Exception Handler Functions
 # ================================
+
 
 def custom_exception_handler(exc, context):
     """
@@ -157,28 +154,28 @@ def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
 
     # Get request object for logging
-    request = context.get('request')
-    ip_address = get_client_ip(request) if request else 'unknown'
+    request = context.get("request")
+    ip_address = get_client_ip(request) if request else "unknown"
     user_email = (
-        getattr(request.user, 'email', 'anonymous')
-        if request and hasattr(request, 'user')
-        else 'anonymous'
+        getattr(request.user, "email", "anonymous")
+        if request and hasattr(request, "user")
+        else "anonymous"
     )
 
     # Handle custom authentication exceptions
     if isinstance(exc, AuthenticationException):
         # Log the security event
         log_security_event(
-            event_type='auth_exception',
+            event_type="auth_exception",
             user_email=user_email,
             ip_address=ip_address,
             details={
-                'exception_type': exc.__class__.__name__,
-                'error_code': exc.error_code,
-                'message': exc.message,
-                'path': request.path if request else 'unknown',
-                'method': request.method if request else 'unknown'
-            }
+                "exception_type": exc.__class__.__name__,
+                "error_code": exc.error_code,
+                "message": exc.message,
+                "path": request.path if request else "unknown",
+                "method": request.method if request else "unknown",
+            },
         )
 
         # Determine HTTP status code based on exception type
@@ -196,41 +193,41 @@ def custom_exception_handler(exc, context):
         # Create custom response
         response = Response(
             data={
-                'success': False,
-                'error': {
-                    'message': exc.message,
-                    'code': exc.error_code,
-                    'details': exc.details,
-                    'timestamp': timezone.now().isoformat()
-                }
+                "success": False,
+                "error": {
+                    "message": exc.message,
+                    "code": exc.error_code,
+                    "details": exc.details,
+                    "timestamp": timezone.now().isoformat(),
+                },
             },
-            status=status_code
+            status=status_code,
         )
 
     # Handle JWT-specific exceptions
     elif isinstance(exc, (TokenError, InvalidToken)):
         log_security_event(
-            event_type='jwt_token_error',
+            event_type="jwt_token_error",
             user_email=user_email,
             ip_address=ip_address,
             details={
-                'exception_type': exc.__class__.__name__,
-                'error_message': str(exc),
-                'path': request.path if request else 'unknown'
-            }
+                "exception_type": exc.__class__.__name__,
+                "error_message": str(exc),
+                "path": request.path if request else "unknown",
+            },
         )
 
         response = Response(
             data={
-                'success': False,
-                'error': {
-                    'message': 'Token de autenticación inválido o expirado.',
-                    'code': 'TOKEN_ERROR',
-                    'details': {'detail': str(exc)},
-                    'timestamp': timezone.now().isoformat()
-                }
+                "success": False,
+                "error": {
+                    "message": "Token de autenticación inválido o expirado.",
+                    "code": "TOKEN_ERROR",
+                    "details": {"detail": str(exc)},
+                    "timestamp": timezone.now().isoformat(),
+                },
             },
-            status=status.HTTP_401_UNAUTHORIZED
+            status=status.HTTP_401_UNAUTHORIZED,
         )
 
     # Handle other authentication-related exceptions
@@ -238,35 +235,33 @@ def custom_exception_handler(exc, context):
         # Log general authentication errors
         if response.status_code in [401, 403]:
             log_security_event(
-                event_type='auth_error',
+                event_type="auth_error",
                 user_email=user_email,
                 ip_address=ip_address,
                 details={
-                    'status_code': response.status_code,
-                    'exception_type': exc.__class__.__name__,
-                    'path': request.path if request else 'unknown',
-                    'original_data': response.data
-                }
+                    "status_code": response.status_code,
+                    "exception_type": exc.__class__.__name__,
+                    "path": request.path if request else "unknown",
+                    "original_data": response.data,
+                },
             )
 
         # Ensure consistent response format
-        if (not isinstance(response.data, dict) or
-                'success' not in response.data):
+        if not isinstance(response.data, dict) or "success" not in response.data:
             response.data = {
-                'success': False,
-                'error': {
-                    'message': 'Error de autenticación.',
-                    'code': 'AUTH_ERROR',
-                    'details': response.data,
-                    'timestamp': timezone.now().isoformat()
-                }
+                "success": False,
+                "error": {
+                    "message": "Error de autenticación.",
+                    "code": "AUTH_ERROR",
+                    "details": response.data,
+                    "timestamp": timezone.now().isoformat(),
+                },
             }
 
     return response
 
 
-def handle_authentication_error(error_type: str, request=None,
-                                user=None, **kwargs):
+def handle_authentication_error(error_type: str, request=None, user=None, **kwargs):
     """
     Helper function to handle and log authentication errors consistently.
 
@@ -279,69 +274,69 @@ def handle_authentication_error(error_type: str, request=None,
     Returns:
         dict: Formatted error response data
     """
-    ip_address = get_client_ip(request) if request else 'unknown'
-    user_email = getattr(user, 'email', 'anonymous') if user else 'anonymous'
+    ip_address = get_client_ip(request) if request else "unknown"
+    user_email = getattr(user, "email", "anonymous") if user else "anonymous"
 
     # Define error messages and codes
     error_mappings = {
-        'invalid_credentials': {
-            'message': 'Credenciales inválidas.',
-            'code': 'INVALID_CREDENTIALS'
+        "invalid_credentials": {
+            "message": "Credenciales inválidas.",
+            "code": "INVALID_CREDENTIALS",
         },
-        'account_locked': {
-            'message': 'Cuenta bloqueada por múltiples intentos fallidos.',
-            'code': 'ACCOUNT_LOCKED'
+        "account_locked": {
+            "message": "Cuenta bloqueada por múltiples intentos fallidos.",
+            "code": "ACCOUNT_LOCKED",
         },
-        'account_inactive': {
-            'message': 'Cuenta desactivada. Contacte al administrador.',
-            'code': 'ACCOUNT_INACTIVE'
+        "account_inactive": {
+            "message": "Cuenta desactivada. Contacte al administrador.",
+            "code": "ACCOUNT_INACTIVE",
         },
-        'token_expired': {
-            'message': 'Token de autenticación expirado.',
-            'code': 'TOKEN_EXPIRED'
+        "token_expired": {
+            "message": "Token de autenticación expirado.",
+            "code": "TOKEN_EXPIRED",
         },
-        'token_invalid': {
-            'message': 'Token de autenticación inválido.',
-            'code': 'TOKEN_INVALID'
+        "token_invalid": {
+            "message": "Token de autenticación inválido.",
+            "code": "TOKEN_INVALID",
         },
-        'rate_limited': {
-            'message': 'Demasiadas peticiones. Intente más tarde.',
-            'code': 'RATE_LIMITED'
-        }
+        "rate_limited": {
+            "message": "Demasiadas peticiones. Intente más tarde.",
+            "code": "RATE_LIMITED",
+        },
     }
 
-    error_info = error_mappings.get(error_type, {
-        'message': 'Error de autenticación.',
-        'code': 'AUTH_ERROR'
-    })
+    error_info = error_mappings.get(
+        error_type, {"message": "Error de autenticación.", "code": "AUTH_ERROR"}
+    )
 
     # Log the error
     log_security_event(
-        event_type=f'auth_{error_type}',
+        event_type=f"auth_{error_type}",
         user_email=user_email,
         ip_address=ip_address,
         details={
-            'error_type': error_type,
-            'path': request.path if request else 'unknown',
-            'method': request.method if request else 'unknown',
-            **kwargs
-        }
+            "error_type": error_type,
+            "path": request.path if request else "unknown",
+            "method": request.method if request else "unknown",
+            **kwargs,
+        },
     )
 
     return {
-        'success': False,
-        'error': {
-            'message': error_info['message'],
-            'code': error_info['code'],
-            'details': kwargs,
-            'timestamp': timezone.now().isoformat()
-        }
+        "success": False,
+        "error": {
+            "message": error_info["message"],
+            "code": error_info["code"],
+            "details": kwargs,
+            "timestamp": timezone.now().isoformat(),
+        },
     }
 
 
 # ================================
 # Decorator for Exception Handling
 # ================================
+
 
 def handle_auth_exceptions(view_func):
     """
@@ -353,55 +348,56 @@ def handle_auth_exceptions(view_func):
     Returns:
         Wrapped view function with exception handling
     """
+
     def wrapper(*args, **kwargs):
         try:
             return view_func(*args, **kwargs)
         except AuthenticationException as e:
             request = args[0] if args else None
-            ip_address = get_client_ip(request) if request else 'unknown'
+            ip_address = get_client_ip(request) if request else "unknown"
             user_email = (
-                getattr(request.user, 'email', 'anonymous')
-                if hasattr(request, 'user')
-                else 'anonymous'
+                getattr(request.user, "email", "anonymous")
+                if hasattr(request, "user")
+                else "anonymous"
             )
 
             log_security_event(
-                event_type='view_auth_exception',
+                event_type="view_auth_exception",
                 user_email=user_email,
                 ip_address=ip_address,
                 details={
-                    'view_function': view_func.__name__,
-                    'exception_type': e.__class__.__name__,
-                    'error_code': e.error_code,
-                    'message': e.message
-                }
+                    "view_function": view_func.__name__,
+                    "exception_type": e.__class__.__name__,
+                    "error_code": e.error_code,
+                    "message": e.message,
+                },
             )
 
             return Response(
                 data={
-                    'success': False,
-                    'error': {
-                        'message': e.message,
-                        'code': e.error_code,
-                        'details': e.details,
-                        'timestamp': timezone.now().isoformat()
-                    }
+                    "success": False,
+                    "error": {
+                        "message": e.message,
+                        "code": e.error_code,
+                        "details": e.details,
+                        "timestamp": timezone.now().isoformat(),
+                    },
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
             logger.error(f"Unexpected error in {view_func.__name__}: {str(e)}")
             return Response(
                 data={
-                    'success': False,
-                    'error': {
-                        'message': 'Error interno del servidor.',
-                        'code': 'INTERNAL_ERROR',
-                        'details': {},
-                        'timestamp': timezone.now().isoformat()
-                    }
+                    "success": False,
+                    "error": {
+                        "message": "Error interno del servidor.",
+                        "code": "INTERNAL_ERROR",
+                        "details": {},
+                        "timestamp": timezone.now().isoformat(),
+                    },
                 },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
     return wrapper
@@ -411,7 +407,10 @@ def handle_auth_exceptions(view_func):
 # Validation Helper Functions
 # ================================
 
-def validate_and_raise(condition: bool, exception_class: AuthenticationException, *args, **kwargs):
+
+def validate_and_raise(
+    condition: bool, exception_class: AuthenticationException, *args, **kwargs
+):
     """
     Helper function to validate a condition and raise an exception if it fails.
 
@@ -434,9 +433,9 @@ def safe_get_user_email(user) -> str:
     Returns:
         str: User email or 'anonymous'
     """
-    if hasattr(user, 'email'):
+    if hasattr(user, "email"):
         return user.email
-    elif hasattr(user, 'username'):
+    elif hasattr(user, "username"):
         return user.username
     else:
-        return 'anonymous'
+        return "anonymous"

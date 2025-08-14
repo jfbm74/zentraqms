@@ -1,15 +1,15 @@
 /**
  * Access Denied Page for ZentraQMS Frontend
- * 
+ *
  * This page is displayed when users don't have sufficient permissions
  * to access a protected route or resource.
  */
 
-import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import { usePermissions } from '../../hooks/usePermissions';
-import { RBACService } from '../../services/rbac.service';
+import React from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
+import { usePermissions } from "../../hooks/usePermissions";
+import { RBACService } from "../../services/rbac.service";
 
 /**
  * Location state interface for access denied information
@@ -35,8 +35,8 @@ const AccessDeniedPage: React.FC = () => {
 
   // Get state passed from ProtectedRoute
   const locationState = location.state as AccessDeniedLocationState | null;
-  const fromPath = locationState?.from?.pathname || '/';
-  const reason = locationState?.reason || 'insufficient_permissions';
+  const fromPath = locationState?.from?.pathname || "/";
+  const reason = locationState?.reason || "insufficient_permissions";
   const requiredPermissions = locationState?.requiredPermissions || [];
   const requiredRoles = locationState?.requiredRoles || [];
 
@@ -62,11 +62,11 @@ const AccessDeniedPage: React.FC = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/login');
+      navigate("/login");
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
       // Force redirect to login even if logout fails
-      navigate('/login');
+      navigate("/login");
     }
   };
 
@@ -78,33 +78,33 @@ const AccessDeniedPage: React.FC = () => {
 
     if (capabilities.canViewReports) {
       actions.push({
-        label: 'Ver Reportes',
-        path: '/reportes',
-        icon: 'ri-file-chart-line',
+        label: "Ver Reportes",
+        path: "/reportes",
+        icon: "ri-file-chart-line",
       });
     }
 
     if (capabilities.canManageProcesses) {
       actions.push({
-        label: 'Gestión de Procesos',
-        path: '/procesos',
-        icon: 'ri-file-list-3-line',
+        label: "Gestión de Procesos",
+        path: "/procesos",
+        icon: "ri-file-list-3-line",
       });
     }
 
     if (capabilities.canManageAudits) {
       actions.push({
-        label: 'Auditorías',
-        path: '/auditorias',
-        icon: 'ri-search-eye-line',
+        label: "Auditorías",
+        path: "/auditorias",
+        icon: "ri-search-eye-line",
       });
     }
 
     // Always add dashboard
     actions.push({
-      label: 'Dashboard',
-      path: '/dashboard',
-      icon: 'ri-dashboard-line',
+      label: "Dashboard",
+      path: "/dashboard",
+      icon: "ri-dashboard-line",
     });
 
     return actions;
@@ -123,13 +123,16 @@ const AccessDeniedPage: React.FC = () => {
     return (
       <div className="mt-4">
         <h6 className="text-muted mb-3">Permisos Requeridos:</h6>
-        
+
         {requiredRoles.length > 0 && (
           <div className="mb-3">
             <small className="text-muted d-block mb-2">Roles:</small>
             <div className="d-flex flex-wrap gap-2">
               {requiredRoles.map((role, index) => (
-                <span key={index} className="badge bg-primary-subtle text-primary">
+                <span
+                  key={index}
+                  className="badge bg-primary-subtle text-primary"
+                >
                   <i className="ri-user-line me-1"></i>
                   {role}
                 </span>
@@ -143,7 +146,10 @@ const AccessDeniedPage: React.FC = () => {
             <small className="text-muted d-block mb-2">Permisos:</small>
             <div className="d-flex flex-wrap gap-2">
               {requiredPermissions.map((permission, index) => (
-                <span key={index} className="badge bg-warning-subtle text-warning">
+                <span
+                  key={index}
+                  className="badge bg-warning-subtle text-warning"
+                >
                   <i className="ri-shield-keyhole-line me-1"></i>
                   {permission}
                 </span>
@@ -162,18 +168,20 @@ const AccessDeniedPage: React.FC = () => {
     return (
       <div className="mt-4">
         <h6 className="text-muted mb-3">Tus Permisos Actuales:</h6>
-        
+
         <div className="row">
           <div className="col-md-6">
             <small className="text-muted d-block mb-2">Rol Principal:</small>
             <span className="badge bg-info-subtle text-info fs-6">
               <i className="ri-user-star-line me-1"></i>
-              {primaryRole || 'Sin rol asignado'}
+              {primaryRole || "Sin rol asignado"}
             </span>
           </div>
-          
+
           <div className="col-md-6">
-            <small className="text-muted d-block mb-2">Total de Permisos:</small>
+            <small className="text-muted d-block mb-2">
+              Total de Permisos:
+            </small>
             <span className="badge bg-success-subtle text-success fs-6">
               <i className="ri-shield-check-line me-1"></i>
               {permissions.length} permisos
@@ -224,9 +232,13 @@ const AccessDeniedPage: React.FC = () => {
     <div className="auth-page-wrapper pt-5">
       <div className="auth-one-bg-position auth-one-bg" id="auth-particles">
         <div className="bg-overlay"></div>
-        
+
         <div className="shape">
-          <svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 1440 120">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            version="1.1"
+            viewBox="0 0 1440 120"
+          >
             <path d="M 0,36 C 144,53.6 432,123.2 720,124 C 1008,124.8 1296,56.8 1440,40L1440 140L0 140z"></path>
           </svg>
         </div>
@@ -239,7 +251,11 @@ const AccessDeniedPage: React.FC = () => {
               <div className="text-center mt-sm-5 mb-4 text-white-50">
                 <div>
                   <Link to="/" className="d-inline-block auth-logo">
-                    <img src="/assets/images/logo-light.png" alt="" height="20" />
+                    <img
+                      src="/assets/images/logo-light.png"
+                      alt=""
+                      height="20"
+                    />
                   </Link>
                 </div>
                 <p className="mt-3 fs-15 fw-medium">
@@ -259,13 +275,14 @@ const AccessDeniedPage: React.FC = () => {
                         <i className="ri-shield-cross-line"></i>
                       </div>
                     </div>
-                    
+
                     <h4 className="text-danger mt-4">Acceso Denegado</h4>
                     <p className="text-muted mt-3">
-                      No tienes permisos suficientes para acceder a este recurso.
+                      No tienes permisos suficientes para acceder a este
+                      recurso.
                     </p>
 
-                    {fromPath !== '/' && (
+                    {fromPath !== "/" && (
                       <div className="alert alert-warning mt-3" role="alert">
                         <i className="ri-information-line me-2"></i>
                         Intentabas acceder a: <strong>{fromPath}</strong>
@@ -277,7 +294,7 @@ const AccessDeniedPage: React.FC = () => {
 
                     <div className="mt-4">
                       <h6 className="text-muted mb-3">¿Qué puedes hacer?</h6>
-                      
+
                       <div className="d-grid gap-2">
                         <button
                           type="button"
@@ -287,8 +304,11 @@ const AccessDeniedPage: React.FC = () => {
                           <i className="ri-arrow-left-line me-1"></i>
                           Volver
                         </button>
-                        
-                        <Link to="/dashboard" className="btn btn-outline-primary">
+
+                        <Link
+                          to="/dashboard"
+                          className="btn btn-outline-primary"
+                        >
                           <i className="ri-dashboard-line me-1"></i>
                           Ir al Dashboard
                         </Link>
@@ -297,7 +317,9 @@ const AccessDeniedPage: React.FC = () => {
 
                     {suggestedActions.length > 0 && (
                       <div className="mt-4">
-                        <h6 className="text-muted mb-3">Acciones Disponibles:</h6>
+                        <h6 className="text-muted mb-3">
+                          Acciones Disponibles:
+                        </h6>
                         <div className="row g-2">
                           {suggestedActions.map((action, index) => (
                             <div key={index} className="col-6">
@@ -319,7 +341,10 @@ const AccessDeniedPage: React.FC = () => {
                         <small className="text-muted">
                           {user && (
                             <>
-                              Conectado como: <strong>{user.first_name} {user.last_name}</strong>
+                              Conectado como:{" "}
+                              <strong>
+                                {user.first_name} {user.last_name}
+                              </strong>
                             </>
                           )}
                         </small>
@@ -338,8 +363,10 @@ const AccessDeniedPage: React.FC = () => {
                     <div className="mt-4">
                       <div className="alert alert-info" role="alert">
                         <i className="ri-information-line me-2"></i>
-                        <strong>¿Necesitas más permisos?</strong><br />
-                        Contacta a tu administrador de sistema para solicitar acceso adicional.
+                        <strong>¿Necesitas más permisos?</strong>
+                        <br />
+                        Contacta a tu administrador de sistema para solicitar
+                        acceso adicional.
                       </div>
                     </div>
                   </div>
@@ -347,15 +374,27 @@ const AccessDeniedPage: React.FC = () => {
               </div>
 
               {/* Debug info for development */}
-              {process.env.NODE_ENV === 'development' && (
+              {process.env.NODE_ENV === "development" && (
                 <div className="card mt-3">
                   <div className="card-body p-3">
-                    <h6 className="text-muted mb-2">Debug Info (Development Only):</h6>
+                    <h6 className="text-muted mb-2">
+                      Debug Info (Development Only):
+                    </h6>
                     <small className="text-muted">
-                      <div><strong>Reason:</strong> {reason}</div>
-                      <div><strong>From:</strong> {fromPath}</div>
-                      <div><strong>User Roles:</strong> {roles.join(', ') || 'None'}</div>
-                      <div><strong>User Permissions:</strong> {permissions.length} total</div>
+                      <div>
+                        <strong>Reason:</strong> {reason}
+                      </div>
+                      <div>
+                        <strong>From:</strong> {fromPath}
+                      </div>
+                      <div>
+                        <strong>User Roles:</strong>{" "}
+                        {roles.join(", ") || "None"}
+                      </div>
+                      <div>
+                        <strong>User Permissions:</strong> {permissions.length}{" "}
+                        total
+                      </div>
                     </small>
                   </div>
                 </div>
@@ -371,7 +410,7 @@ const AccessDeniedPage: React.FC = () => {
             <div className="col-lg-12">
               <div className="text-center">
                 <p className="mb-0 text-muted">
-                  &copy;2024 ZentraQMS. Desarrollado por 
+                  &copy;2024 ZentraQMS. Desarrollado por
                   <i className="mdi mdi-heart text-danger"></i> Zentra Solutions
                 </p>
               </div>

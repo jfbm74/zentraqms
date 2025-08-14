@@ -1,6 +1,6 @@
 /**
  * RBAC Types for ZentraQMS Frontend
- * 
+ *
  * This module defines all TypeScript types and interfaces related to
  * Role-Based Access Control (RBAC), including roles, permissions, and authorization.
  */
@@ -116,16 +116,16 @@ export interface RBACContextType extends RBACState {
   hasAnyPermission: (permissions: string[]) => boolean;
   hasAllPermissions: (permissions: string[]) => boolean;
   getResourcePermissions: (resource: string) => string[];
-  
+
   // Role methods
   hasRole: (role: string) => boolean;
   hasAnyRole: (roles: string[]) => boolean;
   hasAllRoles: (roles: string[]) => boolean;
-  
+
   // Utility methods
   refreshPermissions: () => Promise<void>;
   clearRBAC: () => void;
-  
+
   // Check methods (for debugging)
   checkPermission: (permission: string) => PermissionCheck;
   checkRole: (role: string) => RoleCheck;
@@ -166,17 +166,17 @@ export interface NavigationItem {
   label: string;
   path: string;
   icon?: string;
-  
+
   // RBAC fields
   permission?: string;
   permissions?: string[];
   role?: string;
   roles?: string[];
   requireAll?: boolean;
-  
+
   // Nesting
   children?: NavigationItem[];
-  
+
   // UI properties
   isActive?: boolean;
   isDisabled?: boolean;
@@ -200,19 +200,19 @@ export interface DashboardWidget {
   id: string;
   type: string;
   title: string;
-  
+
   // RBAC fields
   permission?: string;
   permissions?: string[];
   role?: string;
   roles?: string[];
-  
+
   // Layout properties
   position: WidgetPosition;
   size: WidgetSize;
   isVisible: boolean;
   isCollapsible?: boolean;
-  
+
   // Configuration
   config?: Record<string, unknown>;
 }
@@ -242,50 +242,50 @@ export interface WidgetSize {
 /**
  * Dashboard layout types
  */
-export type DashboardLayout = 'grid' | 'masonry' | 'flex';
+export type DashboardLayout = "grid" | "masonry" | "flex";
 
 /**
  * Permission operation types
  */
 export enum PermissionOperation {
-  CREATE = 'create',
-  READ = 'read',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  EXPORT = 'export',
-  IMPORT = 'import',
-  APPROVE = 'approve',
-  REJECT = 'reject',
-  PUBLISH = 'publish',
-  ARCHIVE = 'archive',
+  CREATE = "create",
+  READ = "read",
+  UPDATE = "update",
+  DELETE = "delete",
+  LIST = "list",
+  EXPORT = "export",
+  IMPORT = "import",
+  APPROVE = "approve",
+  REJECT = "reject",
+  PUBLISH = "publish",
+  ARCHIVE = "archive",
 }
 
 /**
  * Resource types enum
  */
 export enum ResourceType {
-  USERS = 'users',
-  PROCESSES = 'processes',
-  AUDITS = 'audits',
-  DOCUMENTS = 'documents',
-  INDICATORS = 'indicators',
-  NORMOGRAM = 'normogram',
-  REPORTS = 'reports',
-  SETTINGS = 'settings',
-  DASHBOARD = 'dashboard',
+  USERS = "users",
+  PROCESSES = "processes",
+  AUDITS = "audits",
+  DOCUMENTS = "documents",
+  INDICATORS = "indicators",
+  NORMOGRAM = "normogram",
+  REPORTS = "reports",
+  SETTINGS = "settings",
+  DASHBOARD = "dashboard",
 }
 
 /**
  * System role codes enum
  */
 export enum SystemRole {
-  SUPER_ADMIN = 'super_admin',
-  ADMIN = 'admin',
-  COORDINADOR = 'coordinador',
-  AUDITOR = 'auditor',
-  CONSULTA = 'consulta',
-  GUEST = 'guest',
+  SUPER_ADMIN = "super_admin",
+  ADMIN = "admin",
+  COORDINADOR = "coordinador",
+  AUDITOR = "auditor",
+  CONSULTA = "consulta",
+  GUEST = "guest",
 }
 
 /**
@@ -311,22 +311,22 @@ export interface RBACCache {
  * RBAC storage keys
  */
 export enum RBACStorageKeys {
-  PERMISSIONS = 'rbac_permissions',
-  ROLES = 'rbac_roles',
-  PERMISSIONS_BY_RESOURCE = 'rbac_permissions_by_resource',
-  CACHE_TIMESTAMP = 'rbac_cache_timestamp',
-  CACHE_VERSION = 'rbac_cache_version',
+  PERMISSIONS = "rbac_permissions",
+  ROLES = "rbac_roles",
+  PERMISSIONS_BY_RESOURCE = "rbac_permissions_by_resource",
+  CACHE_TIMESTAMP = "rbac_cache_timestamp",
+  CACHE_VERSION = "rbac_cache_version",
 }
 
 /**
  * RBAC error types
  */
 export enum RBACErrorType {
-  PERMISSION_DENIED = 'PERMISSION_DENIED',
-  ROLE_REQUIRED = 'ROLE_REQUIRED',
-  INSUFFICIENT_PRIVILEGES = 'INSUFFICIENT_PRIVILEGES',
-  RBAC_DATA_LOAD_ERROR = 'RBAC_DATA_LOAD_ERROR',
-  CACHE_ERROR = 'CACHE_ERROR',
+  PERMISSION_DENIED = "PERMISSION_DENIED",
+  ROLE_REQUIRED = "ROLE_REQUIRED",
+  INSUFFICIENT_PRIVILEGES = "INSUFFICIENT_PRIVILEGES",
+  RBAC_DATA_LOAD_ERROR = "RBAC_DATA_LOAD_ERROR",
+  CACHE_ERROR = "CACHE_ERROR",
 }
 
 /**
@@ -350,10 +350,8 @@ export class PermissionUtils {
    */
   static matchesPattern(permission: string, pattern: string): boolean {
     // Convert pattern to regex
-    const regexPattern = pattern
-      .replace(/\./g, '\\.')
-      .replace(/\*/g, '.*');
-    
+    const regexPattern = pattern.replace(/\./g, "\\.").replace(/\*/g, ".*");
+
     const regex = new RegExp(`^${regexPattern}$`);
     return regex.test(permission);
   }
@@ -362,14 +360,14 @@ export class PermissionUtils {
    * Get resource from permission code
    */
   static getResource(permission: string): string {
-    return permission.split('.')[0];
+    return permission.split(".")[0];
   }
 
   /**
    * Get action from permission code
    */
   static getAction(permission: string): string {
-    return permission.split('.')[1] || '';
+    return permission.split(".")[1] || "";
   }
 
   /**
@@ -383,24 +381,30 @@ export class PermissionUtils {
    * Check if user has super admin permission
    */
   static hasSuperAdminPermission(permissions: string[]): boolean {
-    return permissions.includes('*.all');
+    return permissions.includes("*.all");
   }
 
   /**
    * Get all permissions for a resource
    */
-  static getResourcePermissions(permissions: string[], resource: string): string[] {
-    return permissions.filter(permission => 
-      this.getResource(permission) === resource
+  static getResourcePermissions(
+    permissions: string[],
+    resource: string,
+  ): string[] {
+    return permissions.filter(
+      (permission) => this.getResource(permission) === resource,
     );
   }
 
   /**
    * Check if permission list includes wildcard for resource
    */
-  static hasWildcardPermission(permissions: string[], resource: string): boolean {
-    return permissions.some(permission => 
-      permission === `${resource}.*` || permission === '*.all'
+  static hasWildcardPermission(
+    permissions: string[],
+    resource: string,
+  ): boolean {
+    return permissions.some(
+      (permission) => permission === `${resource}.*` || permission === "*.all",
     );
   }
 }
@@ -411,36 +415,40 @@ export class PermissionUtils {
 export const isPermission = (obj: unknown): obj is Permission => {
   return (
     obj &&
-    typeof obj.id === 'string' &&
-    typeof obj.name === 'string' &&
-    typeof obj.code === 'string' &&
-    typeof obj.resource === 'string' &&
-    typeof obj.action === 'string'
+    typeof obj.id === "string" &&
+    typeof obj.name === "string" &&
+    typeof obj.code === "string" &&
+    typeof obj.resource === "string" &&
+    typeof obj.action === "string"
   );
 };
 
 export const isRole = (obj: unknown): obj is Role => {
   return (
     obj &&
-    typeof obj.id === 'string' &&
-    typeof obj.name === 'string' &&
-    typeof obj.code === 'string' &&
-    typeof obj.is_system === 'boolean' &&
-    typeof obj.is_active === 'boolean'
+    typeof obj.id === "string" &&
+    typeof obj.name === "string" &&
+    typeof obj.code === "string" &&
+    typeof obj.is_system === "boolean" &&
+    typeof obj.is_active === "boolean"
   );
 };
 
-export const isUserPermissionsResponse = (response: unknown): response is UserPermissionsResponse => {
+export const isUserPermissionsResponse = (
+  response: unknown,
+): response is UserPermissionsResponse => {
   return (
     response &&
     response.success === true &&
     response.data &&
     Array.isArray(response.data.permissions_list) &&
-    typeof response.data.permissions_by_resource === 'object'
+    typeof response.data.permissions_by_resource === "object"
   );
 };
 
-export const isUserRolesResponse = (response: unknown): response is UserRolesResponse => {
+export const isUserRolesResponse = (
+  response: unknown,
+): response is UserRolesResponse => {
   return (
     response &&
     response.success === true &&

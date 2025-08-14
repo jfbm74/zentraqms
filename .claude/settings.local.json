@@ -26,9 +26,31 @@
       "Bash(docker exec:*)",
       "Bash(git add:*)",
       "Bash(docker logs:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(curl:*)",
+      "Bash(./venv/bin/python manage.py migrate:*)",
+      "Bash(./venv/bin/python manage.py runserver:*)",
+      "Bash(./venv/bin/python test_audit_system.py:*)",
+      "Bash(./venv/bin/python manage.py shell:*)",
+      "Bash(./venv/bin/python manage.py show_urls:*)",
+      "Bash(export DJANGO_SETTINGS_MODULE=config.settings.testing)",
+      "Bash(rm:*)",
+      "Bash(find:*)",
+      "Bash(true)",
+      "Bash(npm ls:*)",
+      "Bash(npm run test:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx prettier:*)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:*)",
+      "Bash(docker build:*)",
+      "Bash(npm config get:*)",
+      "Bash(sed:*)",
+      "Bash(git push:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "defaultMode": "acceptEdits"
   }
 }

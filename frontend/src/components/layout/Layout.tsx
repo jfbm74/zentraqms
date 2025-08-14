@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
 // Import Components
-import Header from './Header';
-import Sidebar from './Sidebar';
-import Footer from './Footer';
+import Header from "./Header";
+import Sidebar from "./Sidebar";
+import Footer from "./Footer";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -34,25 +34,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <React.Fragment>
-      <div id="layout-wrapper" className={`${!sidebarVisible ? 'sidebar-collapsed' : ''}`}>
-        <Header
-          headerClass={headerClass}
-          onToggleSidebar={toggleSidebar}
-        />
-        <Sidebar
-          isVisible={sidebarVisible}
-        />
+      <div
+        id="layout-wrapper"
+        className={`${!sidebarVisible ? "sidebar-collapsed" : ""}`}
+      >
+        <Header headerClass={headerClass} onToggleSidebar={toggleSidebar} />
+        <Sidebar isVisible={sidebarVisible} />
         <div className="main-content">
           <div className="page-content">
-            <div className="container-fluid">
-              {children}
-            </div>
+            <div className="container-fluid">{children}</div>
           </div>
           <Footer />
         </div>
         {/* Overlay for mobile */}
         {sidebarVisible && (
-          <div 
+          <div
             className="vertical-overlay d-block d-lg-none"
             onClick={toggleSidebar}
           ></div>

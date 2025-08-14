@@ -1,14 +1,14 @@
 /**
  * Normograma Page for ZentraQMS Frontend
- * 
+ *
  * Management page for QMS standards and documentation.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect } from "react";
 
 const NormogramaPage: React.FC = () => {
   useEffect(() => {
-    document.title = 'Normograma | ZentraQMS';
+    document.title = "Normograma | ZentraQMS";
   }, []);
 
   return (
@@ -19,7 +19,9 @@ const NormogramaPage: React.FC = () => {
             <h4 className="mb-sm-0">Normograma</h4>
             <div className="page-title-right">
               <ol className="breadcrumb m-0">
-                <li className="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+                <li className="breadcrumb-item">
+                  <a href="/dashboard">Dashboard</a>
+                </li>
                 <li className="breadcrumb-item active">Normograma</li>
               </ol>
             </div>
@@ -37,7 +39,10 @@ const NormogramaPage: React.FC = () => {
               <div className="text-center py-5">
                 <i className="ri-book-open-line display-4 text-muted"></i>
                 <h5 className="mt-3">Módulo en Desarrollo</h5>
-                <p className="text-muted">La funcionalidad del normograma estará disponible próximamente.</p>
+                <p className="text-muted">
+                  La funcionalidad del normograma estará disponible
+                  próximamente.
+                </p>
               </div>
             </div>
           </div>

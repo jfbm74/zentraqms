@@ -35,29 +35,30 @@ services:
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
 
   frontend:
-    build: ./frontend
-    command: npm run dev -- --host 0.0.0.0 --port 3000
+    build: 
+      context: .
+      dockerfile: ./frontend/Dockerfile
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
     ports:
       - "3000:3000"
     depends_on:
       - backend
 
-  celery:
-    build: ./backend
-    command: celery -A core worker --loglevel=info
-    volumes:
-      - ./backend:/app
-    depends_on:
-      - postgres
-      - redis
-    environment:
-      - DEBUG=True
-      - DB_HOST=postgres
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+# celery:
+#   build: ./backend
+#   command: celery -A config worker --loglevel=info
+#   volumes:
+#     - ./backend:/app
+#   depends_on:
+#     - postgres
+#     - redis
+#   environment:
+#     - DEBUG=True
+#     - DB_HOST=postgres
+#     - CELERY_BROKER_URL=redis://redis:6379/0
+#     - CELERY_RESULT_BACKEND=redis://redis:6379/0
 
 volumes:
   postgres_data:

@@ -1,12 +1,12 @@
 /**
  * Permission Gate Component for ZentraQMS Frontend
- * 
+ *
  * This component provides declarative permission-based access control
  * for conditionally rendering UI elements based on user permissions and roles.
  */
 
-import React from 'react';
-import { useAuth } from '../../hooks/useAuth';
+import React from "react";
+import { useAuth } from "../../hooks/useAuth";
 
 /**
  * Props for PermissionGate component
@@ -14,40 +14,40 @@ import { useAuth } from '../../hooks/useAuth';
 interface PermissionGateProps {
   /** Children to render if permission check passes */
   children: React.ReactNode;
-  
+
   /** Single permission to check */
   permission?: string;
-  
+
   /** Array of permissions - user needs ANY of these */
   permissions?: string[];
-  
+
   /** Array of permissions - user needs ALL of these */
   requireAllPermissions?: string[];
-  
+
   /** Single role to check */
   role?: string;
-  
+
   /** Array of roles - user needs ANY of these */
   roles?: string[];
-  
+
   /** Array of roles - user needs ALL of these */
   requireAllRoles?: string[];
-  
+
   /** Custom permission check function */
   customCheck?: (userPermissions: string[], userRoles: string[]) => boolean;
-  
+
   /** Fallback component to render when permission is denied */
   fallback?: React.ReactNode;
-  
+
   /** Whether to show nothing when permission is denied (default: true) */
   hideOnDeny?: boolean;
-  
+
   /** Whether to show loading state while RBAC data is being fetched */
   showLoading?: boolean;
-  
+
   /** Custom loading component */
   loadingComponent?: React.ReactNode;
-  
+
   /** Whether to use strict mode (requires authentication) */
   requireAuth?: boolean;
 }
@@ -57,7 +57,10 @@ interface PermissionGateProps {
  */
 const DefaultLoadingComponent: React.FC = () => (
   <div className="d-flex justify-content-center align-items-center p-2">
-    <div className="spinner-border spinner-border-sm text-primary" role="status">
+    <div
+      className="spinner-border spinner-border-sm text-primary"
+      role="status"
+    >
       <span className="visually-hidden">Loading...</span>
     </div>
   </div>
@@ -139,10 +142,10 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({
     }
 
     // All checks must pass (AND logic)
-    return checks.every(check => check);
+    return checks.every((check) => check);
   }, [
     customCheck,
-    userPermissions, 
+    userPermissions,
     userRoles,
     permission,
     permissions,
@@ -165,7 +168,11 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({
 
   // Show loading state if RBAC data is being fetched
   if (showLoading && rbacLoading) {
-    return loadingComponent ? <>{loadingComponent}</> : <DefaultLoadingComponent />;
+    return loadingComponent ? (
+      <>{loadingComponent}</>
+    ) : (
+      <DefaultLoadingComponent />
+    );
   }
 
   // Render based on access result
@@ -175,6 +182,5 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({
     return hideOnDeny ? null : <>{fallback}</>;
   }
 };
-
 
 export default PermissionGate;

@@ -1,13 +1,13 @@
 /**
  * Permission-aware Button Components for ZentraQMS Frontend
- * 
+ *
  * These components demonstrate how to create UI elements that adapt
  * based on user permissions and roles.
  */
 
-import React from 'react';
-import { PermissionGate } from '../common/PermissionGate';
-import { usePermissions } from '../../hooks/usePermissions';
+import React from "react";
+import { PermissionGate } from "../common/PermissionGate";
+import { usePermissions } from "../../hooks/usePermissions";
 
 /**
  * Props for action buttons
@@ -16,9 +16,19 @@ interface ActionButtonProps {
   /** Button click handler */
   onClick?: () => void;
   /** Button variant */
-  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info' | 'light' | 'dark' | 'outline-primary' | 'outline-secondary';
+  variant?:
+    | "primary"
+    | "secondary"
+    | "success"
+    | "danger"
+    | "warning"
+    | "info"
+    | "light"
+    | "dark"
+    | "outline-primary"
+    | "outline-secondary";
   /** Button size */
-  size?: 'sm' | 'lg';
+  size?: "sm" | "lg";
   /** Whether button is disabled */
   disabled?: boolean;
   /** Additional CSS classes */
@@ -32,14 +42,16 @@ interface ActionButtonProps {
 /**
  * Create Action Button - Only visible if user can create resources
  */
-export const CreateActionButton: React.FC<ActionButtonProps & { resource: string }> = ({
+export const CreateActionButton: React.FC<
+  ActionButtonProps & { resource: string }
+> = ({
   resource,
   onClick,
-  variant = 'primary',
+  variant = "primary",
   size,
   disabled = false,
-  className = '',
-  icon = 'ri-add-line',
+  className = "",
+  icon = "ri-add-line",
   children,
 }) => {
   const { canCreate } = usePermissions();
@@ -51,7 +63,7 @@ export const CreateActionButton: React.FC<ActionButtonProps & { resource: string
   return (
     <button
       type="button"
-      className={`btn btn-${variant} ${size ? `btn-${size}` : ''} ${className}`}
+      className={`btn btn-${variant} ${size ? `btn-${size}` : ""} ${className}`}
       onClick={onClick}
       disabled={disabled}
     >
@@ -64,14 +76,16 @@ export const CreateActionButton: React.FC<ActionButtonProps & { resource: string
 /**
  * Edit Action Button - Only visible if user can update resources
  */
-export const EditActionButton: React.FC<ActionButtonProps & { resource: string }> = ({
+export const EditActionButton: React.FC<
+  ActionButtonProps & { resource: string }
+> = ({
   resource,
   onClick,
-  variant = 'outline-primary',
+  variant = "outline-primary",
   size,
   disabled = false,
-  className = '',
-  icon = 'ri-edit-line',
+  className = "",
+  icon = "ri-edit-line",
   children,
 }) => {
   const { canUpdate } = usePermissions();
@@ -83,7 +97,7 @@ export const EditActionButton: React.FC<ActionButtonProps & { resource: string }
   return (
     <button
       type="button"
-      className={`btn btn-${variant} ${size ? `btn-${size}` : ''} ${className}`}
+      className={`btn btn-${variant} ${size ? `btn-${size}` : ""} ${className}`}
       onClick={onClick}
       disabled={disabled}
     >
@@ -96,14 +110,16 @@ export const EditActionButton: React.FC<ActionButtonProps & { resource: string }
 /**
  * Delete Action Button - Only visible if user can delete resources
  */
-export const DeleteActionButton: React.FC<ActionButtonProps & { resource: string }> = ({
+export const DeleteActionButton: React.FC<
+  ActionButtonProps & { resource: string }
+> = ({
   resource,
   onClick,
-  variant = 'outline-danger',
+  variant = "outline-danger",
   size,
   disabled = false,
-  className = '',
-  icon = 'ri-delete-bin-line',
+  className = "",
+  icon = "ri-delete-bin-line",
   children,
 }) => {
   const { canDelete } = usePermissions();
@@ -115,7 +131,7 @@ export const DeleteActionButton: React.FC<ActionButtonProps & { resource: string
   return (
     <button
       type="button"
-      className={`btn btn-${variant} ${size ? `btn-${size}` : ''} ${className}`}
+      className={`btn btn-${variant} ${size ? `btn-${size}` : ""} ${className}`}
       onClick={onClick}
       disabled={disabled}
     >
@@ -128,14 +144,16 @@ export const DeleteActionButton: React.FC<ActionButtonProps & { resource: string
 /**
  * View Action Button - Only visible if user can read resources
  */
-export const ViewActionButton: React.FC<ActionButtonProps & { resource: string }> = ({
+export const ViewActionButton: React.FC<
+  ActionButtonProps & { resource: string }
+> = ({
   resource,
   onClick,
-  variant = 'outline-info',
+  variant = "outline-info",
   size,
   disabled = false,
-  className = '',
-  icon = 'ri-eye-line',
+  className = "",
+  icon = "ri-eye-line",
   children,
 }) => {
   const { canRead } = usePermissions();
@@ -147,7 +165,7 @@ export const ViewActionButton: React.FC<ActionButtonProps & { resource: string }
   return (
     <button
       type="button"
-      className={`btn btn-${variant} ${size ? `btn-${size}` : ''} ${className}`}
+      className={`btn btn-${variant} ${size ? `btn-${size}` : ""} ${className}`}
       onClick={onClick}
       disabled={disabled}
     >
@@ -160,21 +178,23 @@ export const ViewActionButton: React.FC<ActionButtonProps & { resource: string }
 /**
  * Permission Button - Generic button that shows/hides based on permission
  */
-export const PermissionButton: React.FC<ActionButtonProps & {
-  permission?: string;
-  permissions?: string[];
-  role?: string;
-  roles?: string[];
-}> = ({
+export const PermissionButton: React.FC<
+  ActionButtonProps & {
+    permission?: string;
+    permissions?: string[];
+    role?: string;
+    roles?: string[];
+  }
+> = ({
   permission,
   permissions,
   role,
   roles,
   onClick,
-  variant = 'primary',
+  variant = "primary",
   size,
   disabled = false,
-  className = '',
+  className = "",
   icon,
   children,
 }) => {
@@ -187,7 +207,7 @@ export const PermissionButton: React.FC<ActionButtonProps & {
     >
       <button
         type="button"
-        className={`btn btn-${variant} ${size ? `btn-${size}` : ''} ${className}`}
+        className={`btn btn-${variant} ${size ? `btn-${size}` : ""} ${className}`}
         onClick={onClick}
         disabled={disabled}
       >
@@ -203,18 +223,18 @@ export const PermissionButton: React.FC<ActionButtonProps & {
  */
 export const AdminActionButton: React.FC<ActionButtonProps> = ({
   onClick,
-  variant = 'warning',
+  variant = "warning",
   size,
   disabled = false,
-  className = '',
-  icon = 'ri-admin-line',
+  className = "",
+  icon = "ri-admin-line",
   children,
 }) => {
   return (
-    <PermissionGate roles={['admin', 'super_admin']}>
+    <PermissionGate roles={["admin", "super_admin"]}>
       <button
         type="button"
-        className={`btn btn-${variant} ${size ? `btn-${size}` : ''} ${className}`}
+        className={`btn btn-${variant} ${size ? `btn-${size}` : ""} ${className}`}
         onClick={onClick}
         disabled={disabled}
       >
@@ -230,18 +250,18 @@ export const AdminActionButton: React.FC<ActionButtonProps> = ({
  */
 export const ExportActionButton: React.FC<ActionButtonProps> = ({
   onClick,
-  variant = 'outline-success',
+  variant = "outline-success",
   size,
   disabled = false,
-  className = '',
-  icon = 'ri-download-line',
+  className = "",
+  icon = "ri-download-line",
   children,
 }) => {
   return (
-    <PermissionGate permissions={['reports.export', 'data.export']}>
+    <PermissionGate permissions={["reports.export", "data.export"]}>
       <button
         type="button"
-        className={`btn btn-${variant} ${size ? `btn-${size}` : ''} ${className}`}
+        className={`btn btn-${variant} ${size ? `btn-${size}` : ""} ${className}`}
         onClick={onClick}
         disabled={disabled}
       >
@@ -257,18 +277,18 @@ export const ExportActionButton: React.FC<ActionButtonProps> = ({
  */
 export const ImportActionButton: React.FC<ActionButtonProps> = ({
   onClick,
-  variant = 'outline-info',
+  variant = "outline-info",
   size,
   disabled = false,
-  className = '',
-  icon = 'ri-upload-line',
+  className = "",
+  icon = "ri-upload-line",
   children,
 }) => {
   return (
-    <PermissionGate permissions={['data.import']}>
+    <PermissionGate permissions={["data.import"]}>
       <button
         type="button"
-        className={`btn btn-${variant} ${size ? `btn-${size}` : ''} ${className}`}
+        className={`btn btn-${variant} ${size ? `btn-${size}` : ""} ${className}`}
         onClick={onClick}
         disabled={disabled}
       >
@@ -284,18 +304,18 @@ export const ImportActionButton: React.FC<ActionButtonProps> = ({
  */
 export const SettingsActionButton: React.FC<ActionButtonProps> = ({
   onClick,
-  variant = 'outline-secondary',
+  variant = "outline-secondary",
   size,
   disabled = false,
-  className = '',
-  icon = 'ri-settings-line',
+  className = "",
+  icon = "ri-settings-line",
   children,
 }) => {
   return (
-    <PermissionGate permissions={['settings.update', 'system.admin']}>
+    <PermissionGate permissions={["settings.update", "system.admin"]}>
       <button
         type="button"
-        className={`btn btn-${variant} ${size ? `btn-${size}` : ''} ${className}`}
+        className={`btn btn-${variant} ${size ? `btn-${size}` : ""} ${className}`}
         onClick={onClick}
         disabled={disabled}
       >
@@ -316,7 +336,7 @@ interface ActionButtonGroupProps {
 
 export const ActionButtonGroup: React.FC<ActionButtonGroupProps> = ({
   children,
-  className = '',
+  className = "",
 }) => {
   return (
     <div className={`btn-group ${className}`} role="group">
@@ -350,19 +370,19 @@ interface PermissionDropdownProps {
 
 export const PermissionDropdown: React.FC<PermissionDropdownProps> = ({
   buttonText,
-  variant = 'primary',
+  variant = "primary",
   size,
   items,
 }) => {
   // Filter visible items based on permissions
-  const visibleItems = items.filter(item => {
+  const visibleItems = items.filter((item) => {
     if (item.divider) return true;
-    
+
     // If no permissions specified, item is always visible
     if (!item.permission && !item.permissions && !item.role && !item.roles) {
       return true;
     }
-    
+
     // This would need to be implemented with useAuth hook
     // For now, show all items (placeholder)
     return true;
@@ -375,7 +395,7 @@ export const PermissionDropdown: React.FC<PermissionDropdownProps> = ({
   return (
     <div className="dropdown">
       <button
-        className={`btn btn-${variant} ${size ? `btn-${size}` : ''} dropdown-toggle`}
+        className={`btn btn-${variant} ${size ? `btn-${size}` : ""} dropdown-toggle`}
         type="button"
         data-bs-toggle="dropdown"
         aria-expanded="false"
@@ -385,7 +405,11 @@ export const PermissionDropdown: React.FC<PermissionDropdownProps> = ({
       <ul className="dropdown-menu">
         {visibleItems.map((item, index) => {
           if (item.divider) {
-            return <li key={index}><hr className="dropdown-divider" /></li>;
+            return (
+              <li key={index}>
+                <hr className="dropdown-divider" />
+              </li>
+            );
           }
 
           return (
@@ -453,9 +477,10 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
       <div className="d-flex justify-content-between align-items-center">
         <span className="text-muted">
           <i className="ri-checkbox-circle-line me-1"></i>
-          {selectedCount} elemento{selectedCount !== 1 ? 's' : ''} seleccionado{selectedCount !== 1 ? 's' : ''}
+          {selectedCount} elemento{selectedCount !== 1 ? "s" : ""} seleccionado
+          {selectedCount !== 1 ? "s" : ""}
         </span>
-        
+
         <div className="d-flex gap-2">
           {onBulkEdit && (
             <EditActionButton
@@ -467,16 +492,13 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
               Editar Selección
             </EditActionButton>
           )}
-          
+
           {onBulkExport && (
-            <ExportActionButton
-              onClick={onBulkExport}
-              size="sm"
-            >
+            <ExportActionButton onClick={onBulkExport} size="sm">
               Exportar Selección
             </ExportActionButton>
           )}
-          
+
           {customActions.map((action, index) => (
             <PermissionButton
               key={index}
@@ -484,13 +506,13 @@ export const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
               permissions={action.permissions}
               onClick={action.onClick}
               size="sm"
-              variant={action.variant || 'outline-secondary'}
+              variant={action.variant || "outline-secondary"}
               icon={action.icon}
             >
               {action.label}
             </PermissionButton>
           ))}
-          
+
           {onBulkDelete && (
             <DeleteActionButton
               resource={resource}

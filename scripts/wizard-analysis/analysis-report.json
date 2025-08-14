@@ -1,0 +1,252 @@
+{
+  "timestamp": "2025-08-14T17:52:20.793Z",
+  "wizard_version": "OrganizationWizard v1.0",
+  "analysis_results": {
+    "screenshots": [
+      {
+        "step": 1,
+        "name": "Datos de Organización",
+        "path": "step-1-datos-de-organización.png"
+      },
+      {
+        "step": 2,
+        "name": "Ubicación",
+        "path": "step-2-ubicación.png"
+      },
+      {
+        "step": 3,
+        "name": "Configuración",
+        "path": "step-3-configuración.png"
+      }
+    ],
+    "accessibility": [
+      {
+        "type": "missing_label",
+        "element": "INPUT[name=\"search\"]",
+        "message": "Input sin label asociado"
+      },
+      {
+        "type": "contrast_issue",
+        "element": "button[0]",
+        "message": "Posible problema de contraste"
+      },
+      {
+        "type": "contrast_issue",
+        "element": "button[1]",
+        "message": "Posible problema de contraste"
+      },
+      {
+        "type": "contrast_issue",
+        "element": "button[2]",
+        "message": "Posible problema de contraste"
+      },
+      {
+        "type": "contrast_issue",
+        "element": "button[3]",
+        "message": "Posible problema de contraste"
+      },
+      {
+        "type": "contrast_issue",
+        "element": "button[4]",
+        "message": "Posible problema de contraste"
+      },
+      {
+        "type": "contrast_issue",
+        "element": "button[5]",
+        "message": "Posible problema de contraste"
+      },
+      {
+        "type": "contrast_issue",
+        "element": "button[6]",
+        "message": "Posible problema de contraste"
+      },
+      {
+        "type": "contrast_issue",
+        "element": "button[7]",
+        "message": "Posible problema de contraste"
+      },
+      {
+        "type": "contrast_issue",
+        "element": "button[8]",
+        "message": "Posible problema de contraste"
+      },
+      {
+        "type": "contrast_issue",
+        "element": "button[9]",
+        "message": "Posible problema de contraste"
+      },
+      {
+        "type": "contrast_issue",
+        "element": "button[10]",
+        "message": "Posible problema de contraste"
+      },
+      {
+        "type": "contrast_issue",
+        "element": "button[11]",
+        "message": "Posible problema de contraste"
+      },
+      {
+        "type": "contrast_issue",
+        "element": "button[12]",
+        "message": "Posible problema de contraste"
+      },
+      {
+        "type": "contrast_issue",
+        "element": "button[14]",
+        "message": "Posible problema de contraste"
+      },
+      {
+        "type": "contrast_issue",
+        "element": "button[15]",
+        "message": "Posible problema de contraste"
+      }
+    ],
+    "performance": [],
+    "usability": [
+      {
+        "step": 1,
+        "fieldAnalysis": [
+          {
+            "selector": "input[name=\"name\"]",
+            "exists": false
+          },
+          {
+            "selector": "input[name=\"email\"]",
+            "exists": false
+          },
+          {
+            "selector": "input[name=\"phone\"]",
+            "exists": false
+          },
+          {
+            "selector": "input[name=\"nit\"]",
+            "exists": false
+          }
+        ],
+        "suggestions": [
+          "Usar input masks para NIT y teléfono",
+          "Agregar tooltips explicativos",
+          "Mejorar feedback visual de validación",
+          "Implementar validación en tiempo real"
+        ]
+      },
+      {
+        "step": 2,
+        "addressFields": [
+          {
+            "name": "search",
+            "type": "text",
+            "placeholder": "Buscar...",
+            "required": false
+          },
+          {
+            "name": "",
+            "type": "text",
+            "placeholder": "Ej. Empresa de Tecnología SAS",
+            "required": false
+          },
+          {
+            "name": "",
+            "type": "email",
+            "placeholder": "contacto@organizacion.com",
+            "required": false
+          },
+          {
+            "name": "",
+            "type": "text",
+            "placeholder": "123.456.789-0",
+            "required": false
+          },
+          {
+            "name": "",
+            "type": "tel",
+            "placeholder": "+57 (300) 123-4567",
+            "required": false
+          },
+          {
+            "name": "",
+            "type": "url",
+            "placeholder": "https://www.organizacion.com",
+            "required": false
+          },
+          {
+            "name": "",
+            "type": "textarea",
+            "placeholder": "Describa brevemente su organización: misión, visión, actividades principales, mercado objetivo, etc.",
+            "required": false
+          }
+        ],
+        "suggestions": [
+          "Integrar Google Places API para autocompletado",
+          "Usar selects para departamentos/ciudades colombianas",
+          "Validar código postal según región",
+          "Mostrar mapa de ubicación"
+        ]
+      },
+      {
+        "step": 3,
+        "sectorOptions": [],
+        "suggestions": [
+          "Mostrar preview de template seleccionado",
+          "Agregar descripciones de cada sector",
+          "Permitir personalización de template",
+          "Mostrar impacto de la selección"
+        ]
+      }
+    ],
+    "velzonCompliance": {
+      "hasVelzonClasses": true,
+      "usesBootstrap": true,
+      "hasRemixIcons": true,
+      "followsVelzonStructure": true
+    },
+    "suggestions": []
+  },
+  "recommendations": {
+    "immediate_fixes": [
+      {
+        "priority": "high",
+        "title": "Mejorar Validación de NIT",
+        "description": "Implementar máscara de input y validación visual más clara",
+        "implementation": "Usar react-input-mask y mostrar dígito de verificación en tiempo real"
+      },
+      {
+        "priority": "high",
+        "title": "Agregar Labels de Accesibilidad",
+        "description": "Todos los inputs deben tener labels apropiados",
+        "implementation": "Agregar htmlFor en todos los labels y aria-labels cuando sea necesario"
+      },
+      {
+        "priority": "medium",
+        "title": "Implementar Autoguardado",
+        "description": "Evitar pérdida de datos al navegar entre pasos",
+        "implementation": "Usar localStorage o sessionStorage para persistir datos del formulario"
+      }
+    ],
+    "velzon_enhancements": [
+      {
+        "title": "Usar FormWizards de Velzon",
+        "description": "Aprovechar los componentes wizard existentes en Velzon",
+        "velzon_path": "/pages/Forms/FormWizards.tsx"
+      },
+      {
+        "title": "Integrar Validation Components",
+        "description": "Usar los componentes de validación de Velzon",
+        "velzon_path": "/pages/Forms/FormValidation.tsx"
+      },
+      {
+        "title": "Mejorar Progress Indicator",
+        "description": "Usar el step indicator avanzado de Velzon",
+        "velzon_path": "/Components/Common/StepProgress.tsx"
+      }
+    ],
+    "ux_improvements": [
+      "Agregar tooltips explicativos en campos complejos",
+      "Implementar vista previa de datos antes de envío",
+      "Mejorar feedback visual durante carga",
+      "Agregar opción de guardar como borrador",
+      "Implementar navegación con teclado",
+      "Optimizar para dispositivos móviles"
+    ]
+  }
+}

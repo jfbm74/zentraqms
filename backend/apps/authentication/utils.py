@@ -15,12 +15,13 @@ from django.utils import timezone
 from apps.common.utils import get_client_ip
 
 User = get_user_model()
-logger = logging.getLogger('authentication')
+logger = logging.getLogger("authentication")
 
 
 # ================================
 # Account Security Functions
 # ================================
+
 
 def is_account_locked(user) -> bool:
     """
@@ -47,11 +48,9 @@ def lock_account(user, minutes: int = 30) -> None:
         minutes (int): Duration to lock account in minutes (default: 30)
     """
     user.locked_until = timezone.now() + timedelta(minutes=minutes)
-    user.save(update_fields=['locked_until'])
+    user.save(update_fields=["locked_until"])
 
-    logger.warning(
-        f"Account locked for user: {user.email} for {minutes} minutes"
-    )
+    logger.warning(f"Account locked for user: {user.email} for {minutes} minutes")
 
 
 def unlock_account(user) -> None:
@@ -63,7 +62,7 @@ def unlock_account(user) -> None:
     """
     user.locked_until = None
     user.failed_login_attempts = 0
-    user.save(update_fields=['locked_until', 'failed_login_attempts'])
+    user.save(update_fields=["locked_until", "failed_login_attempts"])
 
     logger.info(f"Account unlocked for user: {user.email}")
 
@@ -83,10 +82,10 @@ def increment_failed_attempts(user, max_attempts: int = 5) -> bool:
 
     if user.failed_login_attempts >= max_attempts:
         lock_account(user)
-        user.save(update_fields=['failed_login_attempts'])
+        user.save(update_fields=["failed_login_attempts"])
         return True
     else:
-        user.save(update_fields=['failed_login_attempts'])
+        user.save(update_fields=["failed_login_attempts"])
         return False
 
 
@@ -99,10 +98,12 @@ def reset_failed_attempts(user) -> None:
     """
     if user.failed_login_attempts > 0:
         user.failed_login_attempts = 0
-        user.save(update_fields=['failed_login_attempts'])
+        user.save(update_fields=["failed_login_attempts"])
 
 
-def update_last_login_info(user, request=None, ip_address: Optional[str] = None) -> None:
+def update_last_login_info(
+    user, request=None, ip_address: Optional[str] = None
+) -> None:
     """
     Update user's last login information including IP address.
 
@@ -121,14 +122,15 @@ def update_last_login_info(user, request=None, ip_address: Optional[str] = None)
     # Update IP if available
     if ip_address:
         user.last_login_ip = ip_address
-        user.save(update_fields=['last_login', 'last_login_ip'])
+        user.save(update_fields=["last_login", "last_login_ip"])
     else:
-        user.save(update_fields=['last_login'])
+        user.save(update_fields=["last_login"])
 
 
 # ================================
 # IP and Security Functions
 # ================================
+
 
 def is_suspicious_ip(ip_address: str) -> bool:
     """
@@ -147,7 +149,9 @@ def is_suspicious_ip(ip_address: str) -> bool:
     return False
 
 
-def log_security_event(event_type: str, user_email: str, ip_address: str, details: dict = None) -> None:
+def log_security_event(
+    event_type: str, user_email: str, ip_address: str, details: dict = None
+) -> None:
     """
     Log security-related events for auditing purposes.
 
@@ -158,11 +162,11 @@ def log_security_event(event_type: str, user_email: str, ip_address: str, detail
         details (dict): Additional event details (optional)
     """
     log_data = {
-        'event_type': event_type,
-        'user_email': user_email,
-        'ip_address': ip_address,
-        'timestamp': timezone.now().isoformat(),
-        'details': details or {}
+        "event_type": event_type,
+        "user_email": user_email,
+        "ip_address": ip_address,
+        "timestamp": timezone.now().isoformat(),
+        "details": details or {},
     }
 
     logger.info(f"Security event: {log_data}")
@@ -197,7 +201,7 @@ def validate_user_access(user, request=None) -> tuple[bool, str]:
     if request:
         ip_address = get_client_ip(request)
         if ip_address and is_suspicious_ip(ip_address):
-            log_security_event('suspicious_ip', user.email, ip_address)
+            log_security_event("suspicious_ip", user.email, ip_address)
             return False, "Acceso denegado desde esta ubicación."
 
     return True, ""
@@ -206,6 +210,7 @@ def validate_user_access(user, request=None) -> tuple[bool, str]:
 # ================================
 # Token Management Functions
 # ================================
+
 
 def get_token_info(token_string: str) -> dict:
     """
@@ -219,6 +224,7 @@ def get_token_info(token_string: str) -> dict:
     """
     try:
         import jwt
+
         # Decode without verification (for debugging/info purposes only)
         payload = jwt.decode(token_string, options={"verify_signature": False})
         return payload
@@ -239,7 +245,7 @@ def is_token_expired(token_string: str) -> bool:
     """
     try:
         token_info = get_token_info(token_string)
-        exp = token_info.get('exp')
+        exp = token_info.get("exp")
 
         if exp:
             return timezone.now().timestamp() > exp
@@ -261,7 +267,7 @@ def calculate_token_expiry(token_string: str) -> Optional[timezone.datetime]:
     """
     try:
         token_info = get_token_info(token_string)
-        exp = token_info.get('exp')
+        exp = token_info.get("exp")
 
         if exp:
             return timezone.datetime.fromtimestamp(exp, tz=timezone.utc)
@@ -275,7 +281,10 @@ def calculate_token_expiry(token_string: str) -> Optional[timezone.datetime]:
 # Rate Limiting Functions
 # ================================
 
-def check_rate_limit(identifier: str, max_requests: int = 10, window_minutes: int = 15) -> tuple[bool, int]:
+
+def check_rate_limit(
+    identifier: str, max_requests: int = 10, window_minutes: int = 15
+) -> tuple[bool, int]:
     """
     Check if a request should be rate limited.
 
@@ -310,6 +319,7 @@ def record_request(identifier: str) -> None:
 # Password Strength Functions
 # ================================
 
+
 def calculate_password_strength(password: str) -> dict:
     """
     Calculate password strength score and provide feedback.
@@ -335,17 +345,17 @@ def calculate_password_strength(password: str) -> dict:
         score += 1
 
     # Character variety checks
-    if re.search(r'[a-z]', password):
+    if re.search(r"[a-z]", password):
         score += 1
     else:
         feedback.append("Debe contener letras minúsculas")
 
-    if re.search(r'[A-Z]', password):
+    if re.search(r"[A-Z]", password):
         score += 1
     else:
         feedback.append("Debe contener letras mayúsculas")
 
-    if re.search(r'\d', password):
+    if re.search(r"\d", password):
         score += 1
     else:
         feedback.append("Debe contener números")
@@ -356,7 +366,7 @@ def calculate_password_strength(password: str) -> dict:
         feedback.append("Debe contener caracteres especiales")
 
     # Common patterns check
-    common_patterns = ['123', 'abc', 'password', 'admin']
+    common_patterns = ["123", "abc", "password", "admin"]
     if any(pattern in password.lower() for pattern in common_patterns):
         score -= 1
         feedback.append("Evite patrones comunes")
@@ -374,16 +384,17 @@ def calculate_password_strength(password: str) -> dict:
         strength = "Muy débil"
 
     return {
-        'score': max(0, score),
-        'max_score': 6,
-        'strength': strength,
-        'feedback': feedback
+        "score": max(0, score),
+        "max_score": 6,
+        "strength": strength,
+        "feedback": feedback,
     }
 
 
 # ================================
 # Utility Helper Functions
 # ================================
+
 
 def get_user_by_email(email: str) -> Optional[User]:
     """
@@ -442,14 +453,14 @@ def clean_user_session_data(user) -> dict:
         dict: Clean user data for storage
     """
     return {
-        'id': str(user.id),
-        'email': user.email,
-        'first_name': user.first_name,
-        'last_name': user.last_name,
-        'is_verified': user.is_verified,
-        'is_active': user.is_active,
-        'is_staff': user.is_staff,
-        'department': user.department,
-        'position': user.position,
-        'last_login': user.last_login.isoformat() if user.last_login else None,
+        "id": str(user.id),
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "is_verified": user.is_verified,
+        "is_active": user.is_active,
+        "is_staff": user.is_staff,
+        "department": user.department,
+        "position": user.position,
+        "last_login": user.last_login.isoformat() if user.last_login else None,
     }
