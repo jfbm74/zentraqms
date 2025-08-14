@@ -317,7 +317,7 @@ describe("Organization Creation E2E Flow", () => {
 
   const mockNavigate = vi.fn();
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
 
     // Setup API client mock

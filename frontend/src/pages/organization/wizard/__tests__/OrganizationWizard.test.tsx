@@ -129,7 +129,7 @@ describe("OrganizationWizard", () => {
   const mockApiPost = vi.fn();
   const mockNavigate = vi.fn();
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     // Setup API mock
     const { apiClient } = await import("../../../../api/endpoints");

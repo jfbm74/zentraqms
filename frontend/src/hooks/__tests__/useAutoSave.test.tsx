@@ -62,7 +62,7 @@ describe("useAutoSave", () => {
     initialConfig: { interval: 1000 }, // 1 second for testing
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     vi.clearAllTimers();
 

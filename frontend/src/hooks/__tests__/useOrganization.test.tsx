@@ -87,7 +87,7 @@ describe("useOrganization", () => {
     updated_at: "2023-01-01T00:00:00Z",
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
 
     // Setup auth mock
@@ -136,7 +136,7 @@ describe("useOrganization", () => {
       );
     });
 
-    it("should not fetch data when user is not authenticated", () => {
+    it("should not fetch data when user is not authenticated", async () => {
       const { useAuth } = await import("../useAuth");
       useAuth.mockReturnValue({ ...mockAuth, isAuthenticated: false });
 
