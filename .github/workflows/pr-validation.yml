@@ -111,15 +111,33 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          cache: 'npm'
-          cache-dependency-path: 'package-lock.json'
+          # Temporarily disable cache to fix rollup dependency issue
+          # cache: 'npm'
+          # cache-dependency-path: 'package-lock.json'
 
-      - name: 📦 Install root dependencies
-        run: npm ci
+      - name: 📦 Clean and install all dependencies
+        run: |
+          # Install from root to handle workspace properly
+          npm install --force
+          
+          # Fix for rollup optional dependencies issue in workspace
+          cd frontend
+          
+          # Force install rollup native dependencies
+          echo "Installing rollup native dependencies..."
+          npm install @rollup/rollup-linux-x64-gnu@4.46.2 --no-save --force || true
+          
+          # Alternative: rebuild rollup if the binary is missing
+          if [ ! -d "node_modules/@rollup/rollup-linux-x64-gnu" ]; then
+            echo "Rebuilding rollup dependencies..."
+            npm rebuild rollup
+          fi
+          
+          # Verify installation
+          ls -la node_modules/@rollup/ || echo "Rollup modules not found"
+          echo "Rollup version:"
+          npm list rollup
         working-directory: .
-        
-      - name: 📦 Install frontend dependencies
-        run: npm install
 
       - name: 🔍 Lint check
         run: npm run lint
@@ -128,7 +146,21 @@ jobs:
         run: npx tsc --noEmit
 
       - name: 🧪 Run tests with coverage
-        run: npm run test:coverage
+        run: |
+          # Debug rollup installation
+          echo "Checking rollup installation..."
+          npm list rollup || echo "Rollup not found in package list"
+          find . -name "rollup-linux-x64-gnu*" || echo "No rollup linux binary found"
+          
+          # Set environment variables to help rollup
+          export ROLLUP_NO_BINARY_DOWNLOAD=false
+          export CI=true
+          
+          # Run tests
+          npm run test:coverage
+        env:
+          ROLLUP_NO_BINARY_DOWNLOAD: false
+          CI: true
 
       - name: 🏗️ Build check
         run: npm run build
