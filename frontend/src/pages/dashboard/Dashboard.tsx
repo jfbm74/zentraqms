@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "../../utils/SimpleRouter";
 import { toast } from "react-toastify";
@@ -31,7 +31,7 @@ const Dashboard: React.FC = () => {
   );
 
   // Check organization status
-  const checkOrganizationStatus = async () => {
+  const checkOrganizationStatus = useCallback(async () => {
     console.log("[Dashboard] checkOrganizationStatus called");
     console.log("[Dashboard] User:", user);
     console.log("[Dashboard] AuthLoading:", authLoading);
@@ -97,7 +97,7 @@ const Dashboard: React.FC = () => {
         shouldRedirectToWizard: false,
       }));
     }
-  };
+  }, [user, authLoading, hasPermission, navigate]);
 
   // Cargar datos del dashboard (simulado por ahora)
   useEffect(() => {
@@ -129,7 +129,7 @@ const Dashboard: React.FC = () => {
     if (user && !authLoading) {
       loadDashboardData();
     }
-  }, [user, authLoading, hasPermission, navigate]);
+  }, [user, authLoading, hasPermission, navigate, checkOrganizationStatus]);
 
   const handleLogout = async () => {
     try {

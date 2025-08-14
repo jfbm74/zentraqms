@@ -69,6 +69,7 @@ const WizardContainer: React.FC<WizardContainerProps> = ({
           }));
         } else {
           setValidationErrors((prev) => {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { [stepId]: _removed, ...rest } = prev;
             return rest;
           });
@@ -182,7 +183,7 @@ const WizardContainer: React.FC<WizardContainerProps> = ({
   }, [activeTab, onComplete, validateStep]);
 
   // Get current step
-  const _currentStep = steps.find((s) => s.id === activeTab);
+  // const _currentStep = steps.find((s) => s.id === activeTab);
 
   return (
     <div className="page-content">

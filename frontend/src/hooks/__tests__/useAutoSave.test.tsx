@@ -320,7 +320,7 @@ describe("useAutoSave", () => {
         await act(async () => {
           try {
             await result.current.saveNow();
-          } catch (error) {
+          } catch {
             // Expected to throw
           }
         });
@@ -735,7 +735,7 @@ describe("useAutoSave", () => {
         await act(async () => {
           try {
             await result.current.resolveConflict("keep_local");
-          } catch (error) {
+          } catch {
             // Expected to throw
           }
         });

@@ -509,7 +509,7 @@ export const useOrganization = (
           },
         );
         return response.data.valid;
-      } catch (error) {
+      } catch {
         return false;
       }
     },
@@ -534,7 +534,7 @@ export const useOrganization = (
           { nit },
         );
         return response.data.available;
-      } catch (error) {
+      } catch {
         return false;
       }
     },

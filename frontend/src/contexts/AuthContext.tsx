@@ -123,7 +123,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         user: action.payload,
       };
 
-    case "TOKEN_REFRESHED":
+    case "TOKEN_REFRESHED": {
       const newTokens = {
         access: action.payload.access,
         refresh: action.payload.refresh || state.tokens?.refresh || "",
@@ -142,6 +142,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         ...state,
         tokens: newTokens,
       };
+    }
 
     case "CLEAR_ERROR":
       return {
@@ -434,7 +435,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw error;
       }
     },
-    [internalRefreshPermissions],
+    [],
   );
 
   /**
@@ -643,7 +644,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         );
       });
     }
-  }, [state.isAuthenticated, state.rbacLoading, state.permissions.length]);
+  }, [state.isAuthenticated, state.rbacLoading, state.permissions.length, internalRefreshPermissions]);
 
   /**
    * Auto-refresh token when it's about to expire
@@ -711,7 +712,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   /**
    * Context value
    */
-  const contextValue: AuthContextType = {
+  const contextValue: AuthContextType = React.useMemo(() => ({
     // State
     isAuthenticated: state.isAuthenticated,
     isLoading: state.isLoading,
@@ -749,12 +750,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isTokenExpired,
     getAccessToken,
     getRefreshToken,
-  };
+  }), [
+    state.isAuthenticated,
+    state.isLoading,
+    state.user,
+    state.tokens,
+    state.error,
+    state.permissions,
+    state.roles,
+    state.permissionsByResource,
+    state.rbacLoading,
+    state.rbacError,
+    state.rbacLastUpdated,
+    login,
+    logout,
+    refreshToken,
+    getCurrentUser,
+    clearError,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    hasRole,
+    hasAnyRole,
+    hasAllRoles,
+    getResourcePermissions,
+    refreshPermissions,
+    clearRbacError,
+    isTokenExpired,
+    getAccessToken,
+    getRefreshToken,
+  ]);
 
   // Make auth context available for debugging in development
   React.useEffect(() => {
     if (import.meta.env.DEV) {
-      (window as any).authContext = contextValue;
+      (window as unknown as { authContext: AuthContextType }).authContext = contextValue;
     }
   }, [contextValue]);
 

@@ -291,7 +291,7 @@ export const useAutoSave = (
       }
 
       return draftData;
-    } catch (error) {
+    } catch {
       // Draft not found is not an error
       return null;
     }
@@ -318,7 +318,7 @@ export const useAutoSave = (
       if (config.showNotifications) {
         toast.success("Borrador eliminado");
       }
-    } catch (error) {
+    } catch {
       // Ignore errors when clearing draft
     }
   }, [
@@ -425,7 +425,7 @@ export const useAutoSave = (
       if (hasDataChanged() && !state.isAutoSaving && !state.conflictDetected) {
         try {
           await performSave();
-        } catch (error) {
+        } catch {
           // Error is already handled in performSave
         }
       }

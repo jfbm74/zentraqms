@@ -24,7 +24,7 @@ interface SimpleRouterProps {
 
 export const SimpleRouter: React.FC<SimpleRouterProps> = ({ children }) => {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
-  const [params, setParams] = useState<Record<string, string>>({});
+  const [params] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const handlePopState = () => {

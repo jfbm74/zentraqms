@@ -18,6 +18,7 @@ import {
   Logger,
   NotificationHandler,
   ErrorType,
+  ErrorSeverity,
 } from "./errorHandler";
 import { AuthStorage } from "./storage";
 
@@ -40,11 +41,11 @@ export function setupHttpInterceptors(axiosInstance: AxiosInstance) {
         startTime: Date.now(),
         url: config.url || "",
         method: config.method?.toUpperCase() || "GET",
-        retryCount: (config as any).__retryCount || 0,
+        retryCount: (config as unknown as { __retryCount?: number }).__retryCount || 0,
       };
 
       // Store metadata in config
-      (config as any).__metadata = metadata;
+      (config as unknown as { __metadata: RequestMetadata }).__metadata = metadata;
 
       // Add authentication token
       const authData = AuthStorage.getAuthData();
@@ -55,7 +56,7 @@ export function setupHttpInterceptors(axiosInstance: AxiosInstance) {
       // Add request ID for tracking (internal only, not sent to server to avoid CORS issues)
       const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       // config.headers['X-Request-ID'] = requestId; // Disabled to avoid CORS issues
-      (config as any).__requestId = requestId;
+      (config as unknown as { __requestId: string }).__requestId = requestId;
 
       // Log outgoing request
       Logger.log("info", `[HTTP Request] ${metadata.method} ${metadata.url}`, {
@@ -77,9 +78,9 @@ export function setupHttpInterceptors(axiosInstance: AxiosInstance) {
   axiosInstance.interceptors.response.use(
     (response) => {
       // Calculate request duration
-      const metadata = (response.config as any).__metadata as RequestMetadata;
+      const metadata = (response.config as unknown as { __metadata: RequestMetadata }).__metadata;
       const duration = Date.now() - metadata.startTime;
-      const requestId = (response.config as any).__requestId;
+      const requestId = (response.config as unknown as { __requestId: string }).__requestId;
 
       // Log successful response
       Logger.log("info", `[HTTP Response] ${metadata.method} ${metadata.url}`, {
@@ -93,8 +94,8 @@ export function setupHttpInterceptors(axiosInstance: AxiosInstance) {
       return response;
     },
     async (error: AxiosError) => {
-      const config = error.config as any;
-      const metadata = config?.__metadata as RequestMetadata;
+      const config = error.config as unknown as { __metadata?: RequestMetadata; __requestId?: string; __retryCount?: number };
+      const metadata = config?.__metadata;
       const requestId = config?.__requestId;
       const retryCount = config?.__retryCount || 0;
 
@@ -243,7 +244,7 @@ async function retryRequest(
   await new Promise((resolve) => setTimeout(resolve, delay));
 
   // Increment retry count
-  (config as any).__retryCount = retryCount + 1;
+  (config as unknown as { __retryCount: number }).__retryCount = retryCount + 1;
 
   // Retry the request
   return axiosInstance(config);
@@ -312,25 +313,21 @@ export const httpClient = {
   /**
    * Make a GET request with enhanced error handling
    */
-  async get<T = any>(
+  async get<T = unknown>(
     url: string,
     config?: AxiosRequestConfig & {
       silent?: boolean;
       skipErrorNotification?: boolean;
     },
   ): Promise<T> {
-    try {
-      const response = await axios.get<T>(url, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await axios.get<T>(url, config);
+    return response.data;
   },
 
   /**
    * Make a POST request with enhanced error handling
    */
-  async post<T = any>(
+  async post<T = unknown>(
     url: string,
     data?: unknown,
     config?: AxiosRequestConfig & {
@@ -338,18 +335,14 @@ export const httpClient = {
       skipErrorNotification?: boolean;
     },
   ): Promise<T> {
-    try {
-      const response = await axios.post<T>(url, data, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await axios.post<T>(url, data, config);
+    return response.data;
   },
 
   /**
    * Make a PUT request with enhanced error handling
    */
-  async put<T = any>(
+  async put<T = unknown>(
     url: string,
     data?: unknown,
     config?: AxiosRequestConfig & {
@@ -357,42 +350,33 @@ export const httpClient = {
       skipErrorNotification?: boolean;
     },
   ): Promise<T> {
-    try {
-      const response = await axios.put<T>(url, data, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await axios.put<T>(url, data, config);
+    return response.data;
   },
 
   /**
    * Make a DELETE request with enhanced error handling
    */
-  async delete<T = any>(
+  async delete<T = unknown>(
     url: string,
     config?: AxiosRequestConfig & {
       silent?: boolean;
       skipErrorNotification?: boolean;
     },
   ): Promise<T> {
-    try {
-      const response = await axios.delete<T>(url, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await axios.delete<T>(url, config);
+    return response.data;
   },
 
   /**
    * Make a request with automatic retry
    */
-  async withRetry<T = any>(
+  async withRetry<T = unknown>(
     operation: () => Promise<T>,
-    maxRetries: number = 3,
   ): Promise<T> {
     return RetryHandler.executeWithRetry(operation, {
       type: ErrorType.UNKNOWN,
-      severity: "MEDIUM" as any,
+      severity: "MEDIUM" as ErrorSeverity,
       message: "Operation failed",
       userMessage: "Operación fallida",
       timestamp: new Date(),

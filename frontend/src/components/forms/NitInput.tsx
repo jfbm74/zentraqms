@@ -9,7 +9,7 @@
  * - Integration with form libraries
  */
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 
 interface NitInputProps {
   value?: string;
@@ -104,7 +104,7 @@ const NitInput: React.FC<NitInputProps> = ({
   /**
    * Validate NIT format
    */
-  const validateNit = (nit: string, dv: string): boolean => {
+  const validateNit = useCallback((nit: string, dv: string): boolean => {
     const cleanNit = nit.replace(/\D/g, "");
 
     // Basic length validation
@@ -120,7 +120,7 @@ const NitInput: React.FC<NitInputProps> = ({
     // Calculate and compare verification digit
     const calculatedDv = calculateVerificationDigit(cleanNit);
     return calculatedDv === dv;
-  };
+  }, []);
 
   /**
    * Handle NIT input change

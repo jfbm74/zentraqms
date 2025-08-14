@@ -12,7 +12,7 @@
  * Coverage Target: >80%
  */
 
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import Step1OrganizationData from "../Step1OrganizationData";
@@ -458,7 +458,7 @@ describe("Step1OrganizationData", () => {
         render(
           <Step1OrganizationData
             {...defaultProps}
-            data={dataWithNulls as any}
+            data={dataWithNulls as Record<string, unknown>}
           />,
         );
       }).not.toThrow();

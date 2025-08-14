@@ -175,7 +175,7 @@ describe("useOrganization", () => {
         await act(async () => {
           try {
             await result.current.fetchOrganization("org-123");
-          } catch (error) {
+          } catch {
             // Expected to throw
           }
         });
@@ -252,7 +252,7 @@ describe("useOrganization", () => {
         await act(async () => {
           try {
             await result.current.createOrganization({});
-          } catch (error) {
+          } catch {
             // Expected to throw
           }
         });
@@ -301,7 +301,7 @@ describe("useOrganization", () => {
         await act(async () => {
           try {
             await result.current.updateOrganization("org-123", {});
-          } catch (error) {
+          } catch {
             // Expected to throw
           }
         });
@@ -369,7 +369,7 @@ describe("useOrganization", () => {
         await act(async () => {
           try {
             await result.current.fetchLocations("org-123");
-          } catch (error) {
+          } catch {
             // Expected to throw
           }
         });
@@ -755,7 +755,7 @@ describe("useOrganization", () => {
       await act(async () => {
         try {
           await result.current.fetchOrganization("org-123");
-        } catch (error) {
+        } catch {
           // Expected to throw
         }
       });

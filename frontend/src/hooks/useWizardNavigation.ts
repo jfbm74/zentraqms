@@ -19,7 +19,7 @@ export interface WizardStep {
   isCompleted: boolean;
   isAccessible: boolean;
   validationRules?: ValidationRule[];
-  component?: React.ComponentType<any>;
+  component?: React.ComponentType<Record<string, unknown>>;
 }
 
 export interface ValidationRule {

@@ -37,7 +37,6 @@ const Step1OrganizationData: React.FC<Step1Props> = ({
   const handleNitChange = (
     nit: string,
     verificationDigit: string,
-    _isValid: boolean,
   ) => {
     onChange({
       nit,

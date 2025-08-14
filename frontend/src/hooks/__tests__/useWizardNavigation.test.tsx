@@ -70,12 +70,12 @@ describe("useWizardNavigation", () => {
     },
   ];
 
-  const defaultConfig = {
-    allowSkipOptionalSteps: true,
-    allowBackNavigation: true,
-    validateOnStepChange: true,
-    persistProgress: false,
-  };
+  // const _defaultConfig = {
+  //   allowSkipOptionalSteps: true,
+  //   allowBackNavigation: true,
+  //   validateOnStepChange: true,
+  //   persistProgress: false,
+  // };
 
   beforeEach(() => {
     vi.clearAllMocks();

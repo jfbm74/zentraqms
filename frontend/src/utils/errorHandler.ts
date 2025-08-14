@@ -8,7 +8,7 @@
  * - Centralized logging
  */
 
-import { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
+import { AxiosError } from "axios";
 import { toast } from "react-toastify";
 
 // Error types
@@ -72,13 +72,13 @@ export class Logger {
 
   static log(level: "info" | "warn" | "error", message: string, data?: unknown) {
     const timestamp = new Date();
-    const logEntry = {
+    /* const _logEntry = {
       level,
       message,
       data,
       timestamp,
       url: window.location.href,
-    };
+    }; */
 
     if (this.isDevelopment) {
       console[level](`[${timestamp.toISOString()}] ${message}`, data);
@@ -257,7 +257,7 @@ export class ErrorClassifier {
   }
 
   private static extractServerMessage(error: AxiosError): string | null {
-    const data = error.response?.data as any;
+    const data = error.response?.data as Record<string, unknown>;
 
     if (typeof data === "string") {
       return data;
@@ -470,7 +470,7 @@ export class NotificationHandler {
       case ErrorSeverity.HIGH:
         return 8000;
       case ErrorSeverity.CRITICAL:
-        return false as any; // Don't auto-close critical errors
+        return false as unknown as number; // Don't auto-close critical errors
       default:
         return 5000;
     }

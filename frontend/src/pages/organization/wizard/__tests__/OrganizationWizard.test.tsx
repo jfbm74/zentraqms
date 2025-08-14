@@ -12,7 +12,7 @@
  * Coverage Target: >80%
  */
 
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { toast } from "react-toastify";
@@ -39,7 +39,7 @@ vi.mock("../../../../api/endpoints", () => ({
 
 // Mock step components
 vi.mock("../../../../components/wizard/steps/Step1OrganizationData", () => ({
-  default: ({ data, errors, onChange }: unknown) => (
+  default: ({ data, onChange }: { data: Record<string, unknown>; onChange: (data: Record<string, unknown>) => void }) => (
     <div data-testid="step1-organization">
       <input
         data-testid="org-name"
@@ -70,7 +70,7 @@ vi.mock("../../../../components/wizard/steps/Step1OrganizationData", () => ({
 }));
 
 vi.mock("../../../../components/wizard/steps/Step2LocationData", () => ({
-  default: ({ data, errors, onChange }: unknown) => (
+  default: ({ data, onChange }: { data: Record<string, unknown>; onChange: (data: Record<string, unknown>) => void }) => (
     <div data-testid="step2-location">
       <input
         data-testid="location-address"
@@ -92,7 +92,7 @@ vi.mock("../../../../components/wizard/steps/Step2LocationData", () => ({
 }));
 
 vi.mock("../../../../components/wizard/steps/Step3SectorTemplate", () => ({
-  default: ({ data, errors, onChange }: unknown) => (
+  default: ({ data, onChange }: { data: Record<string, unknown>; onChange: (data: Record<string, unknown>) => void }) => (
     <div data-testid="step3-sector">
       <select
         data-testid="sector-template"
@@ -600,7 +600,7 @@ describe("OrganizationWizard", () => {
       const user = userEvent.setup();
       render(<OrganizationWizard />);
 
-      const nextButton = screen.getByText("Siguiente: Ubicación");
+      screen.getByText("Siguiente: Ubicación");
       await user.tab();
 
       // Should be able to focus on interactive elements
