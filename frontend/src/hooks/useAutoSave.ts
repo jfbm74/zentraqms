@@ -36,6 +36,14 @@ export interface SaveData {
   [key: string]: unknown;
 }
 
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+}
+
 export interface AutoSaveHookReturn {
   // State
   isAutoSaving: boolean;
@@ -232,7 +240,7 @@ export const useAutoSave = (
       }
     } catch (error: unknown) {
       const errorMessage =
-        (error as any)?.response?.data?.message || "Error al guardar automáticamente";
+        (error as ApiError)?.response?.data?.message || "Error al guardar automáticamente";
 
       updateState({
         isAutoSaving: false,
@@ -386,7 +394,7 @@ export const useAutoSave = (
         }
       } catch (error: unknown) {
         const errorMessage =
-          (error as any)?.response?.data?.message || "Error al resolver conflicto";
+          (error as ApiError)?.response?.data?.message || "Error al resolver conflicto";
         updateState({ lastError: errorMessage });
 
         if (config.showNotifications) {
@@ -478,7 +486,7 @@ export const useAutoSave = (
    * Update unsaved changes status
    */
   useEffect(() => {
-    const hasChanges = hasDataChanged();
+    const hasChanges = JSON.stringify(currentData) !== JSON.stringify(lastSavedData);
     if (hasChanges !== state.hasUnsavedChanges) {
       updateState({ hasUnsavedChanges: hasChanges });
     }
