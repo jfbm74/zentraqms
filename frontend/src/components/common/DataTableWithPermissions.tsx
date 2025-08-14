@@ -1,11 +1,11 @@
 /**
  * Data Table with Permission-based Actions
- * 
+ *
  * Example component demonstrating how to integrate RBAC with UI elements.
  * Shows/hides table actions based on user permissions.
  */
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   CreateActionButton,
   EditActionButton,
@@ -15,8 +15,8 @@ import {
   ImportActionButton,
   BulkActionsBar,
   ActionButtonGroup,
-} from '../ui/PermissionButtons';
-import { PermissionGate } from './PermissionGate';
+} from "../ui/PermissionButtons";
+import { PermissionGate } from "./PermissionGate";
 
 /**
  * Generic data item interface
@@ -42,16 +42,16 @@ interface TableColumn<T = DataItem> {
 interface DataTableWithPermissionsProps<T = DataItem> {
   /** Resource type for permission checking */
   resource: string;
-  
+
   /** Table data */
   data: T[];
-  
+
   /** Table columns */
   columns: TableColumn<T>[];
-  
+
   /** Loading state */
   loading?: boolean;
-  
+
   /** Action handlers */
   onAdd?: () => void;
   onEdit?: (item: T) => void;
@@ -62,14 +62,14 @@ interface DataTableWithPermissionsProps<T = DataItem> {
   onBulkEdit?: (items: T[]) => void;
   onBulkDelete?: (items: T[]) => void;
   onBulkExport?: (items: T[]) => void;
-  
+
   /** Table configuration */
   title?: string;
   showSearch?: boolean;
   showPagination?: boolean;
   showBulkActions?: boolean;
   itemsPerPage?: number;
-  
+
   /** Custom action buttons */
   customActions?: Array<{
     label: string;
@@ -107,7 +107,7 @@ export const DataTableWithPermissions = <T extends DataItem>({
   customActions = [],
 }: DataTableWithPermissionsProps<T>) => {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   /**
@@ -128,7 +128,7 @@ export const DataTableWithPermissions = <T extends DataItem>({
    */
   const handleSelectAll = (selected: boolean) => {
     if (selected) {
-      setSelectedItems(new Set(data.map(item => item.id)));
+      setSelectedItems(new Set(data.map((item) => item.id)));
     } else {
       setSelectedItems(new Set());
     }
@@ -137,27 +137,32 @@ export const DataTableWithPermissions = <T extends DataItem>({
   /**
    * Get filtered and paginated data
    */
-  const filteredData = data.filter(item => {
+  const filteredData = data.filter((item) => {
     if (!searchTerm) return true;
-    return Object.values(item).some(value => 
-      String(value).toLowerCase().includes(searchTerm.toLowerCase())
+    return Object.values(item).some((value) =>
+      String(value).toLowerCase().includes(searchTerm.toLowerCase()),
     );
   });
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const paginatedData = showPagination 
-    ? filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  const paginatedData = showPagination
+    ? filteredData.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage,
+      )
     : filteredData;
 
   const selectedCount = selectedItems.size;
-  const allSelected = selectedCount === paginatedData.length && paginatedData.length > 0;
-  const partialSelected = selectedCount > 0 && selectedCount < paginatedData.length;
+  const allSelected =
+    selectedCount === paginatedData.length && paginatedData.length > 0;
+  const partialSelected =
+    selectedCount > 0 && selectedCount < paginatedData.length;
 
   /**
    * Get selected items data
    */
   const getSelectedItems = (): T[] => {
-    return data.filter(item => selectedItems.has(item.id));
+    return data.filter((item) => selectedItems.has(item.id));
   };
 
   /**
@@ -165,14 +170,12 @@ export const DataTableWithPermissions = <T extends DataItem>({
    */
   const renderHeaderActions = () => (
     <div className="d-flex justify-content-between align-items-center mb-3">
-      <div>
-        {title && <h5 className="mb-0">{title}</h5>}
-      </div>
-      
+      <div>{title && <h5 className="mb-0">{title}</h5>}</div>
+
       <div className="d-flex gap-2">
         {/* Search */}
         {showSearch && (
-          <div className="input-group" style={{ width: '300px' }}>
+          <div className="input-group" style={{ width: "300px" }}>
             <span className="input-group-text">
               <i className="ri-search-line"></i>
             </span>
@@ -188,21 +191,17 @@ export const DataTableWithPermissions = <T extends DataItem>({
 
         {/* Import Action */}
         {onImport && (
-          <ImportActionButton onClick={onImport}>
-            Importar
-          </ImportActionButton>
+          <ImportActionButton onClick={onImport}>Importar</ImportActionButton>
         )}
 
         {/* Export Action */}
         {onExport && (
-          <ExportActionButton onClick={onExport}>
-            Exportar
-          </ExportActionButton>
+          <ExportActionButton onClick={onExport}>Exportar</ExportActionButton>
         )}
 
         {/* Custom Header Actions */}
         {customActions
-          .filter(action => !action.bulk)
+          .filter((action) => !action.bulk)
           .map((action, index) => (
             <PermissionGate
               key={index}
@@ -210,15 +209,14 @@ export const DataTableWithPermissions = <T extends DataItem>({
               permissions={action.permissions}
             >
               <button
-                className={`btn btn-${action.variant || 'outline-secondary'}`}
+                className={`btn btn-${action.variant || "outline-secondary"}`}
                 onClick={() => action.onClick()}
               >
                 <i className={`${action.icon} me-1`}></i>
                 {action.label}
               </button>
             </PermissionGate>
-          ))
-        }
+          ))}
 
         {/* Add Action */}
         {onAdd && (
@@ -242,20 +240,25 @@ export const DataTableWithPermissions = <T extends DataItem>({
       <BulkActionsBar
         resource={resource}
         selectedCount={selectedCount}
-        onBulkEdit={onBulkEdit ? () => onBulkEdit(selectedItemsData) : undefined}
-        onBulkDelete={onBulkDelete ? () => onBulkDelete(selectedItemsData) : undefined}
-        onBulkExport={onBulkExport ? () => onBulkExport(selectedItemsData) : undefined}
+        onBulkEdit={
+          onBulkEdit ? () => onBulkEdit(selectedItemsData) : undefined
+        }
+        onBulkDelete={
+          onBulkDelete ? () => onBulkDelete(selectedItemsData) : undefined
+        }
+        onBulkExport={
+          onBulkExport ? () => onBulkExport(selectedItemsData) : undefined
+        }
         customActions={customActions
-          .filter(action => action.bulk)
-          .map(action => ({
+          .filter((action) => action.bulk)
+          .map((action) => ({
             label: action.label,
             icon: action.icon,
             onClick: () => action.onClick(),
             permission: action.permission,
             permissions: action.permissions,
             variant: action.variant,
-          }))
-        }
+          }))}
       />
     );
   };
@@ -274,7 +277,7 @@ export const DataTableWithPermissions = <T extends DataItem>({
           Ver
         </ViewActionButton>
       )}
-      
+
       {onEdit && (
         <EditActionButton
           resource={resource}
@@ -284,7 +287,7 @@ export const DataTableWithPermissions = <T extends DataItem>({
           Editar
         </EditActionButton>
       )}
-      
+
       {onDelete && (
         <DeleteActionButton
           resource={resource}
@@ -306,7 +309,7 @@ export const DataTableWithPermissions = <T extends DataItem>({
     return (
       <nav>
         <ul className="pagination justify-content-center">
-          <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+          <li className={`page-item ${currentPage === 1 ? "disabled" : ""}`}>
             <button
               className="page-link"
               onClick={() => setCurrentPage(currentPage - 1)}
@@ -315,11 +318,11 @@ export const DataTableWithPermissions = <T extends DataItem>({
               Anterior
             </button>
           </li>
-          
+
           {[...Array(totalPages)].map((_, index) => (
             <li
               key={index + 1}
-              className={`page-item ${currentPage === index + 1 ? 'active' : ''}`}
+              className={`page-item ${currentPage === index + 1 ? "active" : ""}`}
             >
               <button
                 className="page-link"
@@ -329,8 +332,10 @@ export const DataTableWithPermissions = <T extends DataItem>({
               </button>
             </li>
           ))}
-          
-          <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+
+          <li
+            className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}
+          >
             <button
               className="page-link"
               onClick={() => setCurrentPage(currentPage + 1)}
@@ -358,13 +363,13 @@ export const DataTableWithPermissions = <T extends DataItem>({
     <div>
       {renderHeaderActions()}
       {renderBulkActions()}
-      
+
       <div className="table-responsive">
         <table className="table table-hover">
           <thead className="table-light">
             <tr>
               {showBulkActions && (
-                <th style={{ width: '50px' }}>
+                <th style={{ width: "50px" }}>
                   <input
                     type="checkbox"
                     className="form-check-input"
@@ -376,7 +381,7 @@ export const DataTableWithPermissions = <T extends DataItem>({
                   />
                 </th>
               )}
-              
+
               {columns.map((column) => (
                 <th key={String(column.key)}>
                   {column.label}
@@ -385,11 +390,11 @@ export const DataTableWithPermissions = <T extends DataItem>({
                   )}
                 </th>
               ))}
-              
-              <th style={{ width: '120px' }}>Acciones</th>
+
+              <th style={{ width: "120px" }}>Acciones</th>
             </tr>
           </thead>
-          
+
           <tbody>
             {paginatedData.length === 0 ? (
               <tr>
@@ -409,30 +414,29 @@ export const DataTableWithPermissions = <T extends DataItem>({
                         type="checkbox"
                         className="form-check-input"
                         checked={selectedItems.has(item.id)}
-                        onChange={(e) => handleItemSelect(item.id, e.target.checked)}
+                        onChange={(e) =>
+                          handleItemSelect(item.id, e.target.checked)
+                        }
                       />
                     </td>
                   )}
-                  
+
                   {columns.map((column) => (
                     <td key={String(column.key)}>
-                      {column.render 
+                      {column.render
                         ? column.render(item[column.key], item, index)
-                        : String(item[column.key] || '')
-                      }
+                        : String(item[column.key] || "")}
                     </td>
                   ))}
-                  
-                  <td>
-                    {renderRowActions(item)}
-                  </td>
+
+                  <td>{renderRowActions(item)}</td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
       </div>
-      
+
       {renderPagination()}
     </div>
   );

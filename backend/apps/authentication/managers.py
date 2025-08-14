@@ -32,14 +32,14 @@ class UserManager(BaseUserManager):
             ValidationError: If email format is invalid
         """
         if not email:
-            raise ValueError(_('El email es obligatorio'))
+            raise ValueError(_("El email es obligatorio"))
 
         # Normalize the email address
         email = self.normalize_email(email)
 
         # Validate email format (basic validation)
-        if '@' not in email:
-            raise ValidationError(_('El formato del email no es válido'))
+        if "@" not in email:
+            raise ValidationError(_("El formato del email no es válido"))
 
         # Create the user instance
         user = self.model(email=email, **extra_fields)
@@ -65,10 +65,10 @@ class UserManager(BaseUserManager):
             User: The created user instance
         """
         # Set default values for regular users
-        extra_fields.setdefault('is_staff', False)
-        extra_fields.setdefault('is_superuser', False)
-        extra_fields.setdefault('is_active', True)
-        extra_fields.setdefault('is_verified', False)
+        extra_fields.setdefault("is_staff", False)
+        extra_fields.setdefault("is_superuser", False)
+        extra_fields.setdefault("is_active", True)
+        extra_fields.setdefault("is_verified", False)
 
         return self._create_user(email, password, **extra_fields)
 
@@ -88,16 +88,16 @@ class UserManager(BaseUserManager):
             ValueError: If is_staff or is_superuser is not True
         """
         # Set required values for superusers
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('is_active', True)
-        extra_fields.setdefault('is_verified', True)
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
+        extra_fields.setdefault("is_verified", True)
 
         # Validate that superuser flags are properly set
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError(_('El superusuario debe tener is_staff=True.'))
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError(_('El superusuario debe tener is_superuser=True.'))
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError(_("El superusuario debe tener is_staff=True."))
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError(_("El superusuario debe tener is_superuser=True."))
 
         return self._create_user(email, password, **extra_fields)
 
@@ -140,7 +140,9 @@ class UserManager(BaseUserManager):
         """
         return self.filter(is_staff=True)
 
-    def create_user_with_profile(self, email, password, first_name, last_name, **extra_fields):
+    def create_user_with_profile(
+        self, email, password, first_name, last_name, **extra_fields
+    ):
         """
         Create a user with basic profile information.
 
@@ -154,9 +156,11 @@ class UserManager(BaseUserManager):
         Returns:
             User: The created user instance
         """
-        extra_fields.update({
-            'first_name': first_name,
-            'last_name': last_name,
-        })
+        extra_fields.update(
+            {
+                "first_name": first_name,
+                "last_name": last_name,
+            }
+        )
 
         return self.create_user(email=email, password=password, **extra_fields)

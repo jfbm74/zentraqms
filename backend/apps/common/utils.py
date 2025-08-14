@@ -46,37 +46,49 @@ def custom_exception_handler(exc, context):
             f"API Exception: {exc.__class__.__name__}: {str(exc)}",
             exc_info=True,
             extra={
-                'request': context.get('request'),
-                'view': context.get('view'),
-            }
+                "request": context.get("request"),
+                "view": context.get("view"),
+            },
         )
 
         # Customize the response format
         custom_response_data = {
-            'success': False,
-            'error': {
-                'type': exc.__class__.__name__,
-                'message': _('Ha ocurrido un error en el servidor.'),
-                'details': response.data,
-                'timestamp': timezone.now().isoformat(),
-            }
+            "success": False,
+            "error": {
+                "type": exc.__class__.__name__,
+                "message": _("Ha ocurrido un error en el servidor."),
+                "details": response.data,
+                "timestamp": timezone.now().isoformat(),
+            },
         }
 
         # Handle specific exception types
         if response.status_code == status.HTTP_400_BAD_REQUEST:
-            custom_response_data['error']['message'] = _('Los datos enviados no son válidos.')
+            custom_response_data["error"]["message"] = _(
+                "Los datos enviados no son válidos."
+            )
         elif response.status_code == status.HTTP_401_UNAUTHORIZED:
-            custom_response_data['error']['message'] = _('No tienes autorización para acceder a este recurso.')
+            custom_response_data["error"]["message"] = _(
+                "No tienes autorización para acceder a este recurso."
+            )
         elif response.status_code == status.HTTP_403_FORBIDDEN:
-            custom_response_data['error']['message'] = _('No tienes permisos para realizar esta acción.')
+            custom_response_data["error"]["message"] = _(
+                "No tienes permisos para realizar esta acción."
+            )
         elif response.status_code == status.HTTP_404_NOT_FOUND:
-            custom_response_data['error']['message'] = _('El recurso solicitado no existe.')
+            custom_response_data["error"]["message"] = _(
+                "El recurso solicitado no existe."
+            )
         elif response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED:
-            custom_response_data['error']['message'] = _('Método no permitido para este endpoint.')
+            custom_response_data["error"]["message"] = _(
+                "Método no permitido para este endpoint."
+            )
         elif response.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
-            custom_response_data['error']['message'] = _('Has excedido el límite de peticiones. Intenta más tarde.')
+            custom_response_data["error"]["message"] = _(
+                "Has excedido el límite de peticiones. Intenta más tarde."
+            )
         elif response.status_code >= 500:
-            custom_response_data['error']['message'] = _('Error interno del servidor.')
+            custom_response_data["error"]["message"] = _("Error interno del servidor.")
 
         response.data = custom_response_data
 
@@ -110,7 +122,7 @@ def generate_secure_token(length: int = 32) -> str:
         str: Secure random token
     """
     alphabet = string.ascii_letters + string.digits
-    return ''.join(secrets.choice(alphabet) for _ in range(length))
+    return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
 def generate_verification_code(length: int = 6) -> str:
@@ -123,7 +135,7 @@ def generate_verification_code(length: int = 6) -> str:
     Returns:
         str: Numeric verification code
     """
-    return ''.join(secrets.choice(string.digits) for _ in range(length))
+    return "".join(secrets.choice(string.digits) for _ in range(length))
 
 
 def get_client_ip(request) -> Optional[str]:
@@ -137,19 +149,19 @@ def get_client_ip(request) -> Optional[str]:
         Optional[str]: Client IP address or None if not found
     """
     # Check for IP in forwarded headers (for proxy/load balancer setups)
-    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
     if x_forwarded_for:
         # Take the first IP if there are multiple
-        ip = x_forwarded_for.split(',')[0].strip()
+        ip = x_forwarded_for.split(",")[0].strip()
         return ip
 
     # Check for real IP header
-    x_real_ip = request.META.get('HTTP_X_REAL_IP')
+    x_real_ip = request.META.get("HTTP_X_REAL_IP")
     if x_real_ip:
         return x_real_ip.strip()
 
     # Fall back to REMOTE_ADDR
-    return request.META.get('REMOTE_ADDR')
+    return request.META.get("REMOTE_ADDR")
 
 
 def send_notification_email(
@@ -157,7 +169,7 @@ def send_notification_email(
     message: str,
     recipient_list: list,
     from_email: Optional[str] = None,
-    html_message: Optional[str] = None
+    html_message: Optional[str] = None,
 ) -> bool:
     """
     Send notification email to users.
@@ -189,9 +201,7 @@ def send_notification_email(
 
 
 def create_success_response(
-    data: Any = None,
-    message: str = None,
-    status_code: int = status.HTTP_200_OK
+    data: Any = None, message: str = None, status_code: int = status.HTTP_200_OK
 ) -> Response:
     """
     Create a standardized success response.
@@ -205,10 +215,10 @@ def create_success_response(
         Response: Standardized success response
     """
     response_data = {
-        'success': True,
-        'message': message or _('Operación completada exitosamente.'),
-        'data': data,
-        'timestamp': timezone.now().isoformat(),
+        "success": True,
+        "message": message or _("Operación completada exitosamente."),
+        "data": data,
+        "timestamp": timezone.now().isoformat(),
     }
 
     return Response(response_data, status=status_code)
@@ -217,7 +227,7 @@ def create_success_response(
 def create_error_response(
     message: str,
     errors: Optional[Dict] = None,
-    status_code: int = status.HTTP_400_BAD_REQUEST
+    status_code: int = status.HTTP_400_BAD_REQUEST,
 ) -> Response:
     """
     Create a standardized error response.
@@ -231,12 +241,12 @@ def create_error_response(
         Response: Standardized error response
     """
     response_data = {
-        'success': False,
-        'error': {
-            'message': message,
-            'details': errors or {},
-            'timestamp': timezone.now().isoformat(),
-        }
+        "success": False,
+        "error": {
+            "message": message,
+            "details": errors or {},
+            "timestamp": timezone.now().isoformat(),
+        },
     }
 
     return Response(response_data, status=status_code)
@@ -255,9 +265,10 @@ def validate_file_size(file, max_size_mb: int = 5):
     """
     if file.size > max_size_mb * 1024 * 1024:
         raise ValidationError(
-            _('El archivo es demasiado grande. El tamaño máximo permitido es %(size)sMB.') % {
-                'size': max_size_mb
-            }
+            _(
+                "El archivo es demasiado grande. El tamaño máximo permitido es %(size)sMB."
+            )
+            % {"size": max_size_mb}
         )
 
 
@@ -278,9 +289,8 @@ def validate_file_extension(file, allowed_extensions: list):
 
     if ext not in allowed_extensions:
         raise ValidationError(
-            _('Tipo de archivo no permitido. Los tipos permitidos son: %(extensions)s') % {
-                'extensions': ', '.join(allowed_extensions)
-            }
+            _("Tipo de archivo no permitido. Los tipos permitidos son: %(extensions)s")
+            % {"extensions": ", ".join(allowed_extensions)}
         )
 
 
@@ -299,6 +309,7 @@ def format_file_size(size_bytes: int) -> str:
 
     size_names = ["B", "KB", "MB", "GB", "TB"]
     import math
+
     i = int(math.floor(math.log(size_bytes, 1024)))
     p = math.pow(1024, i)
     s = round(size_bytes / p, 2)
@@ -320,14 +331,14 @@ def slugify_spanish(text: str) -> str:
     import re
 
     # Normalize unicode characters
-    text = unicodedata.normalize('NFKD', text)
+    text = unicodedata.normalize("NFKD", text)
 
     # Remove accents
-    text = ''.join([c for c in text if not unicodedata.combining(c)])
+    text = "".join([c for c in text if not unicodedata.combining(c)])
 
     # Convert to lowercase and replace spaces with hyphens
-    text = re.sub(r'[^\w\s-]', '', text).strip().lower()
-    text = re.sub(r'[-\s]+', '-', text)
+    text = re.sub(r"[^\w\s-]", "", text).strip().lower()
+    text = re.sub(r"[-\s]+", "-", text)
 
     return text
 
@@ -341,6 +352,8 @@ class APIResponseMixin:
         """Create a success response."""
         return create_success_response(data, message, status_code)
 
-    def error_response(self, message, errors=None, status_code=status.HTTP_400_BAD_REQUEST):
+    def error_response(
+        self, message, errors=None, status_code=status.HTTP_400_BAD_REQUEST
+    ):
         """Create an error response."""
         return create_error_response(message, errors, status_code)

@@ -1,0 +1,409 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis OrganizationWizard - ZentraQMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <style>
+        .recommendation-card { border-left: 4px solid #0d6efd; }
+        .priority-high { border-left-color: #dc3545 !important; }
+        .priority-medium { border-left-color: #fd7e14 !important; }
+        .priority-low { border-left-color: #198754 !important; }
+        .screenshot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+        .screenshot-card img { max-width: 100%; height: auto; border-radius: 0.5rem; }
+    </style>
+</head>
+<body>
+    <div class="container my-5">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-4">
+                    <i class="ri-search-line me-2"></i>
+                    Análisis OrganizationWizard
+                </h1>
+                <p class="text-muted">Reporte generado el 14/8/2025, 12:52:20</p>
+            </div>
+        </div>
+
+        <!-- Resumen Ejecutivo -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">📊 Resumen Ejecutivo</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h3 class="text-success">3</h3>
+                                    <p class="mb-0">Screenshots</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h3 class="text-warning">16</h3>
+                                    <p class="mb-0">Problemas Accesibilidad</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h3 class="text-info">3</h3>
+                                    <p class="mb-0">Mejoras Inmediatas</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h3 class="text-primary">3</h3>
+                                    <p class="mb-0">Mejoras Velzon</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Screenshots -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">📸 Capturas del Wizard</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="screenshot-grid">
+                            
+                                <div class="screenshot-card">
+                                    <img src="step-1-datos-de-organización.png" alt="Step 1: Datos de Organización" class="img-thumbnail">
+                                    <p class="mt-2 text-center"><strong>Step 1:</strong> Datos de Organización</p>
+                                </div>
+                            
+                                <div class="screenshot-card">
+                                    <img src="step-2-ubicación.png" alt="Step 2: Ubicación" class="img-thumbnail">
+                                    <p class="mt-2 text-center"><strong>Step 2:</strong> Ubicación</p>
+                                </div>
+                            
+                                <div class="screenshot-card">
+                                    <img src="step-3-configuración.png" alt="Step 3: Configuración" class="img-thumbnail">
+                                    <p class="mt-2 text-center"><strong>Step 3:</strong> Configuración</p>
+                                </div>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recomendaciones Inmediatas -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">🚨 Mejoras Inmediatas</h5>
+                    </div>
+                    <div class="card-body">
+                        
+                            <div class="card recommendation-card priority-high mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <span class="badge bg-danger me-2">
+                                            HIGH
+                                        </span>
+                                        Mejorar Validación de NIT
+                                    </h6>
+                                    <p class="card-text">Implementar máscara de input y validación visual más clara</p>
+                                    <code class="bg-light p-2 d-block">Usar react-input-mask y mostrar dígito de verificación en tiempo real</code>
+                                </div>
+                            </div>
+                        
+                            <div class="card recommendation-card priority-high mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <span class="badge bg-danger me-2">
+                                            HIGH
+                                        </span>
+                                        Agregar Labels de Accesibilidad
+                                    </h6>
+                                    <p class="card-text">Todos los inputs deben tener labels apropiados</p>
+                                    <code class="bg-light p-2 d-block">Agregar htmlFor en todos los labels y aria-labels cuando sea necesario</code>
+                                </div>
+                            </div>
+                        
+                            <div class="card recommendation-card priority-medium mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <span class="badge bg-warning me-2">
+                                            MEDIUM
+                                        </span>
+                                        Implementar Autoguardado
+                                    </h6>
+                                    <p class="card-text">Evitar pérdida de datos al navegar entre pasos</p>
+                                    <code class="bg-light p-2 d-block">Usar localStorage o sessionStorage para persistir datos del formulario</code>
+                                </div>
+                            </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mejoras Velzon -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">🎨 Mejoras Basadas en Velzon</h5>
+                    </div>
+                    <div class="card-body">
+                        
+                            <div class="card recommendation-card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">Usar FormWizards de Velzon</h6>
+                                    <p class="card-text">Aprovechar los componentes wizard existentes en Velzon</p>
+                                    <code class="bg-light p-2 d-block">/pages/Forms/FormWizards.tsx</code>
+                                </div>
+                            </div>
+                        
+                            <div class="card recommendation-card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">Integrar Validation Components</h6>
+                                    <p class="card-text">Usar los componentes de validación de Velzon</p>
+                                    <code class="bg-light p-2 d-block">/pages/Forms/FormValidation.tsx</code>
+                                </div>
+                            </div>
+                        
+                            <div class="card recommendation-card mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">Mejorar Progress Indicator</h6>
+                                    <p class="card-text">Usar el step indicator avanzado de Velzon</p>
+                                    <code class="bg-light p-2 d-block">/Components/Common/StepProgress.tsx</code>
+                                </div>
+                            </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Datos Técnicos -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">🔧 Datos Técnicos</h5>
+                    </div>
+                    <div class="card-body">
+                        <pre class="bg-light p-3"><code>{
+  "screenshots": [
+    {
+      "step": 1,
+      "name": "Datos de Organización",
+      "path": "step-1-datos-de-organización.png"
+    },
+    {
+      "step": 2,
+      "name": "Ubicación",
+      "path": "step-2-ubicación.png"
+    },
+    {
+      "step": 3,
+      "name": "Configuración",
+      "path": "step-3-configuración.png"
+    }
+  ],
+  "accessibility": [
+    {
+      "type": "missing_label",
+      "element": "INPUT[name=\"search\"]",
+      "message": "Input sin label asociado"
+    },
+    {
+      "type": "contrast_issue",
+      "element": "button[0]",
+      "message": "Posible problema de contraste"
+    },
+    {
+      "type": "contrast_issue",
+      "element": "button[1]",
+      "message": "Posible problema de contraste"
+    },
+    {
+      "type": "contrast_issue",
+      "element": "button[2]",
+      "message": "Posible problema de contraste"
+    },
+    {
+      "type": "contrast_issue",
+      "element": "button[3]",
+      "message": "Posible problema de contraste"
+    },
+    {
+      "type": "contrast_issue",
+      "element": "button[4]",
+      "message": "Posible problema de contraste"
+    },
+    {
+      "type": "contrast_issue",
+      "element": "button[5]",
+      "message": "Posible problema de contraste"
+    },
+    {
+      "type": "contrast_issue",
+      "element": "button[6]",
+      "message": "Posible problema de contraste"
+    },
+    {
+      "type": "contrast_issue",
+      "element": "button[7]",
+      "message": "Posible problema de contraste"
+    },
+    {
+      "type": "contrast_issue",
+      "element": "button[8]",
+      "message": "Posible problema de contraste"
+    },
+    {
+      "type": "contrast_issue",
+      "element": "button[9]",
+      "message": "Posible problema de contraste"
+    },
+    {
+      "type": "contrast_issue",
+      "element": "button[10]",
+      "message": "Posible problema de contraste"
+    },
+    {
+      "type": "contrast_issue",
+      "element": "button[11]",
+      "message": "Posible problema de contraste"
+    },
+    {
+      "type": "contrast_issue",
+      "element": "button[12]",
+      "message": "Posible problema de contraste"
+    },
+    {
+      "type": "contrast_issue",
+      "element": "button[14]",
+      "message": "Posible problema de contraste"
+    },
+    {
+      "type": "contrast_issue",
+      "element": "button[15]",
+      "message": "Posible problema de contraste"
+    }
+  ],
+  "performance": [],
+  "usability": [
+    {
+      "step": 1,
+      "fieldAnalysis": [
+        {
+          "selector": "input[name=\"name\"]",
+          "exists": false
+        },
+        {
+          "selector": "input[name=\"email\"]",
+          "exists": false
+        },
+        {
+          "selector": "input[name=\"phone\"]",
+          "exists": false
+        },
+        {
+          "selector": "input[name=\"nit\"]",
+          "exists": false
+        }
+      ],
+      "suggestions": [
+        "Usar input masks para NIT y teléfono",
+        "Agregar tooltips explicativos",
+        "Mejorar feedback visual de validación",
+        "Implementar validación en tiempo real"
+      ]
+    },
+    {
+      "step": 2,
+      "addressFields": [
+        {
+          "name": "search",
+          "type": "text",
+          "placeholder": "Buscar...",
+          "required": false
+        },
+        {
+          "name": "",
+          "type": "text",
+          "placeholder": "Ej. Empresa de Tecnología SAS",
+          "required": false
+        },
+        {
+          "name": "",
+          "type": "email",
+          "placeholder": "contacto@organizacion.com",
+          "required": false
+        },
+        {
+          "name": "",
+          "type": "text",
+          "placeholder": "123.456.789-0",
+          "required": false
+        },
+        {
+          "name": "",
+          "type": "tel",
+          "placeholder": "+57 (300) 123-4567",
+          "required": false
+        },
+        {
+          "name": "",
+          "type": "url",
+          "placeholder": "https://www.organizacion.com",
+          "required": false
+        },
+        {
+          "name": "",
+          "type": "textarea",
+          "placeholder": "Describa brevemente su organización: misión, visión, actividades principales, mercado objetivo, etc.",
+          "required": false
+        }
+      ],
+      "suggestions": [
+        "Integrar Google Places API para autocompletado",
+        "Usar selects para departamentos/ciudades colombianas",
+        "Validar código postal según región",
+        "Mostrar mapa de ubicación"
+      ]
+    },
+    {
+      "step": 3,
+      "sectorOptions": [],
+      "suggestions": [
+        "Mostrar preview de template seleccionado",
+        "Agregar descripciones de cada sector",
+        "Permitir personalización de template",
+        "Mostrar impacto de la selección"
+      ]
+    }
+  ],
+  "velzonCompliance": {
+    "hasVelzonClasses": true,
+    "usesBootstrap": true,
+    "hasRemixIcons": true,
+    "followsVelzonStructure": true
+  },
+  "suggestions": []
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -35,6 +35,7 @@ DJANGO_APPS = [
 
 THIRD_PARTY_APPS = [
     'rest_framework',
+    'rest_framework.authtoken',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
@@ -45,10 +46,7 @@ LOCAL_APPS = [
     'apps.authentication',
     'apps.authorization',
     'apps.common',
-    'procesos',
-    'normograma',
-    'auditorias',
-    'indicadores',
+    'apps.organization',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

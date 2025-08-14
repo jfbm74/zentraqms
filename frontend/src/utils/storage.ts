@@ -1,12 +1,12 @@
 /**
  * Storage Utilities for ZentraQMS Frontend
- * 
+ *
  * This module provides secure and type-safe utilities for managing
  * localStorage and sessionStorage, with encryption support for sensitive data.
  */
 
-import { User } from '../types/user.types';
-import { TokenPair, StorageKeys } from '../types/auth.types';
+import { User } from "../types/user.types";
+import { TokenPair, StorageKeys } from "../types/auth.types";
 
 /**
  * Storage configuration interface
@@ -23,7 +23,7 @@ interface StorageConfig {
 const DEFAULT_CONFIG: StorageConfig = {
   encrypt: false, // Will be enabled in Phase 2 with proper encryption
   useSessionStorage: false,
-  prefix: 'zentra_',
+  prefix: "zentra_",
 };
 
 /**
@@ -57,8 +57,8 @@ class StorageService {
     try {
       return JSON.stringify(data);
     } catch (error) {
-      console.error('[Storage] Failed to stringify data:', error);
-      throw new Error('Failed to serialize data for storage');
+      console.error("[Storage] Failed to stringify data:", error);
+      throw new Error("Failed to serialize data for storage");
     }
   }
 
@@ -69,7 +69,7 @@ class StorageService {
     try {
       return JSON.parse(data) as T;
     } catch (error) {
-      console.error('[Storage] Failed to parse data:', error);
+      console.error("[Storage] Failed to parse data:", error);
       return null;
     }
   }
@@ -81,7 +81,7 @@ class StorageService {
     // TODO: Implement proper encryption in Phase 2
     // For now, just return the data as-is
     if (this.config.encrypt) {
-      console.warn('[Storage] Encryption not yet implemented');
+      console.warn("[Storage] Encryption not yet implemented");
     }
     return data;
   }
@@ -93,7 +93,7 @@ class StorageService {
     // TODO: Implement proper decryption in Phase 2
     // For now, just return the data as-is
     if (this.config.encrypt) {
-      console.warn('[Storage] Decryption not yet implemented');
+      console.warn("[Storage] Decryption not yet implemented");
     }
     return data;
   }
@@ -106,8 +106,10 @@ class StorageService {
       const storage = this.getStorage();
       const prefixedKey = this.getPrefixedKey(key);
       const serializedValue = this.stringify(value);
-      const finalValue = this.config.encrypt ? this.encrypt(serializedValue) : serializedValue;
-      
+      const finalValue = this.config.encrypt
+        ? this.encrypt(serializedValue)
+        : serializedValue;
+
       storage.setItem(prefixedKey, finalValue);
       return true;
     } catch (error) {
@@ -124,12 +126,14 @@ class StorageService {
       const storage = this.getStorage();
       const prefixedKey = this.getPrefixedKey(key);
       const storedValue = storage.getItem(prefixedKey);
-      
+
       if (!storedValue) {
         return null;
       }
 
-      const decryptedValue = this.config.encrypt ? this.decrypt(storedValue) : storedValue;
+      const decryptedValue = this.config.encrypt
+        ? this.decrypt(storedValue)
+        : storedValue;
       return this.parse<T>(decryptedValue);
     } catch (error) {
       console.error(`[Storage] Failed to retrieve item ${key}:`, error);
@@ -173,7 +177,7 @@ class StorageService {
     try {
       const storage = this.getStorage();
       const keysToRemove: string[] = [];
-      
+
       // Find all keys with our prefix
       for (let i = 0; i < storage.length; i++) {
         const key = storage.key(i);
@@ -181,11 +185,11 @@ class StorageService {
           keysToRemove.push(key);
         }
       }
-      
+
       // Remove all matching keys
-      keysToRemove.forEach(key => storage.removeItem(key));
+      keysToRemove.forEach((key) => storage.removeItem(key));
     } catch (error) {
-      console.error('[Storage] Failed to clear storage:', error);
+      console.error("[Storage] Failed to clear storage:", error);
     }
   }
 
@@ -196,7 +200,7 @@ class StorageService {
     try {
       const storage = this.getStorage();
       let size = 0;
-      
+
       for (let i = 0; i < storage.length; i++) {
         const key = storage.key(i);
         if (key && key.startsWith(this.config.prefix!)) {
@@ -206,10 +210,10 @@ class StorageService {
           }
         }
       }
-      
+
       return size;
     } catch (error) {
-      console.error('[Storage] Failed to calculate storage size:', error);
+      console.error("[Storage] Failed to calculate storage size:", error);
       return 0;
     }
   }
@@ -220,7 +224,9 @@ class StorageService {
  */
 export const storage = new StorageService();
 export const secureStorage = new StorageService({ encrypt: true });
-export const sessionStorage = new StorageService({ useSessionStorage: true });
+export const sessionStorageService = new StorageService({
+  useSessionStorage: true,
+});
 
 /**
  * Authentication-specific storage utilities
@@ -230,8 +236,14 @@ export class AuthStorage {
    * Store authentication tokens
    */
   static setTokens(tokens: TokenPair): boolean {
-    const accessStored = storage.setItem(StorageKeys.ACCESS_TOKEN, tokens.access);
-    const refreshStored = storage.setItem(StorageKeys.REFRESH_TOKEN, tokens.refresh);
+    const accessStored = storage.setItem(
+      StorageKeys.ACCESS_TOKEN,
+      tokens.access,
+    );
+    const refreshStored = storage.setItem(
+      StorageKeys.REFRESH_TOKEN,
+      tokens.refresh,
+    );
     return accessStored && refreshStored;
   }
 
@@ -241,11 +253,11 @@ export class AuthStorage {
   static getTokens(): TokenPair | null {
     const access = storage.getItem<string>(StorageKeys.ACCESS_TOKEN);
     const refresh = storage.getItem<string>(StorageKeys.REFRESH_TOKEN);
-    
+
     if (!access || !refresh) {
       return null;
     }
-    
+
     return { access, refresh };
   }
 
@@ -309,56 +321,78 @@ export class AuthStorage {
    * Store user permissions (Phase 5 - RBAC)
    */
   static setUserPermissions(permissions: string[]): boolean {
-    return sessionStorage.setItem(StorageKeys.USER_PERMISSIONS, permissions);
+    return sessionStorageService.setItem(
+      StorageKeys.USER_PERMISSIONS,
+      permissions,
+    );
   }
 
   /**
    * Get user permissions (Phase 5 - RBAC)
    */
   static getUserPermissions(): string[] {
-    return sessionStorage.getItem<string[]>(StorageKeys.USER_PERMISSIONS) || [];
+    return (
+      sessionStorageService.getItem<string[]>(StorageKeys.USER_PERMISSIONS) ||
+      []
+    );
   }
 
   /**
    * Store user roles (Phase 5 - RBAC)
    */
   static setUserRoles(roles: string[]): boolean {
-    return sessionStorage.setItem(StorageKeys.USER_ROLES, roles);
+    return sessionStorageService.setItem(StorageKeys.USER_ROLES, roles);
   }
 
   /**
    * Get user roles (Phase 5 - RBAC)
    */
   static getUserRoles(): string[] {
-    return sessionStorage.getItem<string[]>(StorageKeys.USER_ROLES) || [];
+    return (
+      sessionStorageService.getItem<string[]>(StorageKeys.USER_ROLES) || []
+    );
   }
 
   /**
    * Store permissions by resource (Phase 5 - RBAC)
    */
-  static setPermissionsByResource(permissionsByResource: Record<string, string[]>): boolean {
-    return sessionStorage.setItem(StorageKeys.PERMISSIONS_BY_RESOURCE, permissionsByResource);
+  static setPermissionsByResource(
+    permissionsByResource: Record<string, string[]>,
+  ): boolean {
+    return sessionStorageService.setItem(
+      StorageKeys.PERMISSIONS_BY_RESOURCE,
+      permissionsByResource,
+    );
   }
 
   /**
    * Get permissions by resource (Phase 5 - RBAC)
    */
   static getPermissionsByResource(): Record<string, string[]> {
-    return sessionStorage.getItem<Record<string, string[]>>(StorageKeys.PERMISSIONS_BY_RESOURCE) || {};
+    return (
+      sessionStorageService.getItem<Record<string, string[]>>(
+        StorageKeys.PERMISSIONS_BY_RESOURCE,
+      ) || {}
+    );
   }
 
   /**
    * Store RBAC cache timestamp (Phase 5 - RBAC)
    */
   static setRBACCacheTimestamp(timestamp: Date): boolean {
-    return sessionStorage.setItem(StorageKeys.RBAC_CACHE_TIMESTAMP, timestamp.toISOString());
+    return sessionStorageService.setItem(
+      StorageKeys.RBAC_CACHE_TIMESTAMP,
+      timestamp.toISOString(),
+    );
   }
 
   /**
    * Get RBAC cache timestamp (Phase 5 - RBAC)
    */
   static getRBACCacheTimestamp(): Date | null {
-    const timestamp = sessionStorage.getItem<string>(StorageKeys.RBAC_CACHE_TIMESTAMP);
+    const timestamp = sessionStorageService.getItem<string>(
+      StorageKeys.RBAC_CACHE_TIMESTAMP,
+    );
     return timestamp ? new Date(timestamp) : null;
   }
 
@@ -372,10 +406,17 @@ export class AuthStorage {
   }): boolean {
     const permissionsStored = this.setUserPermissions(data.permissions);
     const rolesStored = this.setUserRoles(data.roles);
-    const permissionsByResourceStored = this.setPermissionsByResource(data.permissionsByResource);
+    const permissionsByResourceStored = this.setPermissionsByResource(
+      data.permissionsByResource,
+    );
     const timestampStored = this.setRBACCacheTimestamp(new Date());
-    
-    return permissionsStored && rolesStored && permissionsByResourceStored && timestampStored;
+
+    return (
+      permissionsStored &&
+      rolesStored &&
+      permissionsByResourceStored &&
+      timestampStored
+    );
   }
 
   /**
@@ -399,10 +440,10 @@ export class AuthStorage {
    * Clear RBAC data (Phase 5)
    */
   static clearRBACData(): void {
-    sessionStorage.removeItem(StorageKeys.USER_PERMISSIONS);
-    sessionStorage.removeItem(StorageKeys.USER_ROLES);
-    sessionStorage.removeItem(StorageKeys.PERMISSIONS_BY_RESOURCE);
-    sessionStorage.removeItem(StorageKeys.RBAC_CACHE_TIMESTAMP);
+    sessionStorageService.removeItem(StorageKeys.USER_PERMISSIONS);
+    sessionStorageService.removeItem(StorageKeys.USER_ROLES);
+    sessionStorageService.removeItem(StorageKeys.PERMISSIONS_BY_RESOURCE);
+    sessionStorageService.removeItem(StorageKeys.RBAC_CACHE_TIMESTAMP);
   }
 
   /**
@@ -411,10 +452,10 @@ export class AuthStorage {
   static isRBACCacheValid(): boolean {
     const timestamp = this.getRBACCacheTimestamp();
     if (!timestamp) return false;
-    
+
     const oneHourAgo = new Date();
     oneHourAgo.setHours(oneHourAgo.getHours() - 1);
-    
+
     return timestamp > oneHourAgo;
   }
 
@@ -426,7 +467,7 @@ export class AuthStorage {
     storage.removeItem(StorageKeys.REFRESH_TOKEN);
     storage.removeItem(StorageKeys.USER_DATA);
     storage.removeItem(StorageKeys.REMEMBER_ME);
-    
+
     // Clear RBAC data as well (Phase 5)
     this.clearRBACData();
   }
@@ -464,12 +505,12 @@ export class AuthStorage {
   }): boolean {
     const tokensStored = this.setTokens(data.tokens);
     const userStored = this.setUser(data.user);
-    
+
     let rememberStored = true;
     if (data.rememberMe !== undefined) {
       rememberStored = this.setRememberMe(data.rememberMe);
     }
-    
+
     return tokensStored && userStored && rememberStored;
   }
 }
@@ -489,11 +530,11 @@ export class StorageEvents {
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    
+    window.addEventListener("storage", handleStorageChange);
+
     // Return cleanup function
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener("storage", handleStorageChange);
     };
   }
 
@@ -502,7 +543,9 @@ export class StorageEvents {
    */
   static onAuthChange(callback: () => void): () => void {
     return this.onStorageChange((event) => {
-      const authKeys = Object.values(StorageKeys).map(key => DEFAULT_CONFIG.prefix + key);
+      const authKeys = Object.values(StorageKeys).map(
+        (key) => DEFAULT_CONFIG.prefix + key,
+      );
       if (event.key && authKeys.includes(event.key)) {
         callback();
       }
@@ -512,8 +555,12 @@ export class StorageEvents {
   /**
    * Dispatch custom storage event
    */
-  static dispatchStorageEvent(key: string, oldValue: unknown, newValue: unknown): void {
-    const event = new StorageEvent('storage', {
+  static dispatchStorageEvent(
+    key: string,
+    oldValue: unknown,
+    newValue: unknown,
+  ): void {
+    const event = new StorageEvent("storage", {
       key: DEFAULT_CONFIG.prefix + key,
       oldValue: oldValue ? JSON.stringify(oldValue) : null,
       newValue: newValue ? JSON.stringify(newValue) : null,
@@ -532,11 +579,13 @@ export class StorageQuota {
   /**
    * Check if storage is available
    */
-  static isAvailable(type: 'localStorage' | 'sessionStorage' = 'localStorage'): boolean {
+  static isAvailable(
+    type: "localStorage" | "sessionStorage" = "localStorage",
+  ): boolean {
     try {
       const storage = window[type];
-      const testKey = '__storage_test__';
-      storage.setItem(testKey, 'test');
+      const testKey = "__storage_test__";
+      storage.setItem(testKey, "test");
       storage.removeItem(testKey);
       return true;
     } catch {
@@ -567,7 +616,7 @@ export class StorageQuota {
 
       return { used, available, percentage };
     } catch (error) {
-      console.error('[Storage] Failed to calculate usage:', error);
+      console.error("[Storage] Failed to calculate usage:", error);
       return { used: 0, available: 0, percentage: 0 };
     }
   }

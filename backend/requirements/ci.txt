@@ -21,6 +21,7 @@ PyJWT==2.8.0
 
 # Utilities
 requests==2.31.0
+Pillow==11.3.0
 
 # Background tasks (required for core imports)
 celery==5.3.4
