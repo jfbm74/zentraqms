@@ -96,8 +96,10 @@ const NitInput: React.FC<NitInputProps> = ({
       return `${cleanNit.slice(0, 3)}.${cleanNit.slice(3)}`;
     } else if (cleanNit.length <= 9) {
       return `${cleanNit.slice(0, 3)}.${cleanNit.slice(3, 6)}.${cleanNit.slice(6)}`;
+    } else if (cleanNit.length <= 12) {
+      return `${cleanNit.slice(0, 3)}.${cleanNit.slice(3, 6)}.${cleanNit.slice(6, 9)}.${cleanNit.slice(9)}`;
     } else {
-      return `${cleanNit.slice(0, 3)}.${cleanNit.slice(3, 6)}.${cleanNit.slice(6, 9)}`;
+      return `${cleanNit.slice(0, 3)}.${cleanNit.slice(3, 6)}.${cleanNit.slice(6, 9)}.${cleanNit.slice(9, 12)}.${cleanNit.slice(12)}`;
     }
   };
 
@@ -261,8 +263,8 @@ const NitInput: React.FC<NitInputProps> = ({
 
   // Determine input state classes
   const getInputStateClass = () => {
-    if (!state.showValidation) return "";
     if (error) return "is-invalid";
+    if (!state.showValidation) return "";
     if (state.isValid) return "is-valid";
     if (state.nit.length > 0) return "is-invalid";
     return "";
@@ -323,7 +325,7 @@ const NitInput: React.FC<NitInputProps> = ({
               onKeyDown={handleNitKeyDown}
               placeholder={placeholder}
               disabled={disabled}
-              maxLength={13} // ###.###.### format
+              maxLength={19} // ###.###.###.###.### format (15 digits + 4 dots)
             />
             {getValidationIcon()}
           </div>
