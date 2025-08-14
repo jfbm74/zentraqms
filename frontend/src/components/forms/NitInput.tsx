@@ -1,19 +1,19 @@
 /**
- * NitInput Component - Professional Colombian NIT Input
+ * NitInput Component - Simple Colombian NIT Input
  *
  * Features:
- * - Automatic formatting (###.###.###-#)
- * - Real-time validation
- * - Automatic verification digit calculation
- * - Visual feedback (✓/✗)
- * - Integration with form libraries
+ * - Manual NIT entry with formatting
+ * - Manual verification digit entry
+ * - Basic validation for format
+ * - Professional styling with Velzon
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 
 interface NitInputProps {
   value?: string;
-  onChange?: (nit: string, verificationDigit: string, isValid: boolean) => void;
+  verificationDigit?: string;
+  onChange?: (nit: string, verificationDigit: string) => void;
   onBlur?: () => void;
   placeholder?: string;
   disabled?: boolean;
@@ -28,13 +28,12 @@ interface NitState {
   nit: string;
   verificationDigit: string;
   formattedNit: string;
-  isValid: boolean;
-  isCalculating: boolean;
   showValidation: boolean;
 }
 
 const NitInput: React.FC<NitInputProps> = ({
   value = "",
+  verificationDigit = "",
   onChange,
   onBlur,
   placeholder = "Ingrese el NIT",
@@ -49,40 +48,11 @@ const NitInput: React.FC<NitInputProps> = ({
     nit: "",
     verificationDigit: "",
     formattedNit: "",
-    isValid: false,
-    isCalculating: false,
     showValidation: false,
   });
 
   const nitInputRef = useRef<HTMLInputElement>(null);
   const dvInputRef = useRef<HTMLInputElement>(null);
-
-  /**
-   * Calculate Colombian NIT verification digit
-   */
-  const calculateVerificationDigit = (nit: string): string => {
-    const cleanNit = nit.replace(/\D/g, "");
-
-    if (cleanNit.length < 8 || cleanNit.length > 15) {
-      return "";
-    }
-
-    const weights = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71];
-    const nitArray = cleanNit.split("").map(Number).reverse();
-
-    let sum = 0;
-    for (let i = 0; i < nitArray.length; i++) {
-      sum += nitArray[i] * weights[i];
-    }
-
-    const remainder = sum % 11;
-
-    if (remainder < 2) {
-      return remainder.toString();
-    } else {
-      return (11 - remainder).toString();
-    }
-  };
 
   /**
    * Format NIT with dots
@@ -104,24 +74,11 @@ const NitInput: React.FC<NitInputProps> = ({
   };
 
   /**
-   * Validate NIT format
+   * NIT colombiano validation (9-10 dígitos)
    */
-  const validateNit = useCallback((nit: string, dv: string): boolean => {
+  const isValidFormat = useCallback((nit: string, dv: string): boolean => {
     const cleanNit = nit.replace(/\D/g, "");
-
-    // Basic length validation
-    if (cleanNit.length < 8 || cleanNit.length > 15) {
-      return false;
-    }
-
-    // DV validation
-    if (!dv || dv.length !== 1 || !/^\d$/.test(dv)) {
-      return false;
-    }
-
-    // Calculate and compare verification digit
-    const calculatedDv = calculateVerificationDigit(cleanNit);
-    return calculatedDv === dv;
+    return cleanNit.length >= 9 && cleanNit.length <= 10 && /^\d$/.test(dv);
   }, []);
 
   /**
@@ -138,64 +95,43 @@ const NitInput: React.FC<NitInputProps> = ({
 
     const formattedValue = formatNit(cleanValue);
 
-    setState((prev) => ({
-      ...prev,
-      nit: cleanValue,
-      formattedNit: formattedValue,
-      isCalculating: cleanValue.length >= 8,
-      showValidation: cleanValue.length >= 8,
-    }));
-
-    // Auto-calculate verification digit for valid length NITs
-    if (cleanValue.length >= 8) {
-      setTimeout(() => {
-        const calculatedDv = calculateVerificationDigit(cleanValue);
-        const isValid = validateNit(cleanValue, calculatedDv);
-
-        setState((prev) => ({
-          ...prev,
-          verificationDigit: calculatedDv,
-          isValid,
-          isCalculating: false,
-        }));
-
-        // Call onChange callback
-        if (onChange) {
-          onChange(cleanValue, calculatedDv, isValid);
-        }
-      }, 100);
-    } else {
-      setState((prev) => ({
+    setState((prev) => {
+      const newState = {
         ...prev,
-        verificationDigit: "",
-        isValid: false,
-        isCalculating: false,
-        showValidation: false,
-      }));
-
+        nit: cleanValue,
+        formattedNit: formattedValue,
+        showValidation: cleanValue.length > 0,
+      };
+      
+      // Call onChange with current verification digit from previous state
       if (onChange) {
-        onChange(cleanValue, "", false);
+        onChange(cleanValue, prev.verificationDigit);
       }
-    }
+      
+      return newState;
+    });
   };
 
   /**
-   * Handle verification digit manual change
+   * Handle verification digit change
    */
   const handleDvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const dvValue = e.target.value.replace(/\D/g, "").slice(0, 1);
-    const isValid = validateNit(state.nit, dvValue);
 
-    setState((prev) => ({
-      ...prev,
-      verificationDigit: dvValue,
-      isValid,
-      showValidation: dvValue.length > 0,
-    }));
-
-    if (onChange) {
-      onChange(state.nit, dvValue, isValid);
-    }
+    setState((prev) => {
+      const newState = {
+        ...prev,
+        verificationDigit: dvValue,
+        showValidation: prev.nit.length > 0 || dvValue.length > 0,
+      };
+      
+      // Call onChange with the current NIT value from state
+      if (onChange) {
+        onChange(prev.nit, dvValue);
+      }
+      
+      return newState;
+    });
   };
 
   /**
@@ -204,7 +140,7 @@ const NitInput: React.FC<NitInputProps> = ({
   const handleBlur = () => {
     setState((prev) => ({
       ...prev,
-      showValidation: prev.nit.length > 0,
+      showValidation: prev.nit.length > 0 || prev.verificationDigit.length > 0,
     }));
 
     if (onBlur) {
@@ -234,72 +170,56 @@ const NitInput: React.FC<NitInputProps> = ({
   };
 
   /**
-   * Initialize from prop value
+   * Initialize from prop values
    */
   useEffect(() => {
-    if (value && value !== state.nit) {
-      const cleanValue = value.replace(/\D/g, "");
-      const formattedValue = formatNit(cleanValue);
+    const cleanNitValue = value ? value.replace(/\D/g, "") : "";
+    const cleanDvValue = verificationDigit ? verificationDigit.replace(/\D/g, "").slice(0, 1) : "";
+    
+    // Only update if the values are different from current state
+    if (cleanNitValue !== state.nit || cleanDvValue !== state.verificationDigit) {
+      const formattedValue = formatNit(cleanNitValue);
 
       setState((prev) => ({
         ...prev,
-        nit: cleanValue,
+        nit: cleanNitValue,
+        verificationDigit: cleanDvValue,
         formattedNit: formattedValue,
-        showValidation: cleanValue.length >= 8,
+        showValidation: cleanNitValue.length > 0 || cleanDvValue.length > 0,
       }));
-
-      if (cleanValue.length >= 8) {
-        const calculatedDv = calculateVerificationDigit(cleanValue);
-        const isValid = validateNit(cleanValue, calculatedDv);
-
-        setState((prev) => ({
-          ...prev,
-          verificationDigit: calculatedDv,
-          isValid,
-        }));
-      }
     }
-  }, [value, state.nit, validateNit]);
+  }, [value, verificationDigit, state.nit, state.verificationDigit]);
 
   // Determine input state classes
   const getInputStateClass = () => {
     if (error) return "is-invalid";
     if (!state.showValidation) return "";
-    if (state.isValid) return "is-valid";
-    if (state.nit.length > 0) return "is-invalid";
+    
+    const hasValidFormat = isValidFormat(state.nit, state.verificationDigit);
+    if (hasValidFormat && state.nit.length > 0 && state.verificationDigit.length > 0) {
+      return "is-valid";
+    }
+    if (state.nit.length > 0 || state.verificationDigit.length > 0) {
+      return "";
+    }
     return "";
   };
 
   const getValidationIcon = () => {
-    if (!state.showValidation) return null;
-    if (state.isCalculating) {
-      return (
-        <div className="position-absolute end-0 top-50 translate-middle-y me-3">
-          <div
-            className="spinner-border spinner-border-sm text-primary"
-            role="status"
-          >
-            <span className="visually-hidden">Calculando...</span>
-          </div>
-        </div>
-      );
-    }
-    if (state.isValid) {
+    if (!state.showValidation || error) return null;
+    
+    const hasValidFormat = isValidFormat(state.nit, state.verificationDigit);
+    if (hasValidFormat && state.nit.length > 0 && state.verificationDigit.length > 0) {
       return (
         <div className="position-absolute end-0 top-50 translate-middle-y me-3">
           <i className="ri-check-line text-success fs-16"></i>
         </div>
       );
     }
-    if (state.nit.length > 0) {
-      return (
-        <div className="position-absolute end-0 top-50 translate-middle-y me-3">
-          <i className="ri-close-line text-danger fs-16"></i>
-        </div>
-      );
-    }
     return null;
   };
+
+  const displayValue = state.formattedNit + (state.verificationDigit ? `-${state.verificationDigit}` : '');
 
   return (
     <div className={`nit-input-container ${className}`}>
@@ -310,7 +230,7 @@ const NitInput: React.FC<NitInputProps> = ({
         </label>
       )}
 
-      <div className="row g-2">
+      <div className="row">
         {/* NIT Input */}
         <div className="col-8">
           <div className="position-relative">
@@ -324,67 +244,76 @@ const NitInput: React.FC<NitInputProps> = ({
               onBlur={handleBlur}
               onKeyDown={handleNitKeyDown}
               placeholder={placeholder}
+              aria-describedby={`${id}-help`}
+              aria-required={required}
               disabled={disabled}
-              maxLength={19} // ###.###.###.###.### format (15 digits + 4 dots)
+              maxLength={17} // Allow for dots: ###.###.###.###
             />
-            {getValidationIcon()}
-          </div>
-
-          {/* NIT Helper Text */}
-          <div className="form-text">
-            <small className="text-muted">Formato: 123.456.789</small>
           </div>
         </div>
 
         {/* Verification Digit Input */}
         <div className="col-4">
-          <div className="input-group">
-            <span className="input-group-text">-</span>
-            <input
-              ref={dvInputRef}
-              type="text"
-              className={`form-control ${getInputStateClass()}`}
-              value={state.verificationDigit}
-              onChange={handleDvChange}
-              onBlur={handleBlur}
-              onKeyDown={handleDvKeyDown}
-              placeholder="0"
-              disabled={disabled}
-              maxLength={1}
-            />
-          </div>
-
-          {/* DV Helper Text */}
-          <div className="form-text">
-            <small className="text-muted">Dígito de verificación</small>
+          <div className="position-relative">
+            <div className="input-group">
+              <span className="input-group-text">-</span>
+              <input
+                ref={dvInputRef}
+                type="text"
+                className={`form-control ${getInputStateClass()}`}
+                value={state.verificationDigit}
+                onChange={handleDvChange}
+                onBlur={handleBlur}
+                onKeyDown={handleDvKeyDown}
+                placeholder="0"
+                aria-label="Dígito de verificación"
+                aria-describedby={`${id}-dv-help`}
+                disabled={disabled}
+                maxLength={1}
+              />
+              {getValidationIcon()}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Validation Messages */}
-      {error && <div className="invalid-feedback d-block">{error}</div>}
+      {/* NIT Helper Text */}
+      <div id={`${id}-help`} className="form-text">
+        <small className="text-muted d-flex align-items-center">
+          <i className="ri-information-line me-1" aria-hidden="true"></i>
+          Número de Identificación Tributaria - Ingrese el NIT y su dígito de verificación
+          <button
+            type="button"
+            className="btn btn-link btn-sm p-0 ms-1"
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            title="El NIT es un número único asignado por la DIAN. El dígito de verificación debe ser ingresado manualmente según aparece en sus documentos oficiales."
+            aria-label="Información sobre el NIT"
+          >
+            <i className="ri-question-line text-primary" aria-hidden="true"></i>
+          </button>
+        </small>
+      </div>
 
-      {state.showValidation && !error && (
-        <div
-          className={`mt-2 ${state.isValid ? "text-success" : "text-danger"}`}
-        >
-          <small>
-            <i
-              className={`ri-${state.isValid ? "check" : "close"}-line me-1`}
-            ></i>
-            {state.isValid
-              ? `NIT válido: ${state.formattedNit}-${state.verificationDigit}`
-              : "NIT inválido o dígito de verificación incorrecto"}
-          </small>
+      {/* Validation Messages */}
+      {error && (
+        <div className="invalid-feedback d-block" role="alert">
+          <i className="ri-error-warning-line me-1" aria-hidden="true"></i>
+          {error}
         </div>
       )}
 
-      {/* Auto-calculation Notice */}
-      {state.nit.length >= 8 && !state.isCalculating && (
-        <div className="mt-1">
-          <small className="text-info">
-            <i className="ri-information-line me-1"></i>
-            Dígito de verificación calculado automáticamente
+      {state.showValidation && !error && (
+        <div className="mt-1" role="status" aria-live="polite">
+          <small className="text-muted d-flex align-items-center">
+            <i className="ri-file-text-line me-1" aria-hidden="true"></i>
+            <span>
+              {isValidFormat(state.nit, state.verificationDigit) && state.nit.length > 0 && state.verificationDigit.length > 0
+                ? `NIT: ${displayValue}`
+                : state.nit.length > 0 && state.nit.length < 9
+                ? "El NIT colombiano debe tener entre 9 y 10 dígitos"
+                : "Complete el NIT y dígito de verificación"}
+            </span>
           </small>
         </div>
       )}

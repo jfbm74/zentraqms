@@ -4,7 +4,7 @@
  * Handles adding multiple branch offices/locations for the organization
  */
 import React, { useState } from "react";
-import { toast } from "react-toastify";
+import { useToast } from "../../../hooks/useToast";
 
 // Types
 interface BranchOffice {
@@ -37,6 +37,9 @@ const Step5BranchOffices: React.FC<Step5Props> = ({
   onSkip,
 }) => {
   const [branchOffices, setBranchOffices] = useState<BranchOffice[]>([]);
+  
+  // Use custom toast hook with deduplication
+  const { showToast } = useToast(3000); // 3 second deduplication window
   const [currentBranch, setCurrentBranch] = useState<BranchOffice>({
     nombre: "",
     direccion: "",
@@ -184,23 +187,30 @@ const Step5BranchOffices: React.FC<Step5Props> = ({
         observaciones: "",
       });
       setIsAdding(false);
-      toast.success("Sucursal agregada a la lista");
+      showToast('success', "Sucursal agregada a la lista");
     }
   };
 
   // Remove branch from list
   const removeBranch = (id: string) => {
     setBranchOffices((prev) => prev.filter((branch) => branch.id !== id));
-    toast.info("Sucursal eliminada de la lista");
+    showToast('info', "Sucursal eliminada de la lista");
   };
 
   // Save all branches
   const saveAllBranches = async () => {
     if (branchOffices.length === 0) {
-      toast.warning("No hay sucursales para guardar");
+      showToast('warning', "No hay sucursales para guardar");
       return;
     }
 
+    // Prevent double execution (React Strict Mode protection)
+    if (isSaving) {
+      console.log("[Step5BranchOffices] Save already in progress, ignoring duplicate call");
+      return;
+    }
+
+    console.log(`[Step5BranchOffices] Starting to save ${branchOffices.length} branches`);
     setIsSaving(true);
 
     try {
@@ -221,13 +231,13 @@ const Step5BranchOffices: React.FC<Step5Props> = ({
 
       await Promise.all(promises);
 
-      toast.success(
-        `${branchOffices.length} sucursal(es) guardada(s) exitosamente`,
+      showToast('success',
+        `${branchOffices.length} sucursal(es) guardada(s) exitosamente`
       );
       onComplete();
     } catch (error: unknown) {
       console.error("[Step5BranchOffices] Error saving branches:", error);
-      toast.error("Error al guardar las sucursales. Inténtalo de nuevo.");
+      showToast('error', "Error al guardar las sucursales. Inténtalo de nuevo.");
     } finally {
       setIsSaving(false);
     }

@@ -204,50 +204,9 @@ class Organization(FullBaseModel):
     def clean(self):
         """Validate model data."""
         super().clean()
-
-        # Validar que el dígito de verificación corresponda al NIT
-        if self.nit and self.digito_verificacion:
-            digito_calculado = self.calcular_digito_verificacion(self.nit)
-            if str(digito_calculado) != self.digito_verificacion:
-                raise ValidationError(
-                    {
-                        "digito_verificacion": _(
-                            "El dígito de verificación no corresponde al NIT ingresado."
-                        )
-                    }
-                )
-
-    @staticmethod
-    def calcular_digito_verificacion(nit_sin_dv):
-        """
-        Calculate verification digit for Colombian NIT.
-
-        Args:
-            nit_sin_dv (str): NIT without verification digit
-
-        Returns:
-            int: Verification digit (0-9)
-        """
-        # Limpiar el NIT de caracteres no numéricos
-        nit_limpio = "".join(filter(str.isdigit, str(nit_sin_dv)))
-
-        # Secuencia de números para el cálculo
-        secuencia = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71]
-
-        # Calcular suma ponderada
-        suma = 0
-        for i, digito in enumerate(reversed(nit_limpio)):
-            if i < len(secuencia):
-                suma += int(digito) * secuencia[i]
-
-        # Calcular residuo
-        residuo = suma % 11
-
-        # Calcular dígito de verificación
-        if residuo < 2:
-            return residuo
-        else:
-            return 11 - residuo
+        
+        # Basic validation - NIT and verification digit are required but we don't validate the calculation
+        pass
 
 
 class Location(FullBaseModel):

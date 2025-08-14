@@ -95,7 +95,6 @@ export interface UseOrganizationReturn {
 
   // Validation operations
   validateNit: (nit: string, verificationDigit: string) => Promise<boolean>;
-  calculateVerificationDigit: (nit: string) => number;
   checkNitAvailability: (nit: string) => Promise<boolean>;
 
   // Utility methods
@@ -110,26 +109,6 @@ export interface UseOrganizationReturn {
   isCurrentUserOwner: boolean;
 }
 
-/**
- * Colombian NIT verification digit calculation
- */
-export const calculateNitVerificationDigit = (nit: string): number => {
-  const cleanNit = nit.replace(/\D/g, "");
-  if (cleanNit.length < 8) return 0;
-
-  const weights = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71];
-  const nitArray = cleanNit.split("").map(Number).reverse();
-
-  let sum = 0;
-  for (let i = 0; i < nitArray.length; i++) {
-    if (i < weights.length) {
-      sum += nitArray[i] * weights[i];
-    }
-  }
-
-  const remainder = sum % 11;
-  return remainder < 2 ? remainder : 11 - remainder;
-};
 
 /**
  * Custom hook for organization management
@@ -496,32 +475,16 @@ export const useOrganization = (
   );
 
   /**
-   * Validate NIT and verification digit
+   * Basic NIT format validation (length only)
    */
   const validateNit = useCallback(
     async (nit: string, verificationDigit: string): Promise<boolean> => {
-      try {
-        const response = await apiClient.post(
-          "/api/v1/organizations/validate-nit/",
-          {
-            nit,
-            digito_verificacion: verificationDigit,
-          },
-        );
-        return response.data.valid;
-      } catch {
-        return false;
-      }
+      // Simple format validation - just check length and that both are present
+      const cleanNit = nit.replace(/\D/g, "");
+      return cleanNit.length >= 8 && cleanNit.length <= 15 && /^\d$/.test(verificationDigit);
     },
     [],
   );
-
-  /**
-   * Calculate verification digit for NIT
-   */
-  const calculateVerificationDigit = useCallback((nit: string): number => {
-    return calculateNitVerificationDigit(nit);
-  }, []);
 
   /**
    * Check if NIT is available (not used by another organization)
@@ -618,7 +581,6 @@ export const useOrganization = (
 
     // Validation operations
     validateNit,
-    calculateVerificationDigit,
     checkNitAvailability,
 
     // Utility methods

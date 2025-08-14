@@ -3,7 +3,7 @@
  *
  * Handles sector configuration and template selection with professional UI
  */
-import React from "react";
+import React, { useState } from "react";
 import TemplateSelector from "../../forms/TemplateSelector";
 
 // Types
@@ -26,6 +26,9 @@ const Step3SectorTemplate: React.FC<Step3Props> = ({
   onChange,
   currentData,
 }) => {
+  // State for intelligent configuration switch
+  const [showIntelligentConfig, setShowIntelligentConfig] = useState(false);
+
   // Sector template options
   const sectorTemplateOptions = [
     { value: "tecnologia", label: "Tecnología e Innovación" },
@@ -177,19 +180,49 @@ const Step3SectorTemplate: React.FC<Step3Props> = ({
         </div>
       </div>
 
-      {/* Info Section */}
-      <div className="alert alert-info d-flex align-items-start">
-        <i className="ri-information-line me-2 mt-1"></i>
-        <div>
-          <strong>Configuración Inteligente:</strong> Basándose en su sector e
-          industria, ZentraQMS configurará automáticamente las mejores prácticas
-          y plantillas específicas para su tipo de organización. Esto incluye
-          procesos, indicadores y documentos relevantes para su sector.
+      {/* Intelligent Configuration Switch */}
+      <div className="row mt-4">
+        <div className="col-lg-12">
+          <div className="card border-0 bg-light">
+            <div className="card-body p-3">
+              <div className="form-check form-switch d-flex align-items-center">
+                <input
+                  className="form-check-input me-3"
+                  type="checkbox"
+                  id="intelligentConfigSwitch"
+                  checked={showIntelligentConfig}
+                  onChange={(e) => setShowIntelligentConfig(e.target.checked)}
+                />
+                <div className="flex-grow-1">
+                  <label className="form-check-label fw-medium mb-1" htmlFor="intelligentConfigSwitch">
+                    <i className="ri-magic-line me-2 text-primary"></i>
+                    Configuración Inteligente
+                  </label>
+                  <div className="text-muted small">
+                    Configura automáticamente plantillas y mejores prácticas específicas para su sector
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Template Selector */}
-      {data.sector_template && (
+      {/* Info Section - Only show when switch is enabled */}
+      {showIntelligentConfig && (
+        <div className="alert alert-info d-flex align-items-start mt-3">
+          <i className="ri-information-line me-2 mt-1"></i>
+          <div>
+            <strong>Configuración Inteligente:</strong> Basándose en su sector e
+            industria, ZentraQMS configurará automáticamente las mejores prácticas
+            y plantillas específicas para su tipo de organización. Esto incluye
+            procesos, indicadores y documentos relevantes para su sector.
+          </div>
+        </div>
+      )}
+
+      {/* Template Selector - Only show when switch is enabled and sector is selected */}
+      {showIntelligentConfig && data.sector_template && (
         <div className="mt-4">
           <div className="card border-2 border-primary">
             <div className="card-header bg-primary bg-soft">

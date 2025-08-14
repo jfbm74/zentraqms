@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "react-toastify";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -20,6 +20,28 @@ const Header: React.FC<HeaderProps> = ({ headerClass, onToggleSidebar }) => {
   // Authentication hook
   const { user, logout, getUserDisplayName } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
+  // Toast deduplication
+  const lastToastRef = useRef<{ message: string; timestamp: number } | null>(null);
+  
+  /**
+   * Show toast with deduplication to prevent duplicates
+   */
+  const showToast = useCallback((type: 'success' | 'error' | 'info' | 'warning', message: string, options?: any) => {
+    const now = Date.now();
+    const lastToast = lastToastRef.current;
+    
+    // Prevent duplicate toasts within 2 seconds
+    if (lastToast && lastToast.message === message && now - lastToast.timestamp < 2000) {
+      return;
+    }
+    
+    // Update last toast reference
+    lastToastRef.current = { message, timestamp: now };
+    
+    // Show the toast
+    toast[type](message, options);
+  }, []);
 
   const toggleDropdown = (dropdown: string) => {
     setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
@@ -31,10 +53,10 @@ const Header: React.FC<HeaderProps> = ({ headerClass, onToggleSidebar }) => {
       setIsLoggingOut(true);
       setActiveDropdown(null); // Close dropdown
       await logout();
-      toast.success("Sesión cerrada correctamente. ¡Hasta luego!");
+      showToast('success', "Sesión cerrada correctamente. ¡Hasta luego!");
     } catch (error) {
       console.error("Error durante logout:", error);
-      toast.error("Error al cerrar sesión. Intenta nuevamente.");
+      showToast('error', "Error al cerrar sesión. Intenta nuevamente.");
     } finally {
       setIsLoggingOut(false);
     }

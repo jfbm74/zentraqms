@@ -275,51 +275,6 @@ class OrganizationViewSet(viewsets.ModelViewSet):
 
         return Response({"locations": serializer.data, "count": locations.count()})
 
-    @action(detail=False, methods=["post"])
-    def calculate_verification_digit(self, request):
-        """
-        Calculate verification digit for a given NIT and optionally validate.
-
-        Args:
-            request: HTTP request with NIT in body, optionally with digito_verificacion
-
-        Returns:
-            Response: Calculated verification digit and validation result
-        """
-        nit = request.data.get("nit", "")
-        provided_digit = request.data.get("digito_verificacion", "")
-
-        if not nit:
-            return Response(
-                {"error": _("NIT es requerido.")}, status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            calculated_digit = Organization.calcular_digito_verificacion(nit)
-            response_data = {
-                "nit": nit,
-                "digito_verificacion": calculated_digit,
-                "nit_completo": f"{nit}-{calculated_digit}",
-            }
-
-            # If a digit was provided, also perform validation
-            if provided_digit:
-                is_valid = str(calculated_digit) == str(provided_digit)
-                response_data.update({
-                    "valid": is_valid,
-                    "message": _("NIT válido") if is_valid else _("NIT inválido - dígito de verificación incorrecto")
-                })
-
-            return Response(response_data)
-        except Exception as e:
-            return Response(
-                {
-                    "error": _("Error calculando dígito de verificación: {}").format(
-                        str(e)
-                    )
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
     @action(detail=True, methods=["get"], url_path="audit-history")
     def audit_history(self, request, pk=None):

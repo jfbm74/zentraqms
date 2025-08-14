@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "../../utils/SimpleRouter";
 import { toast } from "react-toastify";
@@ -22,6 +22,9 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({});
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Toast deduplication
+  const lastToastRef = useRef<{ message: string; timestamp: number } | null>(null);
   const [organizationCheck, setOrganizationCheck] = useState<OrganizationCheck>(
     {
       hasOrganizations: true, // Assume true by default to avoid premature redirect
@@ -29,6 +32,25 @@ const Dashboard: React.FC = () => {
       shouldRedirectToWizard: false,
     },
   );
+  
+  /**
+   * Show toast with deduplication to prevent duplicates
+   */
+  const showToast = useCallback((type: 'success' | 'error' | 'info' | 'warning', message: string, options?: any) => {
+    const now = Date.now();
+    const lastToast = lastToastRef.current;
+    
+    // Prevent duplicate toasts within 3 seconds
+    if (lastToast && lastToast.message === message && now - lastToast.timestamp < 3000) {
+      return;
+    }
+    
+    // Update last toast reference
+    lastToastRef.current = { message, timestamp: now };
+    
+    // Show the toast
+    toast[type](message, options);
+  }, []);
 
   // Check organization status
   const checkOrganizationStatus = useCallback(async () => {
@@ -67,7 +89,7 @@ const Dashboard: React.FC = () => {
       // Auto-redirect if needed (only if user has permissions)
       if (shouldRedirect) {
         console.log("[Dashboard] Triggering auto-redirect...");
-        toast.info(
+        showToast('info',
           "No se han configurado organizaciones. Redirigiendo al asistente de configuración...",
           {
             autoClose: 3000,
@@ -81,7 +103,7 @@ const Dashboard: React.FC = () => {
         console.log(
           "[Dashboard] User cannot create organizations, showing info message",
         );
-        toast.warning(
+        showToast('warning',
           "Las organizaciones no han sido configuradas. Contacte al administrador.",
           {
             autoClose: 5000,
@@ -120,7 +142,7 @@ const Dashboard: React.FC = () => {
         });
       } catch (error) {
         console.error("Error loading dashboard:", error);
-        toast.error("Error al cargar los datos del dashboard");
+        showToast('error', "Error al cargar los datos del dashboard");
       } finally {
         setIsLoading(false);
       }
@@ -134,10 +156,10 @@ const Dashboard: React.FC = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      toast.success("Sesión cerrada correctamente");
+      showToast('success', "Sesión cerrada correctamente");
       navigate("/login");
     } catch {
-      toast.error("Error al cerrar sesión");
+      showToast('error', "Error al cerrar sesión");
     }
   };
 
@@ -146,10 +168,10 @@ const Dashboard: React.FC = () => {
     try {
       const response = await apiClient.get("/api/auth/user/");
       console.log("Protected endpoint response:", response.data);
-      toast.success("Endpoint protegido accedido correctamente");
+      showToast('success', "Endpoint protegido accedido correctamente");
     } catch (error) {
       console.error("Error accessing protected endpoint:", error);
-      toast.error("Error al acceder al endpoint protegido");
+      showToast('error', "Error al acceder al endpoint protegido");
     }
   };
 
@@ -442,7 +464,7 @@ const Dashboard: React.FC = () => {
                     <button
                       onClick={() => {
                         localStorage.removeItem("access_token");
-                        toast.info("Access token eliminado. Intenta navegar.");
+                        showToast('info', "Access token eliminado. Intenta navegar.");
                       }}
                       className="btn btn-warning"
                     >

@@ -5,7 +5,7 @@
  * Uses React Hook Form for form validation and our custom auth system.
  */
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation, Link } from "../../utils/SimpleRouter";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
@@ -55,6 +55,28 @@ const LoginPage: React.FC = () => {
 
   // State for password visibility
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Toast deduplication
+  const lastToastRef = useRef<{ message: string; timestamp: number } | null>(null);
+  
+  /**
+   * Show toast with deduplication to prevent duplicates
+   */
+  const showToast = useCallback((type: 'success' | 'error' | 'info' | 'warning', message: string, options?: any) => {
+    const now = Date.now();
+    const lastToast = lastToastRef.current;
+    
+    // Prevent duplicate toasts within 2 seconds
+    if (lastToast && lastToast.message === message && now - lastToast.timestamp < 2000) {
+      return;
+    }
+    
+    // Update last toast reference
+    lastToastRef.current = { message, timestamp: now };
+    
+    // Show the toast
+    toast[type](message, options);
+  }, []);
 
   // Form management with React Hook Form
   const {
@@ -65,8 +87,8 @@ const LoginPage: React.FC = () => {
     watch,
   } = useForm<LoginFormData>({
     defaultValues: {
-      email: import.meta.env.DEV ? "admin@zentraqms.com" : "",
-      password: import.meta.env.DEV ? "123456" : "",
+      email: "",
+      password: "",
       remember: false,
     },
   });
@@ -104,7 +126,7 @@ const LoginPage: React.FC = () => {
       });
 
       // Success message with role-based redirection info
-      toast.success("¡Bienvenido! Has iniciado sesión correctamente.");
+      showToast('success', "¡Bienvenido! Has iniciado sesión correctamente.");
 
       // The useEffect will handle the redirection once authentication state updates
     } catch (error: unknown) {
@@ -113,13 +135,13 @@ const LoginPage: React.FC = () => {
       // Show specific error messages
       const errorResponse = error as { response?: { status?: number } };
       if (errorResponse.response?.status === 401) {
-        toast.error("Credenciales inválidas. Verifica tu email y contraseña.");
+        showToast('error', "Credenciales inválidas. Verifica tu email y contraseña.");
       } else if (errorResponse.response?.status === 403) {
-        toast.error("Tu cuenta está desactivada. Contacta al administrador.");
+        showToast('error', "Tu cuenta está desactivada. Contacta al administrador.");
       } else if (!errorResponse.response) {
-        toast.error("Error de conexión. Verifica tu conexión a internet.");
+        showToast('error', "Error de conexión. Verifica tu conexión a internet.");
       } else {
-        toast.error("Error al iniciar sesión. Intenta nuevamente.");
+        showToast('error', "Error al iniciar sesión. Intenta nuevamente.");
       }
     }
   };

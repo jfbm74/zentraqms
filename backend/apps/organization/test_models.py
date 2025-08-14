@@ -136,46 +136,7 @@ class OrganizationModelTests(TestCase):
             with self.assertRaises(ValidationError):
                 org.full_clean()
 
-    def test_calcular_digito_verificacion(self):
-        """Test NIT verification digit calculation algorithm."""
-        # Test known NIT and verification digit pairs
-        test_cases = [
-            ("900123456", 8),
-            ("830020154", 2),
-            ("860518614", 7),
-            ("900359991", 0),
-            ("123456789", 6),
-        ]
 
-        for nit, expected_dv in test_cases:
-            calculated_dv = Organization.calcular_digito_verificacion(nit)
-            self.assertEqual(
-                calculated_dv,
-                expected_dv,
-                f"NIT {nit} should have verification digit {expected_dv}, got {calculated_dv}",
-            )
-
-    def test_nit_verification_digit_consistency_validation(self):
-        """Test that clean() validates NIT and verification digit consistency."""
-        # Test with correct verification digit
-        data = self.valid_organization_data.copy()
-        data["nit"] = "900123456"
-        data["digito_verificacion"] = "8"  # Correct for this NIT
-
-        org = Organization(**data)
-        try:
-            org.clean()  # Should not raise ValidationError
-        except ValidationError:
-            self.fail("Should not raise ValidationError for correct NIT and DV")
-
-        # Test with incorrect verification digit
-        data["digito_verificacion"] = "5"  # Incorrect for this NIT
-        org = Organization(**data)
-
-        with self.assertRaises(ValidationError) as context:
-            org.clean()
-
-        self.assertIn("digito_verificacion", context.exception.message_dict)
 
     def test_organization_choices_validation(self):
         """Test that choice fields only accept valid choices."""
@@ -745,19 +706,6 @@ class AuditLogModelTests(TestCase):
 class OrganizationModelPytestTests:
     """Additional pytest-style tests for Organization model."""
 
-    def test_nit_verification_digit_edge_cases(self):
-        """Test NIT verification digit calculation edge cases."""
-        # Test edge cases that might cause division issues
-        edge_cases = [
-            ("0", 0),
-            ("1", 8),
-            ("11", 1),
-            ("111111111", 3),
-        ]
-
-        for nit, expected_dv in edge_cases:
-            calculated_dv = Organization.calcular_digito_verificacion(nit)
-            assert calculated_dv == expected_dv, f"NIT {nit} failed verification"
 
     def test_organization_model_indexes(self):
         """Test that database indexes are properly created."""

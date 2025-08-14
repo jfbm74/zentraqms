@@ -450,3 +450,6 @@ La validación de NIT funcione correctamente para Colombia
 El módulo sea la base sólida para toda la gestión organizacional del sistema
 
 Comienza ejecutando los comandos de setup y luego implementa las tareas en orden de dependencias.
+
+
+Errores

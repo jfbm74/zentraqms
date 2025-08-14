@@ -9,7 +9,7 @@
  * - Integration with organization wizard
  */
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "react-toastify";
 import { apiClient } from "../../api/endpoints";
 
@@ -48,6 +48,27 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   disabled = false,
   currentData,
 }) => {
+  // Toast deduplication
+  const lastToastRef = useRef<{ message: string; timestamp: number } | null>(null);
+  
+  /**
+   * Show toast with deduplication to prevent duplicates
+   */
+  const showToast = useCallback((type: 'success' | 'error' | 'info' | 'warning', message: string, options?: any) => {
+    const now = Date.now();
+    const lastToast = lastToastRef.current;
+    
+    // Prevent duplicate toasts within 2 seconds
+    if (lastToast && lastToast.message === message && now - lastToast.timestamp < 2000) {
+      return;
+    }
+    
+    // Update last toast reference
+    lastToastRef.current = { message, timestamp: now };
+    
+    // Show the toast
+    toast[type](message, options);
+  }, []);
   const [templates, setTemplates] = useState<SectorTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] =
     useState<SectorTemplate | null>(null);
@@ -75,7 +96,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       setTemplates(response.data.templates || []);
     } catch (error: unknown) {
       console.error("[TemplateSelector] Error loading templates:", error);
-      toast.error("Error al cargar las plantillas disponibles");
+      showToast('error', "Error al cargar las plantillas disponibles");
       setTemplates([]);
     } finally {
       setIsLoadingTemplates(false);
@@ -111,7 +132,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         "[TemplateSelector] Error loading template details:",
         error,
       );
-      toast.error("Error al cargar los detalles de la plantilla");
+      showToast('error', "Error al cargar los detalles de la plantilla");
     } finally {
       setIsLoading(false);
     }
@@ -131,7 +152,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
    */
   const confirmApplyTemplate = async () => {
     if (!selectedTemplate || !currentData?.organizationId) {
-      toast.error("No se puede aplicar la plantilla en este momento");
+      showToast('error', "No se puede aplicar la plantilla en este momento");
       return;
     }
 
@@ -144,7 +165,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         },
       );
 
-      toast.success("Plantilla aplicada exitosamente");
+      showToast('success', "Plantilla aplicada exitosamente");
       setShowConfirmModal(false);
 
       if (onTemplateApply) {
@@ -156,7 +177,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         error.response?.data?.error ||
         error.response?.data?.message ||
         "Error al aplicar la plantilla";
-      toast.error(errorMessage);
+      showToast('error', errorMessage);
     } finally {
       setIsLoading(false);
     }

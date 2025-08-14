@@ -258,7 +258,7 @@ class OrganizationSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         """
-        Validate organization data including NIT verification digit.
+        Validate organization data with basic format validation.
 
         Args:
             attrs (dict): Attributes to validate
@@ -272,18 +272,11 @@ class OrganizationSerializer(serializers.ModelSerializer):
         nit = attrs.get("nit")
         digito_verificacion = attrs.get("digito_verificacion")
 
-        # Validar correspondencia entre NIT y dígito de verificación
+        # Basic format validation only - removed auto-calculation
         if nit and digito_verificacion:
-            digito_calculado = Organization.calcular_digito_verificacion(nit)
-            if str(digito_calculado) != str(digito_verificacion):
-                raise serializers.ValidationError(
-                    {
-                        "digito_verificacion": _(
-                            "El dígito de verificación no corresponde al NIT ingresado. "
-                            f"El dígito correcto es: {digito_calculado}"
-                        )
-                    }
-                )
+            # Simply ensure both fields are present and formatted correctly
+            # Actual verification digit validation is now manual
+            pass
 
         return attrs
 
@@ -364,7 +357,7 @@ class OrganizationWizardStep1Serializer(serializers.ModelSerializer):
     """
 
     nit_completo = serializers.ReadOnlyField()
-    digito_verificacion_calculado = serializers.SerializerMethodField()
+    # Removed auto-calculation field as requested by user
 
     class Meta:
         model = Organization
@@ -375,7 +368,6 @@ class OrganizationWizardStep1Serializer(serializers.ModelSerializer):
             "nit",
             "digito_verificacion",
             "nit_completo",
-            "digito_verificacion_calculado",
             "tipo_organizacion",
             "sector_economico",
             "tamaño_empresa",
@@ -385,22 +377,9 @@ class OrganizationWizardStep1Serializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "nit_completo",
-            "digito_verificacion_calculado",
         ]
 
-    def get_digito_verificacion_calculado(self, obj):
-        """
-        Calculate verification digit for the given NIT.
-
-        Args:
-            obj (Organization): Organization instance
-
-        Returns:
-            int or None: Calculated verification digit
-        """
-        if obj.nit:
-            return Organization.calcular_digito_verificacion(obj.nit)
-        return None
+    # Removed auto-calculation method as requested by user
 
     def validate(self, attrs):
         """
@@ -427,21 +406,13 @@ class OrganizationWizardStep1Serializer(serializers.ModelSerializer):
                     {field: _("Este campo es obligatorio para el paso 1.")}
                 )
 
-        # Validar correspondencia NIT-DV
+        # Basic validation only - removed auto-calculation as requested
         nit = attrs.get("nit")
         digito_verificacion = attrs.get("digito_verificacion")
 
         if nit and digito_verificacion:
-            digito_calculado = Organization.calcular_digito_verificacion(nit)
-            if str(digito_calculado) != str(digito_verificacion):
-                raise serializers.ValidationError(
-                    {
-                        "digito_verificacion": _(
-                            "El dígito de verificación no corresponde al NIT ingresado. "
-                            f"El dígito correcto es: {digito_calculado}"
-                        )
-                    }
-                )
+            # Manual verification digit input - no auto-validation
+            pass
 
         return attrs
 

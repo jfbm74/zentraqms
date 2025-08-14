@@ -5,7 +5,7 @@
  * This wizard guides users through the initial organization setup process.
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import classnames from "classnames";
 import { toast } from "react-toastify";
 import { useNavigate } from "../../../utils/SimpleRouter";
@@ -52,9 +52,36 @@ const OrganizationWizard: React.FC = () => {
   const [activeTab, setActiveTab] = useState(1);
   const [passedSteps, setPassedSteps] = useState([1]);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // Toast deduplication
+  const lastToastRef = useRef<{ message: string; timestamp: number } | null>(null);
 
   // Navigation
   const navigate = useNavigate();
+  
+  /**
+   * Show toast with deduplication to prevent duplicates
+   */
+  const showToast = useCallback((type: 'success' | 'error' | 'info', message: string, options?: any) => {
+    const now = Date.now();
+    const lastToast = lastToastRef.current;
+    
+    // Prevent duplicate toasts within 2 seconds
+    if (lastToast && lastToast.message === message && now - lastToast.timestamp < 2000) {
+      return;
+    }
+    
+    // Update last toast reference
+    lastToastRef.current = { message, timestamp: now };
+    
+    // Show the toast
+    toast[type](message, options);
+  }, []);
+
+  // Constants for localStorage keys
+  const STORAGE_KEY = "organization-wizard-draft";
+  const LAST_SAVED_KEY = "organization-wizard-last-saved";
 
   // Form data state
   const [formData, setFormData] = useState<OrganizationData>({
@@ -82,6 +109,126 @@ const OrganizationWizard: React.FC = () => {
 
   // Form validation state
   const [errors, setErrors] = useState<Partial<OrganizationData>>({});
+
+  /**
+   * Load saved draft from localStorage
+   */
+  const loadSavedDraft = useCallback(() => {
+    try {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      const lastSaved = localStorage.getItem(LAST_SAVED_KEY);
+      
+      if (savedData && lastSaved) {
+        const parsedData = JSON.parse(savedData);
+        const savedTime = new Date(lastSaved);
+        const now = new Date();
+        const hoursDiff = (now.getTime() - savedTime.getTime()) / (1000 * 60 * 60);
+        
+        // Only load if saved within last 24 hours
+        if (hoursDiff < 24) {
+          setFormData(parsedData);
+          
+          // Show restore notification
+          showToast('info',
+            `Borrador restaurado del ${savedTime.toLocaleDateString('es-ES')} ${savedTime.toLocaleTimeString('es-ES')}`,
+            {
+              autoClose: 8000,
+              position: "top-center"
+            }
+          );
+          
+          console.log("[OrganizationWizard] Draft restored from:", savedTime.toLocaleString());
+          return true;
+        } else {
+          // Clear old data
+          clearSavedDraft();
+        }
+      }
+    } catch (error) {
+      console.warn("[OrganizationWizard] Failed to load saved draft:", error);
+      clearSavedDraft();
+    }
+    return false;
+  }, []);
+
+  /**
+   * Save draft to localStorage
+   */
+  const saveDraft = useCallback((data: OrganizationData) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(LAST_SAVED_KEY, new Date().toISOString());
+      setHasUnsavedChanges(false);
+      console.log("[OrganizationWizard] Draft saved at:", new Date().toLocaleString());
+    } catch (error) {
+      console.warn("[OrganizationWizard] Failed to save draft:", error);
+    }
+  }, []);
+
+  /**
+   * Clear saved draft from localStorage
+   */
+  const clearSavedDraft = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(LAST_SAVED_KEY);
+    console.log("[OrganizationWizard] Draft cleared");
+  }, []);
+
+  /**
+   * Auto-save with debounce
+   */
+  const debouncedSave = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
+      return (data: OrganizationData) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          saveDraft(data);
+        }, 2000); // Save after 2 seconds of inactivity
+      };
+    })(),
+    [saveDraft]
+  );
+
+  /**
+   * Load saved draft on component mount
+   */
+  useEffect(() => {
+    loadSavedDraft();
+  }, [loadSavedDraft]);
+
+  /**
+   * Auto-save when formData changes
+   */
+  useEffect(() => {
+    // Don't save if data is empty or if we just loaded from storage
+    const hasData = Object.values(formData).some(value => 
+      value && String(value).trim().length > 0
+    );
+    
+    if (hasData) {
+      setHasUnsavedChanges(true);
+      debouncedSave(formData);
+    }
+  }, [formData, debouncedSave]);
+
+  /**
+   * Handle page unload warning
+   */
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = 'Tienes cambios sin guardar. ¿Estás seguro que quieres salir?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
 
   /**
    * Navigate between wizard steps
@@ -153,12 +300,20 @@ const OrganizationWizard: React.FC = () => {
           newErrors.phone =
             "El teléfono debe contener solo números, espacios, guiones y paréntesis";
         }
-        if (!formData.nit || formData.nit.length < 8) {
-          newErrors.nit = "El NIT es requerido y debe tener al menos 8 dígitos";
+        // Validación del NIT colombiano (9-10 dígitos)
+        if (!formData.nit || formData.nit.trim() === "") {
+          newErrors.nit = "El NIT es requerido";
+        } else {
+          const cleanNit = formData.nit.replace(/\D/g, ""); // Solo dígitos
+          if (cleanNit.length < 9 || cleanNit.length > 10) {
+            newErrors.nit = "El NIT colombiano debe tener entre 9 y 10 dígitos";
+          }
         }
-        if (!formData.digito_verificacion) {
-          newErrors.digito_verificacion =
-            "El dígito de verificación es requerido";
+        // Validación del dígito de verificación
+        if (!formData.digito_verificacion || formData.digito_verificacion.trim() === "") {
+          newErrors.digito_verificacion = "El dígito de verificación es requerido";
+        } else if (!/^\d$/.test(formData.digito_verificacion)) {
+          newErrors.digito_verificacion = "El dígito de verificación debe ser un número del 0 al 9";
         }
         break;
 
@@ -198,7 +353,7 @@ const OrganizationWizard: React.FC = () => {
         handleSubmit();
       }
     } else {
-      toast.error("Por favor corrige los errores antes de continuar");
+      showToast('error', "Por favor corrige los errores antes de continuar");
     }
   };
 
@@ -212,11 +367,26 @@ const OrganizationWizard: React.FC = () => {
   };
 
   /**
+   * Map frontend organization size to backend expected values
+   */
+  const mapOrganizationSize = (size: string | undefined): string => {
+    const sizeMapping: Record<string, string> = {
+      micro: "microempresa",
+      small: "pequeña", 
+      medium: "mediana",
+      large: "grande",
+      enterprise: "grande", // Map enterprise to grande
+    };
+    
+    return sizeMapping[size || ""] || "pequeña"; // Default to "pequeña"
+  };
+
+  /**
    * Submit the complete organization data
    */
   const handleSubmit = async () => {
     if (!validateStep(3)) {
-      toast.error("Por favor completa todos los campos requeridos");
+      showToast('error', "Por favor completa todos los campos requeridos");
       return;
     }
 
@@ -230,17 +400,22 @@ const OrganizationWizard: React.FC = () => {
         nit: formData.nit || "", // Use real NIT from form
         digito_verificacion: formData.digito_verificacion || "", // Use real verification digit
         tipo_organizacion: "empresa_privada", // Fixed: use valid choice
-        sector_economico: formData.sector_template || "tecnologia",
-        tamaño_empresa:
-          formData.organization_size === "medium" ? "mediana" : "pequeña", // Fixed: map to valid choices
-        telefono_principal: formData.phone.substring(0, 15), // Fixed: limit to 15 characters
-        email_contacto: formData.email,
+        sector_economico: formData.sector_template || "otro", // Default to "otro" if no sector selected
+        tamaño_empresa: mapOrganizationSize(formData.organization_size), // Use proper mapping
+        telefono_principal: (formData.phone || "").substring(0, 15), // Fixed: limit to 15 characters
+        email_contacto: formData.email || "",
       };
 
       console.log(
         "[OrganizationWizard] Submitting organization data:",
-        organizationPayload,
+        JSON.stringify(organizationPayload, null, 2),
       );
+      console.log("[OrganizationWizard] FormData values:", {
+        sector_template: formData.sector_template,
+        organization_size: formData.organization_size,
+        phone: formData.phone,
+        email: formData.email
+      });
 
       const response = await apiClient.post(
         "/api/v1/organizations/wizard/step1/",
@@ -252,9 +427,13 @@ const OrganizationWizard: React.FC = () => {
         response.data,
       );
 
-      toast.success("¡Organización configurada exitosamente!", {
-        autoClose: 2000,
+      showToast('success', "¡Organización configurada exitosamente!", {
+        autoClose: 3000,
       });
+
+      // Clear saved draft since we successfully submitted
+      clearSavedDraft();
+      setHasUnsavedChanges(false);
 
       // Navigate to success state
       toggleTab(4); // Show success screen
@@ -269,7 +448,7 @@ const OrganizationWizard: React.FC = () => {
       console.error("[OrganizationWizard] Error creating organization:", error);
       console.error(
         "[OrganizationWizard] Error response data:",
-        error.response?.data,
+        JSON.stringify(error.response?.data, null, 2),
       );
 
       // Better error handling to see what the backend is returning
@@ -298,7 +477,7 @@ const OrganizationWizard: React.FC = () => {
         }
       }
 
-      toast.error(errorMessage);
+      showToast('error', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -308,7 +487,7 @@ const OrganizationWizard: React.FC = () => {
    * Handle branch office completion
    */
   const handleBranchOfficeComplete = () => {
-    toast.success("¡Configuración completada exitosamente!");
+    showToast('success', "¡Sucursales configuradas exitosamente!");
     setTimeout(() => {
       navigate("/dashboard");
     }, 1500);
@@ -318,7 +497,7 @@ const OrganizationWizard: React.FC = () => {
    * Handle skipping branch offices
    */
   const handleSkipBranchOffices = () => {
-    toast.info("Puede agregar sucursales más tarde desde Configuración");
+    showToast('info', "Puede agregar sucursales más tarde desde Configuración");
     setTimeout(() => {
       navigate("/dashboard");
     }, 1500);
@@ -335,12 +514,29 @@ const OrganizationWizard: React.FC = () => {
             <div className="card shadow-lg border-0">
               <div className="card-header bg-primary border-0">
                 <div className="text-center pt-3 pb-3">
-                  <h4 className="mb-1 fw-semibold text-white">
+                  <h4 className="mb-1 fw-semibold text-white d-flex align-items-center justify-content-center">
+                    <i className="ri-settings-3-line me-2" aria-hidden="true"></i>
                     Configuración Inicial
+                    {hasUnsavedChanges && (
+                      <span 
+                        className="badge bg-warning ms-2"
+                        title="Guardando cambios automáticamente..."
+                        aria-label="Guardando cambios"
+                      >
+                        <i className="ri-save-line me-1" aria-hidden="true"></i>
+                        Guardando...
+                      </span>
+                    )}
                   </h4>
                   <p className="text-white-50 mb-0">
                     Configure su organización en ZentraQMS
                   </p>
+                  {!hasUnsavedChanges && localStorage.getItem(STORAGE_KEY) && (
+                    <small className="text-white-75 d-block mt-1">
+                      <i className="ri-check-line me-1" aria-hidden="true"></i>
+                      Borrador guardado automáticamente
+                    </small>
+                  )}
                 </div>
               </div>
 
@@ -555,9 +751,7 @@ const OrganizationWizard: React.FC = () => {
                                   type="button"
                                   className="btn btn-outline-secondary btn-label"
                                   onClick={() => {
-                                    toast.success(
-                                      "Redirigiendo al dashboard...",
-                                    );
+                                    showToast('success', "¡Configuración inicial completada!");
                                     setTimeout(
                                       () => navigate("/dashboard"),
                                       1500,

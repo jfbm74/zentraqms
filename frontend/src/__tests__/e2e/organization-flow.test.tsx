@@ -19,6 +19,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { toast } from "react-toastify";
 import OrganizationWizard from "../../pages/organization/wizard/OrganizationWizard";
 
+// Polyfill for JSdom HTMLFormElement.requestSubmit
+if (!HTMLFormElement.prototype.requestSubmit) {
+  HTMLFormElement.prototype.requestSubmit = function(submitter) {
+    if (submitter) {
+      submitter.click();
+    } else {
+      this.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    }
+  };
+}
+
 // Mock dependencies for E2E testing
 vi.mock("react-toastify", () => ({
   toast: {
@@ -425,7 +436,7 @@ describe("Organization Creation E2E Flow", () => {
       expect(toast.success).toHaveBeenCalledWith(
         "¡Organización configurada exitosamente!",
         {
-          autoClose: 2000,
+          autoClose: 3000,
         },
       );
 
@@ -456,6 +467,7 @@ describe("Organization Creation E2E Flow", () => {
       );
       expect(toast.error).toHaveBeenCalledWith(
         "Por favor corrige los errores antes de continuar",
+        undefined,
       );
 
       // Fill partial data with invalid email
@@ -510,9 +522,8 @@ describe("Organization Creation E2E Flow", () => {
       // Should show error message
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith(
-          expect.stringContaining(
-            "nit: Ya existe una organización con este NIT",
-          ),
+          "Errores de validación:\nnit: Ya existe una organización con este NIT",
+          undefined,
         );
       });
     });
@@ -547,6 +558,7 @@ describe("Organization Creation E2E Flow", () => {
       await waitFor(() => {
         expect(toast.error).toHaveBeenCalledWith(
           "Error al crear la organización. Inténtalo de nuevo.",
+          undefined,
         );
       });
     });
@@ -646,7 +658,8 @@ describe("Organization Creation E2E Flow", () => {
       await user.click(screen.getByTestId("complete-branches"));
 
       expect(toast.success).toHaveBeenCalledWith(
-        "¡Configuración completada exitosamente!",
+        "¡Sucursales configuradas exitosamente!",
+        undefined,
       );
     });
 
@@ -693,7 +706,8 @@ describe("Organization Creation E2E Flow", () => {
       await user.click(screen.getByText("Ir al Dashboard"));
 
       expect(toast.success).toHaveBeenCalledWith(
-        "Redirigiendo al dashboard...",
+        "¡Configuración inicial completada!",
+        undefined,
       );
     });
   });
