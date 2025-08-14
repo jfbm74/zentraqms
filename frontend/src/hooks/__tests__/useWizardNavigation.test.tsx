@@ -38,7 +38,7 @@ describe("useWizardNavigation", () => {
       validationRules: [
         {
           field: "name",
-          validator: (value: any) => !!value && value.length > 0,
+          validator: (value: unknown) => !!value && value.length > 0,
           message: "Name is required",
         },
       ],
@@ -51,7 +51,7 @@ describe("useWizardNavigation", () => {
       validationRules: [
         {
           field: "address",
-          validator: (value: any) => !!value && value.length > 0,
+          validator: (value: unknown) => !!value && value.length > 0,
           message: "Address is required",
         },
       ],
@@ -497,7 +497,7 @@ describe("useWizardNavigation", () => {
             validationRules: [
               {
                 field: "name",
-                validator: (value: any) =>
+                validator: (value: unknown) =>
                   value === "invalid" ? "Custom error message" : true,
                 message: "Default message",
               },
@@ -844,7 +844,7 @@ describe("useWizardNavigation", () => {
           validationRules: [
             {
               field: "email",
-              validator: (value: any, allData: any) => {
+              validator: (value: unknown, allData: unknown) => {
                 if (!value) return "Email is required";
                 if (!value.includes("@")) return "Invalid email format";
                 if (allData.confirmEmail !== value)

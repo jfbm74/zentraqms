@@ -22,7 +22,7 @@ interface WizardContainerProps {
   title?: string;
   subtitle?: string;
   steps: WizardStep[];
-  onComplete?: (data: any) => Promise<void>;
+  onComplete?: (data: Record<string, unknown>) => Promise<void>;
   showProgress?: boolean;
   allowSkipSteps?: boolean;
   className?: string;
@@ -69,7 +69,7 @@ const WizardContainer: React.FC<WizardContainerProps> = ({
           }));
         } else {
           setValidationErrors((prev) => {
-            const { [stepId]: removed, ...rest } = prev;
+            const { [stepId]: _removed, ...rest } = prev;
             return rest;
           });
         }
@@ -182,7 +182,7 @@ const WizardContainer: React.FC<WizardContainerProps> = ({
   }, [activeTab, onComplete, validateStep]);
 
   // Get current step
-  const currentStep = steps.find((s) => s.id === activeTab);
+  const _currentStep = steps.find((s) => s.id === activeTab);
 
   return (
     <div className="page-content">

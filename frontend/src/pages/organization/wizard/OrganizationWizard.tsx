@@ -265,7 +265,7 @@ const OrganizationWizard: React.FC = () => {
         ...prev,
         organizationId: createdOrganization.id,
       }));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[OrganizationWizard] Error creating organization:", error);
       console.error(
         "[OrganizationWizard] Error response data:",

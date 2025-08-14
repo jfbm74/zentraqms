@@ -39,7 +39,7 @@ vi.mock("../../../../api/endpoints", () => ({
 
 // Mock step components
 vi.mock("../../../../components/wizard/steps/Step1OrganizationData", () => ({
-  default: ({ data, errors, onChange }: any) => (
+  default: ({ data, errors, onChange }: unknown) => (
     <div data-testid="step1-organization">
       <input
         data-testid="org-name"
@@ -70,7 +70,7 @@ vi.mock("../../../../components/wizard/steps/Step1OrganizationData", () => ({
 }));
 
 vi.mock("../../../../components/wizard/steps/Step2LocationData", () => ({
-  default: ({ data, errors, onChange }: any) => (
+  default: ({ data, errors, onChange }: unknown) => (
     <div data-testid="step2-location">
       <input
         data-testid="location-address"
@@ -92,7 +92,7 @@ vi.mock("../../../../components/wizard/steps/Step2LocationData", () => ({
 }));
 
 vi.mock("../../../../components/wizard/steps/Step3SectorTemplate", () => ({
-  default: ({ data, errors, onChange }: any) => (
+  default: ({ data, errors, onChange }: unknown) => (
     <div data-testid="step3-sector">
       <select
         data-testid="sector-template"
@@ -113,7 +113,7 @@ vi.mock("../../../../components/wizard/steps/Step3SectorTemplate", () => ({
 }));
 
 vi.mock("../../../../components/wizard/steps/Step5BranchOffices", () => ({
-  default: ({ onComplete, onSkip }: any) => (
+  default: ({ onComplete, onSkip }: unknown) => (
     <div data-testid="step5-branches">
       <button data-testid="complete-branches" onClick={onComplete}>
         Complete Branch Offices
@@ -132,11 +132,11 @@ describe("OrganizationWizard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Setup API mock
-    const { apiClient } = require("../../../../api/endpoints");
+    const { apiClient } = await import("../../../../api/endpoints");
     apiClient.post = mockApiPost;
 
     // Setup navigation mock
-    const { useNavigate } = require("../../../../utils/SimpleRouter");
+    const { useNavigate } = await import("../../../../utils/SimpleRouter");
     useNavigate.mockReturnValue(mockNavigate);
   });
 
@@ -366,7 +366,7 @@ describe("OrganizationWizard", () => {
   });
 
   describe("Form Submission", () => {
-    const fillCompleteForm = async (user: any) => {
+    const fillCompleteForm = async (user: unknown) => {
       // Step 1
       await user.type(screen.getByTestId("org-name"), "Test Organization");
       await user.type(screen.getByTestId("org-email"), "test@example.com");

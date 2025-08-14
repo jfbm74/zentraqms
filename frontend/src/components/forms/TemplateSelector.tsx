@@ -9,7 +9,7 @@
  * - Integration with organization wizard
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
 import { apiClient } from "../../api/endpoints";
 
@@ -25,9 +25,9 @@ interface SectorTemplate {
   total_elementos: number;
   is_active: boolean;
   data_json?: {
-    procesos: any[];
-    indicadores: any[];
-    documentos: any[];
+    procesos: Record<string, unknown>[];
+    indicadores: Record<string, unknown>[];
+    documentos: Record<string, unknown>[];
   };
 }
 
@@ -37,7 +37,7 @@ interface TemplateSelectorProps {
   onTemplateApply?: (template: SectorTemplate) => void;
   className?: string;
   disabled?: boolean;
-  currentData?: any; // Current organization data to show overwrite warnings
+  currentData?: Record<string, unknown>; // Current organization data to show overwrite warnings
 }
 
 const TemplateSelector: React.FC<TemplateSelectorProps> = ({
@@ -64,7 +64,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   /**
    * Load templates for the selected sector
    */
-  const loadTemplates = async () => {
+  const loadTemplates = useCallback(async () => {
     if (!sector) return;
 
     setIsLoadingTemplates(true);
@@ -73,14 +73,14 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
         `/api/v1/sector-templates/by-sector/?sector=${sector}`,
       );
       setTemplates(response.data.templates || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[TemplateSelector] Error loading templates:", error);
       toast.error("Error al cargar las plantillas disponibles");
       setTemplates([]);
     } finally {
       setIsLoadingTemplates(false);
     }
-  };
+  }, [sector]);
 
   /**
    * Handle template selection from dropdown
@@ -106,7 +106,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       );
       setPreviewTemplate(response.data);
       setShowPreviewModal(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(
         "[TemplateSelector] Error loading template details:",
         error,
@@ -137,7 +137,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
     setIsLoading(true);
     try {
-      const response = await apiClient.post(
+      await apiClient.post(
         `/api/v1/sector-templates/${selectedTemplate.id}/apply/`,
         {
           organization_id: currentData.organizationId,
@@ -150,7 +150,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
       if (onTemplateApply) {
         onTemplateApply(selectedTemplate);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[TemplateSelector] Error applying template:", error);
       const errorMessage =
         error.response?.data?.error ||
@@ -189,7 +189,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
    */
   useEffect(() => {
     loadTemplates();
-  }, [sector]);
+  }, [loadTemplates]);
 
   return (
     <div className={`template-selector ${className}`}>
@@ -346,7 +346,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                         <div className="list-group list-group-flush">
                           {previewTemplate.data_json.procesos
                             .slice(0, 5)
-                            .map((proceso: any, index: number) => (
+                            .map((proceso: Record<string, unknown>, index: number) => (
                               <div key={index} className="list-group-item px-0">
                                 <div className="d-flex align-items-center">
                                   <i className="ri-file-text-line me-2 text-muted"></i>
@@ -385,7 +385,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                         <div className="list-group list-group-flush">
                           {previewTemplate.data_json.indicadores
                             .slice(0, 5)
-                            .map((indicador: any, index: number) => (
+                            .map((indicador: Record<string, unknown>, index: number) => (
                               <div key={index} className="list-group-item px-0">
                                 <div className="d-flex align-items-center">
                                   <i className="ri-bar-chart-line me-2 text-muted"></i>
@@ -425,7 +425,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
                         <div className="list-group list-group-flush">
                           {previewTemplate.data_json.documentos
                             .slice(0, 5)
-                            .map((documento: any, index: number) => (
+                            .map((documento: Record<string, unknown>, index: number) => (
                               <div key={index} className="list-group-item px-0">
                                 <div className="d-flex align-items-center">
                                   <i className="ri-file-line me-2 text-muted"></i>

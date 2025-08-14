@@ -33,7 +33,7 @@ export interface AutoSaveState {
 }
 
 export interface SaveData {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface AutoSaveHookReturn {
@@ -210,7 +210,7 @@ export const useAutoSave = (
           hideProgressBar: true,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       const errorMessage =
         error.response?.data?.message || "Error al guardar automáticamente";
 
@@ -364,7 +364,7 @@ export const useAutoSave = (
         if (config.showNotifications) {
           toast.success("Conflicto resuelto exitosamente");
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
           error.response?.data?.message || "Error al resolver conflicto";
         updateState({ lastError: errorMessage });

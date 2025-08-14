@@ -152,7 +152,7 @@ export function setupHttpInterceptors(axiosInstance: AxiosInstance) {
  */
 async function handleSpecificErrors(
   error: AxiosError,
-  errorInfo: any,
+  errorInfo: unknown,
 ): Promise<void> {
   switch (errorInfo.type) {
     case ErrorType.AUTHENTICATION:
@@ -190,7 +190,7 @@ async function handleSpecificErrors(
 /**
  * Check if request should be retried
  */
-function shouldRetryRequest(errorInfo: any, retryCount: number): boolean {
+function shouldRetryRequest(errorInfo: unknown, retryCount: number): boolean {
   const maxRetries = 3;
 
   if (retryCount >= maxRetries) {
@@ -332,7 +332,7 @@ export const httpClient = {
    */
   async post<T = any>(
     url: string,
-    data?: any,
+    data?: unknown,
     config?: AxiosRequestConfig & {
       silent?: boolean;
       skipErrorNotification?: boolean;
@@ -351,7 +351,7 @@ export const httpClient = {
    */
   async put<T = any>(
     url: string,
-    data?: any,
+    data?: unknown,
     config?: AxiosRequestConfig & {
       silent?: boolean;
       skipErrorNotification?: boolean;

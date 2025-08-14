@@ -225,7 +225,7 @@ const Step5BranchOffices: React.FC<Step5Props> = ({
         `${branchOffices.length} sucursal(es) guardada(s) exitosamente`,
       );
       onComplete();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("[Step5BranchOffices] Error saving branches:", error);
       toast.error("Error al guardar las sucursales. Inténtalo de nuevo.");
     } finally {

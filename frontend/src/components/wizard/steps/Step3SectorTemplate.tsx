@@ -17,7 +17,7 @@ interface Step3Props {
   data: Partial<SectorData>;
   errors: Partial<SectorData>;
   onChange: (data: Partial<SectorData>) => void;
-  currentData?: any; // Full organization data for template application
+  currentData?: Record<string, unknown>; // Full organization data for template application
 }
 
 const Step3SectorTemplate: React.FC<Step3Props> = ({

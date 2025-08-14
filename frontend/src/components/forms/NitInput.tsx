@@ -257,7 +257,7 @@ const NitInput: React.FC<NitInputProps> = ({
         }));
       }
     }
-  }, [value]);
+  }, [value, state.nit, validateNit]);
 
   // Determine input state classes
   const getInputStateClass = () => {

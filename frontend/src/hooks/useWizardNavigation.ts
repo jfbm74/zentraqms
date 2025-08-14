@@ -24,7 +24,7 @@ export interface WizardStep {
 
 export interface ValidationRule {
   field: string;
-  validator: (value: any, allData: any) => boolean | string;
+  validator: (value: unknown, allData: unknown) => boolean | string;
   message: string;
 }
 
@@ -73,7 +73,7 @@ export interface UseWizardNavigationReturn {
   markStepAsCompleted: (stepIndex: number) => void;
   markStepAsIncomplete: (stepIndex: number) => void;
   updateStepAccessibility: (stepIndex: number, isAccessible: boolean) => void;
-  validateCurrentStep: (data?: any) => {
+  validateCurrentStep: (data?: unknown) => {
     isValid: boolean;
     errors: Record<string, string>;
   };
@@ -189,7 +189,7 @@ export const useWizardNavigation = (
    * Validate current step
    */
   const validateCurrentStep = useCallback(
-    (data?: any): { isValid: boolean; errors: Record<string, string> } => {
+    (data?: unknown): { isValid: boolean; errors: Record<string, string> } => {
       const step = steps[currentStep];
       if (!step || !step.validationRules) {
         return { isValid: true, errors: {} };
@@ -413,7 +413,7 @@ export const useWizardNavigation = (
       setSteps((prev) =>
         prev.map((step) => {
           const savedStepState = progressData.stepsState.find(
-            (s: any) => s.id === step.id,
+            (s: unknown) => s.id === step.id,
           );
           if (savedStepState) {
             return {

@@ -36,7 +36,7 @@ export interface ErrorInfo {
   message: string;
   userMessage: string;
   code?: string | number;
-  details?: any;
+  details?: unknown;
   timestamp: Date;
   url?: string;
   method?: string;
@@ -70,7 +70,7 @@ export class Logger {
   private static isDevelopment = import.meta.env.MODE === "development";
   private static errorLogs: ErrorInfo[] = [];
 
-  static log(level: "info" | "warn" | "error", message: string, data?: any) {
+  static log(level: "info" | "warn" | "error", message: string, data?: unknown) {
     const timestamp = new Date();
     const logEntry = {
       level,
@@ -382,7 +382,7 @@ export class RetryHandler {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  private static isAxiosError(error: any): error is AxiosError {
+  private static isAxiosError(error: unknown): error is AxiosError {
     return error && error.isAxiosError === true;
   }
 }
@@ -507,7 +507,7 @@ export class ErrorHandler {
     Logger.log("info", "Error handler initialized");
   }
 
-  static handleError(error: any, context?: string): ErrorInfo {
+  static handleError(error: unknown, context?: string): ErrorInfo {
     let errorInfo: ErrorInfo;
 
     if (this.isAxiosError(error)) {
@@ -548,7 +548,7 @@ export class ErrorHandler {
     }
   }
 
-  private static isAxiosError(error: any): error is AxiosError {
+  private static isAxiosError(error: unknown): error is AxiosError {
     return error && error.isAxiosError === true;
   }
 
@@ -575,14 +575,14 @@ export class ErrorHandler {
 }
 
 // Export utility functions
-export const logError = (message: string, data?: any) =>
+export const logError = (message: string, data?: unknown) =>
   Logger.log("error", message, data);
-export const logWarn = (message: string, data?: any) =>
+export const logWarn = (message: string, data?: unknown) =>
   Logger.log("warn", message, data);
-export const logInfo = (message: string, data?: any) =>
+export const logInfo = (message: string, data?: unknown) =>
   Logger.log("info", message, data);
 
-export const handleApiError = (error: any, context?: string) =>
+export const handleApiError = (error: unknown, context?: string) =>
   ErrorHandler.handleError(error, context);
 export const executeWithRetry = <T>(
   operation: () => Promise<T>,

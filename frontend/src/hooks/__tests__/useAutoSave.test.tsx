@@ -67,11 +67,11 @@ describe("useAutoSave", () => {
     vi.clearAllTimers();
 
     // Setup auth mock
-    const { useAuth } = require("../useAuth");
+    const { useAuth } = await import("../useAuth");
     useAuth.mockReturnValue(mockAuth);
 
     // Setup API mock
-    const { apiClient } = require("../../api/endpoints");
+    const { apiClient } = await import("../../api/endpoints");
     Object.assign(apiClient, mockApiClient);
   });
 
@@ -361,7 +361,7 @@ describe("useAutoSave", () => {
       });
 
       it("should require authentication", async () => {
-        const { useAuth } = require("../useAuth");
+        const { useAuth } = await import("../useAuth");
         useAuth.mockReturnValue({ ...mockAuth, isAuthenticated: false });
 
         const { result } = renderHook(() =>
@@ -382,7 +382,7 @@ describe("useAutoSave", () => {
           try {
             await result.current.saveNow();
             expect.fail("Should throw authentication error");
-          } catch (error: any) {
+          } catch (error: unknown) {
             expect(error.message).toBe("User must be authenticated to save");
           }
         });
@@ -573,7 +573,7 @@ describe("useAutoSave", () => {
       });
 
       it("should require authentication", async () => {
-        const { useAuth } = require("../useAuth");
+        const { useAuth } = await import("../useAuth");
         useAuth.mockReturnValue({ ...mockAuth, isAuthenticated: false });
 
         const { result } = renderHook(() =>

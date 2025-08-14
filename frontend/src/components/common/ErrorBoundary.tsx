@@ -91,7 +91,7 @@ class ErrorBoundary extends Component<Props, State> {
     this.reportError(structuredError);
   }
 
-  private reportError(errorInfo: any) {
+  private reportError(errorInfo: unknown) {
     // Here you would send the error to your error tracking service
     // like Sentry, LogRocket, Bugsnag, etc.
 

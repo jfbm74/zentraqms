@@ -91,11 +91,11 @@ describe("useOrganization", () => {
     vi.clearAllMocks();
 
     // Setup auth mock
-    const { useAuth } = require("../useAuth");
+    const { useAuth } = await import("../useAuth");
     useAuth.mockReturnValue(mockAuth);
 
     // Setup API mock
-    const { apiClient } = require("../../api/endpoints");
+    const { apiClient } = await import("../../api/endpoints");
     Object.assign(apiClient, mockApiClient);
   });
 
@@ -137,7 +137,7 @@ describe("useOrganization", () => {
     });
 
     it("should not fetch data when user is not authenticated", () => {
-      const { useAuth } = require("../useAuth");
+      const { useAuth } = await import("../useAuth");
       useAuth.mockReturnValue({ ...mockAuth, isAuthenticated: false });
 
       renderHook(() => useOrganization("org-123"));
@@ -186,7 +186,7 @@ describe("useOrganization", () => {
       });
 
       it("should not fetch when user is not authenticated", async () => {
-        const { useAuth } = require("../useAuth");
+        const { useAuth } = await import("../useAuth");
         useAuth.mockReturnValue({ ...mockAuth, isAuthenticated: false });
 
         const { result } = renderHook(() => useOrganization());
@@ -195,7 +195,7 @@ describe("useOrganization", () => {
           try {
             await result.current.fetchOrganization("org-123");
             expect.fail("Should throw authentication error");
-          } catch (error: any) {
+          } catch (error: unknown) {
             expect(error.message).toBe(
               "User must be authenticated to fetch organization",
             );
@@ -730,7 +730,7 @@ describe("useOrganization", () => {
 
   describe("Error Handling", () => {
     it("should handle authentication errors", async () => {
-      const { useAuth } = require("../useAuth");
+      const { useAuth } = await import("../useAuth");
       useAuth.mockReturnValue({ ...mockAuth, isAuthenticated: false });
 
       const { result } = renderHook(() => useOrganization());
@@ -739,7 +739,7 @@ describe("useOrganization", () => {
         try {
           await result.current.fetchOrganization("org-123");
           expect.fail("Should throw authentication error");
-        } catch (error: any) {
+        } catch (error: unknown) {
           expect(error.message).toBe(
             "User must be authenticated to fetch organization",
           );

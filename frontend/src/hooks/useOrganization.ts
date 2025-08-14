@@ -210,7 +210,7 @@ export const useOrganization = (
         });
 
         return organization;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
           error.response?.data?.message || "Failed to fetch organization";
         updateState({
@@ -246,7 +246,7 @@ export const useOrganization = (
 
         toast.success("Organización creada exitosamente");
         return organization;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
           error.response?.data?.message || "Failed to create organization";
         updateState({
@@ -286,7 +286,7 @@ export const useOrganization = (
 
         toast.success("Organización actualizada exitosamente");
         return organization;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
           error.response?.data?.message || "Failed to update organization";
         updateState({
@@ -322,7 +322,7 @@ export const useOrganization = (
         });
 
         toast.success("Organización eliminada exitosamente");
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
           error.response?.data?.message || "Failed to delete organization";
         updateState({
@@ -368,7 +368,7 @@ export const useOrganization = (
         });
 
         return locations;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
           error.response?.data?.message || "Failed to fetch locations";
         updateState({
@@ -404,7 +404,7 @@ export const useOrganization = (
 
         toast.success("Sede creada exitosamente");
         return location;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
           error.response?.data?.message || "Failed to create location";
         updateState({
@@ -446,7 +446,7 @@ export const useOrganization = (
 
         toast.success("Sede actualizada exitosamente");
         return location;
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
           error.response?.data?.message || "Failed to update location";
         updateState({
@@ -481,7 +481,7 @@ export const useOrganization = (
         });
 
         toast.success("Sede eliminada exitosamente");
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMessage =
           error.response?.data?.message || "Failed to delete location";
         updateState({

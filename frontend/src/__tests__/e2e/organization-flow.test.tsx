@@ -13,7 +13,7 @@
  * Coverage Target: >80%
  */
 
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { toast } from "react-toastify";
@@ -56,7 +56,7 @@ vi.mock("../../utils/errorHandler", () => ({
 
 // Mock step components with full functionality
 vi.mock("../../components/wizard/steps/Step1OrganizationData", () => ({
-  default: ({ data, errors, onChange }: any) => (
+  default: ({ data, errors, onChange }: { data: Record<string, unknown>; errors: Record<string, string>; onChange: (values: Record<string, unknown>) => void }) => (
     <div data-testid="step1-organization">
       <div>
         <label htmlFor="org-name">Nombre de la Organización *</label>
@@ -149,7 +149,7 @@ vi.mock("../../components/wizard/steps/Step1OrganizationData", () => ({
 }));
 
 vi.mock("../../components/wizard/steps/Step2LocationData", () => ({
-  default: ({ data, errors, onChange }: any) => (
+  default: ({ data, errors, onChange }: { data: Record<string, unknown>; errors: Record<string, string>; onChange: (values: Record<string, unknown>) => void }) => (
     <div data-testid="step2-location">
       <div>
         <label htmlFor="location-address">Dirección *</label>
@@ -223,7 +223,7 @@ vi.mock("../../components/wizard/steps/Step2LocationData", () => ({
 }));
 
 vi.mock("../../components/wizard/steps/Step3SectorTemplate", () => ({
-  default: ({ data, errors, onChange }: any) => (
+  default: ({ data, errors, onChange }: { data: Record<string, unknown>; errors: Record<string, string>; onChange: (values: Record<string, unknown>) => void }) => (
     <div data-testid="step3-sector">
       <div>
         <label htmlFor="sector-template">Sector Económico *</label>
@@ -281,7 +281,7 @@ vi.mock("../../components/wizard/steps/Step3SectorTemplate", () => ({
 }));
 
 vi.mock("../../components/wizard/steps/Step5BranchOffices", () => ({
-  default: ({ organizationId, onComplete, onSkip }: any) => (
+  default: ({ organizationId, onComplete, onSkip }: { organizationId: string; onComplete: () => void; onSkip: () => void }) => (
     <div data-testid="step5-branches">
       <h5>Gestión de Sucursales</h5>
       <p>Organización ID: {organizationId}</p>
@@ -321,11 +321,11 @@ describe("Organization Creation E2E Flow", () => {
     vi.clearAllMocks();
 
     // Setup API client mock
-    const { apiClient } = require("../../api/endpoints");
+    const { apiClient } = await import("../../api/endpoints");
     Object.assign(apiClient, mockApiClient);
 
     // Setup navigation mock
-    const { useNavigate } = require("../../utils/SimpleRouter");
+    const { useNavigate } = await import("../../utils/SimpleRouter");
     useNavigate.mockReturnValue(mockNavigate);
   });
 

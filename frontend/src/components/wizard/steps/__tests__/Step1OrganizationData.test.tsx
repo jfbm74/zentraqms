@@ -19,7 +19,7 @@ import Step1OrganizationData from "../Step1OrganizationData";
 
 // Mock NitInput component
 vi.mock("../../../forms/NitInput", () => ({
-  default: ({ label, value, onChange, error, required, placeholder }: any) => (
+  default: ({ label, value, onChange, error, required, placeholder }: unknown) => (
     <div data-testid="nit-input">
       <label>
         {label}
