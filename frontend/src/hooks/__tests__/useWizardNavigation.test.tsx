@@ -222,10 +222,14 @@ describe("useWizardNavigation", () => {
           }),
         );
 
-        // Complete and navigate to step 1
+        // Complete step 0 and make step 1 accessible
         act(() => {
           result.current.markStepAsCompleted(0);
           result.current.updateStepAccessibility(1, true);
+        });
+        
+        // Navigate to step 1
+        act(() => {
           result.current.goToStep(1);
         });
 
@@ -318,10 +322,14 @@ describe("useWizardNavigation", () => {
       it("should go to previous step when navigation allowed", () => {
         const { result } = renderHook(() => useWizardNavigation(sampleSteps));
 
-        // Navigate to step 1 first
+        // Complete step 0 and make step 1 accessible
         act(() => {
           result.current.markStepAsCompleted(0);
           result.current.updateStepAccessibility(1, true);
+        });
+        
+        // Navigate to step 1
+        act(() => {
           result.current.goToStep(1);
         });
 
@@ -341,10 +349,14 @@ describe("useWizardNavigation", () => {
           }),
         );
 
-        // Navigate to step 1 first
+        // Complete step 0 and make step 1 accessible
         act(() => {
           result.current.markStepAsCompleted(0);
           result.current.updateStepAccessibility(1, true);
+        });
+        
+        // Navigate to step 1
+        act(() => {
           result.current.goToStep(1);
         });
 
@@ -393,8 +405,9 @@ describe("useWizardNavigation", () => {
       it("should go to last accessible step", () => {
         const { result } = renderHook(() => useWizardNavigation(sampleSteps));
 
-        // Make some steps accessible
+        // Complete step 0 and make other steps accessible
         act(() => {
+          result.current.markStepAsCompleted(0);
           result.current.updateStepAccessibility(1, true);
           result.current.updateStepAccessibility(2, true);
         });
@@ -810,9 +823,15 @@ describe("useWizardNavigation", () => {
       expect(result.current.isFirstStep).toBe(false);
       expect(result.current.canGoPrevious).toBe(true);
 
-      // Navigate to last step
+      // Complete step 1, make step 2 accessible (even though it's optional), and navigate to last step
       act(() => {
+        result.current.markStepAsCompleted(1);
+        result.current.updateStepAccessibility(2, true);
         result.current.updateStepAccessibility(3, true);
+      });
+      
+      // Navigate to the last step
+      act(() => {
         result.current.goToStep(3);
       });
 
