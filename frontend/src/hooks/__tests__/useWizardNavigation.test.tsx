@@ -129,16 +129,18 @@ describe("useWizardNavigation", () => {
       it("should navigate to accessible step", () => {
         const { result } = renderHook(() => useWizardNavigation(sampleSteps));
 
-        // Make step 1 accessible first
+        // Complete current step and make step 1 accessible
         act(() => {
+          result.current.markStepAsCompleted(0);
           result.current.updateStepAccessibility(1, true);
         });
 
-        const success = act(() => {
-          return result.current.goToStep(1);
+        let success: boolean;
+        act(() => {
+          success = result.current.goToStep(1);
         });
 
-        expect(success).toBe(true);
+        expect(success!).toBe(true);
         expect(result.current.currentStep).toBe(1);
         expect(result.current.visitedSteps).toContain(1);
       });
@@ -146,27 +148,31 @@ describe("useWizardNavigation", () => {
       it("should not navigate to inaccessible step", () => {
         const { result } = renderHook(() => useWizardNavigation(sampleSteps));
 
-        const success = act(() => {
-          return result.current.goToStep(2);
+        let success: boolean;
+        act(() => {
+          success = result.current.goToStep(2);
         });
 
-        expect(success).toBe(false);
+        expect(success!).toBe(false);
         expect(result.current.currentStep).toBe(0);
       });
 
       it("should not navigate to invalid step index", () => {
         const { result } = renderHook(() => useWizardNavigation(sampleSteps));
 
-        const successNegative = act(() => {
-          return result.current.goToStep(-1);
+        let successNegative: boolean;
+        let successTooHigh: boolean;
+        
+        act(() => {
+          successNegative = result.current.goToStep(-1);
+        });
+        
+        act(() => {
+          successTooHigh = result.current.goToStep(10);
         });
 
-        const successTooHigh = act(() => {
-          return result.current.goToStep(10);
-        });
-
-        expect(successNegative).toBe(false);
-        expect(successTooHigh).toBe(false);
+        expect(successNegative!).toBe(false);
+        expect(successTooHigh!).toBe(false);
         expect(result.current.currentStep).toBe(0);
       });
 
@@ -180,11 +186,12 @@ describe("useWizardNavigation", () => {
         });
 
         // Try to skip step 1 without completing it
-        const success = act(() => {
-          return result.current.goToStep(2);
+        let success: boolean;
+        act(() => {
+          success = result.current.goToStep(2);
         });
 
-        expect(success).toBe(false);
+        expect(success!).toBe(false);
         expect(result.current.currentStep).toBe(0);
       });
 
@@ -199,11 +206,12 @@ describe("useWizardNavigation", () => {
         });
 
         // Go back to step 0
-        const success = act(() => {
-          return result.current.goToStep(0);
+        let success: boolean;
+        act(() => {
+          success = result.current.goToStep(0);
         });
 
-        expect(success).toBe(true);
+        expect(success!).toBe(true);
         expect(result.current.currentStep).toBe(0);
       });
 
@@ -222,11 +230,12 @@ describe("useWizardNavigation", () => {
         });
 
         // Try to go back to step 0
-        const success = act(() => {
-          return result.current.goToStep(0);
+        let success: boolean;
+        act(() => {
+          success = result.current.goToStep(0);
         });
 
-        expect(success).toBe(false);
+        expect(success!).toBe(false);
         expect(result.current.currentStep).toBe(1);
       });
     });
@@ -241,11 +250,12 @@ describe("useWizardNavigation", () => {
           result.current.updateStepAccessibility(1, true);
         });
 
-        const success = act(() => {
-          return result.current.goNext();
+        let success: boolean;
+        act(() => {
+          success = result.current.goNext();
         });
 
-        expect(success).toBe(true);
+        expect(success!).toBe(true);
         expect(result.current.currentStep).toBe(1);
       });
 
@@ -257,11 +267,12 @@ describe("useWizardNavigation", () => {
           result.current.updateStepAccessibility(1, true);
         });
 
-        const success = act(() => {
-          return result.current.goNext();
+        let success: boolean;
+        act(() => {
+          success = result.current.goNext();
         });
 
-        expect(success).toBe(false);
+        expect(success!).toBe(false);
         expect(result.current.currentStep).toBe(0);
       });
 
@@ -273,11 +284,12 @@ describe("useWizardNavigation", () => {
           result.current.goToStep(3);
         });
 
-        const success = act(() => {
-          return result.current.goNext();
+        let success: boolean;
+        act(() => {
+          success = result.current.goNext();
         });
 
-        expect(success).toBe(false);
+        expect(success!).toBe(false);
       });
 
       it("should skip validation when disabled", () => {
@@ -292,11 +304,12 @@ describe("useWizardNavigation", () => {
           result.current.updateStepAccessibility(1, true);
         });
 
-        const success = act(() => {
-          return result.current.goNext();
+        let success: boolean;
+        act(() => {
+          success = result.current.goNext();
         });
 
-        expect(success).toBe(true);
+        expect(success!).toBe(true);
         expect(result.current.currentStep).toBe(1);
       });
     });
@@ -312,11 +325,12 @@ describe("useWizardNavigation", () => {
           result.current.goToStep(1);
         });
 
-        const success = act(() => {
-          return result.current.goPrevious();
+        let success: boolean;
+        act(() => {
+          success = result.current.goPrevious();
         });
 
-        expect(success).toBe(true);
+        expect(success!).toBe(true);
         expect(result.current.currentStep).toBe(0);
       });
 
@@ -334,22 +348,24 @@ describe("useWizardNavigation", () => {
           result.current.goToStep(1);
         });
 
-        const success = act(() => {
-          return result.current.goPrevious();
+        let success: boolean;
+        act(() => {
+          success = result.current.goPrevious();
         });
 
-        expect(success).toBe(false);
+        expect(success!).toBe(false);
         expect(result.current.currentStep).toBe(1);
       });
 
       it("should not go before first step", () => {
         const { result } = renderHook(() => useWizardNavigation(sampleSteps));
 
-        const success = act(() => {
-          return result.current.goPrevious();
+        let success: boolean;
+        act(() => {
+          success = result.current.goPrevious();
         });
 
-        expect(success).toBe(false);
+        expect(success!).toBe(false);
         expect(result.current.currentStep).toBe(0);
       });
     });
@@ -365,11 +381,12 @@ describe("useWizardNavigation", () => {
           result.current.goToStep(1);
         });
 
-        const success = act(() => {
-          return result.current.goFirst();
+        let success: boolean;
+        act(() => {
+          success = result.current.goFirst();
         });
 
-        expect(success).toBe(true);
+        expect(success!).toBe(true);
         expect(result.current.currentStep).toBe(0);
       });
 
@@ -382,11 +399,12 @@ describe("useWizardNavigation", () => {
           result.current.updateStepAccessibility(2, true);
         });
 
-        const success = act(() => {
-          return result.current.goLast();
+        let success: boolean;
+        act(() => {
+          success = result.current.goLast();
         });
 
-        expect(success).toBe(true);
+        expect(success!).toBe(true);
         expect(result.current.currentStep).toBe(2);
       });
     });

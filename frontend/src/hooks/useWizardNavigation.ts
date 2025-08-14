@@ -236,8 +236,8 @@ export const useWizardNavigation = (
         return false;
       }
 
-      // If going forwards, check if current step is completed (if required)
-      if (stepIndex > currentStep) {
+      // If going forwards, check if current step is completed (if required and validation is enabled)
+      if (stepIndex > currentStep && config.validateOnStepChange) {
         const currentStepObj = steps[currentStep];
         if (currentStepObj.isRequired && !currentStepObj.isCompleted) {
           return false;
@@ -254,7 +254,7 @@ export const useWizardNavigation = (
 
       return true;
     },
-    [steps, currentStep, config.allowBackNavigation],
+    [steps, currentStep, config.allowBackNavigation, config.validateOnStepChange],
   );
 
   /**
