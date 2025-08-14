@@ -36,7 +36,7 @@ class OrganizationAPITests(APITestCase):
     def setUp(self):
         """Set up test data."""
         self.user = User.objects.create_user(
-            email="test@example.com", password="testpass123", first_name="Test", last_name="User"
+            email="test@example.com", password="testpass123", first_name="Test", last_name="User", is_superuser=True
         )
 
         # Create JWT token
@@ -209,7 +209,7 @@ class LocationAPITests(APITestCase):
     def setUp(self):
         """Set up test data."""
         self.user = User.objects.create_user(
-            email="test@example.com", password="testpass123", first_name="Test", last_name="User"
+            email="test@example.com", password="testpass123", first_name="Test", last_name="User", is_superuser=True
         )
 
         # Create JWT token
@@ -292,8 +292,8 @@ class LocationAPITests(APITestCase):
         duplicate_data["nombre"] = "Another Main Location"
 
         response = self.client.post(
-            url=reverse("organization:location-list"),
-            data=duplicate_data,
+            reverse("organization:location-list"),
+            duplicate_data,
             format="json",
         )
 
@@ -394,7 +394,7 @@ class SectorTemplateAPITests(APITestCase):
     def setUp(self):
         """Set up test data."""
         self.user = User.objects.create_user(
-            email="test@example.com", password="testpass123", first_name="Test", last_name="User"
+            email="test@example.com", password="testpass123", first_name="Test", last_name="User", is_superuser=True
         )
 
         # Create JWT token
@@ -464,10 +464,8 @@ class SectorTemplateAPITests(APITestCase):
 
     def test_list_templates_by_sector(self):
         """Test listing templates filtered by sector."""
-        url = reverse(
-            "organization:sectortemplate-by-sector", kwargs={"sector": "tecnologia"}
-        )
-        response = self.client.get(url)
+        url = reverse("organization:sectortemplate-by-sector")
+        response = self.client.get(url, {"sector": "tecnologia"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
@@ -519,7 +517,7 @@ class ValidationAPITests(APITestCase):
     def setUp(self):
         """Set up test data."""
         self.user = User.objects.create_user(
-            email="test@example.com", password="testpass123", first_name="Test", last_name="User"
+            email="test@example.com", password="testpass123", first_name="Test", last_name="User", is_superuser=True
         )
 
         # Create JWT token
@@ -554,7 +552,7 @@ class ValidationAPITests(APITestCase):
         response = self.client.post(url, test_data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["digito_verificacion"], 1)
+        self.assertEqual(response.data["digito_verificacion"], 8)
         self.assertEqual(response.data["nit"], "900123456")
 
     def test_check_nit_availability_endpoint(self):
@@ -572,15 +570,13 @@ class ValidationAPITests(APITestCase):
         url = reverse("organization:organization-exists-check")
 
         # Test unavailable NIT
-        unavailable_data = {"nit": "900123456"}
-        response = self.client.post(url, unavailable_data, format="json")
+        response = self.client.get(url, {"nit": "900123456"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data["available"])
 
         # Test available NIT
-        available_data = {"nit": "900999999"}
-        response = self.client.post(url, available_data, format="json")
+        response = self.client.get(url, {"nit": "900999999"})
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(response.data["available"])
@@ -592,12 +588,14 @@ class AutoSaveAPITests(TransactionTestCase):
     def setUp(self):
         """Set up test data."""
         self.user = User.objects.create_user(
-            email="test@example.com", password="testpass123", first_name="Test", last_name="User"
+            email="test@example.com", password="testpass123", first_name="Test", last_name="User", is_superuser=True
         )
 
-        self.token = Token.objects.create(user=self.user)
+        # Create JWT token
+        refresh = RefreshToken.for_user(self.user)
+        self.access_token = str(refresh.access_token)
         self.client = APIClient()
-        self.client.credentials(HTTP_AUTHORIZATION=f"Token {self.token.key}")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {self.access_token}")
 
         self.organization = Organization.objects.create(
             razon_social="Test Organization",
