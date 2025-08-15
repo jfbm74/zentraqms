@@ -5,7 +5,7 @@
  * This wizard guides users through the initial organization setup process.
  */
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import classnames from "classnames";
 import { toast } from "react-toastify";
 import { useNavigate } from "../../../utils/SimpleRouter";
@@ -16,7 +16,12 @@ import { useNavigate } from "../../../utils/SimpleRouter";
 import Step1OrganizationData from "../../../components/wizard/steps/Step1OrganizationData";
 import Step2LocationData from "../../../components/wizard/steps/Step2LocationData";
 import Step3SectorTemplate from "../../../components/wizard/steps/Step3SectorTemplate";
+import Step3bHealthOrganization from "../../../components/wizard/steps/Step3bHealthOrganization";
+import Step3cHealthServices from "../../../components/wizard/steps/Step3cHealthServices";
 import Step5BranchOffices from "../../../components/wizard/steps/Step5BranchOffices";
+
+// Health integration components
+// Note: Using simplified integration to avoid infinite loops
 
 // APIs
 import { apiClient } from "../../../api/endpoints";
@@ -109,6 +114,59 @@ const OrganizationWizard: React.FC = () => {
 
   // Form validation state
   const [errors, setErrors] = useState<Partial<OrganizationData>>({});
+
+  // Health sector detection (simplified to avoid infinite loops)
+  const isHealthSector = formData.sector_template === 'salud';
+  
+  // Health data state (simplified)
+  const [healthData, setHealthData] = useState({});
+  const [healthErrors, setHealthErrors] = useState({});
+  const [selectedServices, setSelectedServices] = useState([]);
+  
+  // Ultra-simplified health functions to prevent infinite loops
+  const updateHealthData = (data) => {
+    setHealthData(prev => ({ ...prev, ...data }));
+    setHealthErrors({});
+  };
+  
+  const updateSelectedServices = (services) => {
+    setSelectedServices(services);
+  };
+  
+  // Simple validation functions
+  const validateHealthData = () => {
+    const errors = {};
+    if (isHealthSector) {
+      if (!healthData.codigo_prestador) {
+        errors.codigo_prestador = 'El código REPS es requerido';
+      }
+      if (!healthData.naturaleza_juridica) {
+        errors.naturaleza_juridica = 'La naturaleza jurídica es requerida';
+      }
+      if (!healthData.representante_nombre_completo) {
+        errors.representante_nombre_completo = 'El representante es requerido';
+      }
+      if (!healthData.representante_email) {
+        errors.representante_email = 'El email es requerido';
+      }
+    }
+    setHealthErrors(errors);
+    return errors;
+  };
+  
+  const validateServices = () => {
+    return isHealthSector && selectedServices.length === 0 ? ['Debe seleccionar al menos un servicio'] : [];
+  };
+  
+  // Simple computed values
+  const isHealthDataComplete = !isHealthSector || (
+    healthData.codigo_prestador && 
+    healthData.naturaleza_juridica && 
+    healthData.representante_nombre_completo && 
+    healthData.representante_email
+  );
+  
+  const isServicesComplete = !isHealthSector || selectedServices.length > 0;
 
   /**
    * Load saved draft from localStorage
@@ -343,17 +401,41 @@ const OrganizationWizard: React.FC = () => {
   };
 
   /**
-   * Handle next step
+   * Handle next step with health sector logic
    */
   const handleNext = () => {
-    if (validateStep(activeTab)) {
-      if (activeTab < 3) {
-        toggleTab(activeTab + 1);
+    // Regular validation for steps 1-3
+    if (activeTab <= 3) {
+      if (validateStep(activeTab)) {
+        if (activeTab === 3 && isHealthSector) {
+          // After sector selection, go to health organization info
+          toggleTab(4);
+        } else if (activeTab < 3) {
+          // Regular progression for steps 1-2
+          toggleTab(activeTab + 1);
+        } else {
+          // Non-health sector completion
+          handleSubmit();
+        }
       } else {
-        handleSubmit();
+        showToast('error', "Por favor corrige los errores antes de continuar");
       }
-    } else {
-      showToast('error', "Por favor corrige los errores antes de continuar");
+    } else if (activeTab === 4 && isHealthSector) {
+      // Health organization step
+      const healthValidationErrors = validateHealthData();
+      if (Object.keys(healthValidationErrors).length === 0) {
+        toggleTab(5); // Go to health services
+      } else {
+        showToast('error', "Complete la información de salud antes de continuar");
+      }
+    } else if (activeTab === 5 && isHealthSector) {
+      // Health services step
+      const servicesValidationErrors = validateServices();
+      if (servicesValidationErrors.length === 0) {
+        handleSubmit(); // Submit with health data
+      } else {
+        showToast('error', "Seleccione al menos un servicio de salud");
+      }
     }
   };
 
@@ -389,12 +471,23 @@ const OrganizationWizard: React.FC = () => {
       showToast('error', "Por favor completa todos los campos requeridos");
       return;
     }
+    
+    // Additional validation for health sector
+    if (isHealthSector) {
+      const healthValidationErrors = validateHealthData();
+      const servicesValidationErrors = validateServices();
+      
+      if (Object.keys(healthValidationErrors).length > 0 || servicesValidationErrors.length > 0) {
+        showToast('error', "Complete la información de salud antes de continuar");
+        return;
+      }
+    }
 
     setIsLoading(true);
 
     try {
       // Map frontend form data to backend expected format
-      const organizationPayload = {
+      const organizationPayload: any = {
         razon_social: formData.name,
         nombre_comercial: formData.name,
         nit: formData.nit || "", // Use real NIT from form
@@ -405,6 +498,12 @@ const OrganizationWizard: React.FC = () => {
         telefono_principal: (formData.phone || "").substring(0, 15), // Fixed: limit to 15 characters
         email_contacto: formData.email || "",
       };
+      
+      // Add health data if health sector  
+      if (isHealthSector) {
+        organizationPayload.healthProfile = healthData;
+        organizationPayload.healthServices = selectedServices;
+      }
 
       console.log(
         "[OrganizationWizard] Submitting organization data:",
@@ -436,7 +535,8 @@ const OrganizationWizard: React.FC = () => {
       setHasUnsavedChanges(false);
 
       // Navigate to success state
-      toggleTab(4); // Show success screen
+      const successStep = isHealthSector ? 6 : 4;
+      toggleTab(successStep); // Show success screen
 
       // Store organization data for potential branch office creation
       const createdOrganization = response.data.organization;
@@ -598,6 +698,46 @@ const OrganizationWizard: React.FC = () => {
                           Configuración
                         </span>
                       </a>
+                      
+                      {/* Health Organization Step */}
+                      {isHealthSector && (
+                        <a
+                          href="#"
+                          className={classnames("nav-link", {
+                            active: activeTab === 4,
+                            done: passedSteps.includes(4) && activeTab !== 4,
+                          })}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (passedSteps.includes(4)) toggleTab(4);
+                          }}
+                        >
+                          <span className="step-title">
+                            <i className="ri-hospital-line step-icon me-2"></i>
+                            Salud
+                          </span>
+                        </a>
+                      )}
+                      
+                      {/* Health Services Step */}
+                      {isHealthSector && (
+                        <a
+                          href="#"
+                          className={classnames("nav-link", {
+                            active: activeTab === 5,
+                            done: passedSteps.includes(5) && activeTab !== 5,
+                          })}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (passedSteps.includes(5)) toggleTab(5);
+                          }}
+                        >
+                          <span className="step-title">
+                            <i className="ri-service-line step-icon me-2"></i>
+                            Servicios
+                          </span>
+                        </a>
+                      )}
                     </nav>
                   </div>
 
@@ -676,9 +816,76 @@ const OrganizationWizard: React.FC = () => {
                           </button>
                           <button
                             type="button"
-                            className="btn btn-primary btn-label right ms-auto"
+                            className="btn btn-success btn-label right ms-auto"
                             onClick={handleNext}
                             disabled={isLoading}
+                          >
+                            <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
+                            {isHealthSector ? "Siguiente: Información de Salud" : "Completar Configuración"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Step 3b: Health Organization (Conditional) */}
+                    {activeTab === 4 && isHealthSector && (
+                      <div className="tab-pane active">
+                        <Step3bHealthOrganization
+                          data={healthData}
+                          errors={healthErrors}
+                          onChange={updateHealthData}
+                          organizationName={formData.name}
+                          showIntroduction={true}
+                        />
+
+                        <div className="d-flex align-items-start gap-3 mt-4">
+                          <button
+                            type="button"
+                            className="btn btn-light btn-label"
+                            onClick={handlePrevious}
+                          >
+                            <i className="ri-arrow-left-line label-icon align-middle fs-16 me-2"></i>
+                            Anterior
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-success btn-label right ms-auto"
+                            onClick={handleNext}
+                            disabled={!isHealthDataComplete}
+                          >
+                            <i className="ri-arrow-right-line label-icon align-middle fs-16 ms-2"></i>
+                            Siguiente: Servicios de Salud
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Step 3c: Health Services (Conditional) */}
+                    {activeTab === 5 && isHealthSector && (
+                      <div className="tab-pane active">
+                        <Step3cHealthServices
+                          selectedServices={selectedServices}
+                          nivelComplejidad={healthData.nivel_complejidad || ''}
+                          organizationName={formData.name}
+                          selectedSector={formData.sector_template}
+                          onChange={updateSelectedServices}
+                          showIntroduction={true}
+                        />
+
+                        <div className="d-flex align-items-start gap-3 mt-4">
+                          <button
+                            type="button"
+                            className="btn btn-light btn-label"
+                            onClick={handlePrevious}
+                          >
+                            <i className="ri-arrow-left-line label-icon align-middle fs-16 me-2"></i>
+                            Anterior
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-label right ms-auto"
+                            onClick={handleNext}
+                            disabled={isLoading || !isServicesComplete}
                           >
                             {isLoading ? (
                               <>
@@ -704,7 +911,7 @@ const OrganizationWizard: React.FC = () => {
                     )}
 
                     {/* Success Screen with Branch Office Option */}
-                    {activeTab === 4 && (
+                    {((activeTab === 4 && !isHealthSector) || (activeTab === 6 && isHealthSector)) && (
                       <div className="tab-pane active">
                         <div className="text-center py-5">
                           <div className="avatar-md mt-5 mb-4 mx-auto">
@@ -742,7 +949,7 @@ const OrganizationWizard: React.FC = () => {
                                 <button
                                   type="button"
                                   className="btn btn-primary btn-label"
-                                  onClick={() => toggleTab(5)} // Go to branch office step
+                                  onClick={() => toggleTab(isHealthSector ? 7 : 5)} // Go to branch office step
                                 >
                                   <i className="ri-add-line label-icon align-middle fs-16 me-2"></i>
                                   Sí, agregar sucursales
@@ -776,7 +983,7 @@ const OrganizationWizard: React.FC = () => {
                     )}
 
                     {/* Step 5: Branch Offices */}
-                    {activeTab === 5 && (
+                    {((activeTab === 5 && !isHealthSector) || (activeTab === 7 && isHealthSector)) && (
                       <div className="tab-pane active">
                         <Step5BranchOffices
                           organizationId={formData.organizationId || ""}

@@ -7,7 +7,7 @@ providing API serialization and validation.
 
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
-from .models import Organization, Location, SectorTemplate, AuditLog
+from .models import Organization, Location, SectorTemplate, AuditLog, HealthOrganization, HealthService
 
 
 class LocationSerializer(serializers.ModelSerializer):
@@ -861,3 +861,430 @@ class OrganizationHistorySerializer(serializers.Serializer):
             return value
         except Organization.DoesNotExist:
             raise serializers.ValidationError(_("Organización no encontrada."))
+
+
+class HealthOrganizationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for HealthOrganization model.
+    
+    Handles serialization and validation of health organization data,
+    including REPS validation and representative information.
+    """
+    
+    # Read-only computed fields
+    codigo_prestador_formatted = serializers.ReadOnlyField()
+    representante_documento_completo = serializers.ReadOnlyField()
+    servicios_activos = serializers.ReadOnlyField()
+    
+    # Organization relationship
+    organization_name = serializers.CharField(source='organization.razon_social', read_only=True)
+    organization_nit = serializers.CharField(source='organization.nit_completo', read_only=True)
+    
+    class Meta:
+        model = HealthOrganization
+        fields = [
+            'id',
+            'organization',
+            'organization_name',
+            'organization_nit',
+            
+            # REPS Information
+            'codigo_prestador',
+            'codigo_prestador_formatted',
+            'verificado_reps',
+            'fecha_verificacion_reps',
+            'datos_reps',
+            
+            # Classification
+            'naturaleza_juridica',
+            'tipo_prestador',
+            'nivel_complejidad',
+            
+            # Legal Representative
+            'representante_tipo_documento',
+            'representante_numero_documento',
+            'representante_nombre_completo',
+            'representante_telefono',
+            'representante_email',
+            'representante_documento_completo',
+            
+            # Qualification Information
+            'fecha_habilitacion',
+            'resolucion_habilitacion',
+            'registro_especial',
+            
+            # Additional Information
+            'servicios_habilitados_count',
+            'servicios_activos',
+            'observaciones_salud',
+            
+            # Audit fields
+            'is_active',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = [
+            'id',
+            'codigo_prestador_formatted',
+            'representante_documento_completo',
+            'servicios_activos',
+            'organization_name',
+            'organization_nit',
+            'servicios_habilitados_count',
+            'fecha_verificacion_reps',
+            'created_at',
+            'updated_at',
+        ]
+    
+    def validate_codigo_prestador(self, value):
+        """Validate provider code format and uniqueness."""
+        if not value or len(value) != 12:
+            raise serializers.ValidationError(
+                _('El código prestador debe tener exactamente 12 dígitos.')
+            )
+        
+        if not value.isdigit():
+            raise serializers.ValidationError(
+                _('El código prestador debe contener solo números.')
+            )
+        
+        # Check uniqueness (excluding current instance in updates)
+        queryset = HealthOrganization.objects.filter(codigo_prestador=value)
+        if self.instance:
+            queryset = queryset.exclude(pk=self.instance.pk)
+        
+        if queryset.exists():
+            raise serializers.ValidationError(
+                _('Ya existe una organización con este código prestador.')
+            )
+        
+        return value
+    
+    def validate_representante_email(self, value):
+        """Validate representative email format."""
+        if value and '@' not in value:
+            raise serializers.ValidationError(
+                _('Ingrese una dirección de email válida.')
+            )
+        return value
+    
+    def validate(self, attrs):
+        """Cross-field validation."""
+        nivel_complejidad = attrs.get('nivel_complejidad')
+        tipo_prestador = attrs.get('tipo_prestador')
+        
+        # Validate complexity level vs provider type
+        if nivel_complejidad == 'IV' and tipo_prestador not in ['HOSPITAL', 'CLINICA']:
+            raise serializers.ValidationError({
+                'nivel_complejidad': _('Solo hospitales y clínicas pueden tener nivel de complejidad IV.')
+            })
+        
+        return attrs
+
+
+class HealthOrganizationCreateSerializer(HealthOrganizationSerializer):
+    """
+    Serializer for creating HealthOrganization instances.
+    """
+    
+    organization = serializers.PrimaryKeyRelatedField(
+        queryset=Organization.objects.all(),
+        help_text=_('Organización base para el perfil de salud.')
+    )
+    
+    def validate_organization(self, value):
+        """Validate that organization belongs to health sector."""
+        if value.sector_economico != 'salud':
+            raise serializers.ValidationError(
+                _('La organización debe pertenecer al sector salud.')
+            )
+        
+        # Check if health profile already exists
+        if hasattr(value, 'health_profile'):
+            raise serializers.ValidationError(
+                _('Esta organización ya tiene un perfil de salud asociado.')
+            )
+        
+        return value
+
+
+class HealthOrganizationListSerializer(serializers.ModelSerializer):
+    """
+    Simplified serializer for HealthOrganization list views.
+    """
+    
+    organization_name = serializers.CharField(source='organization.razon_social', read_only=True)
+    codigo_prestador_formatted = serializers.ReadOnlyField()
+    servicios_activos = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = HealthOrganization
+        fields = [
+            'id',
+            'organization_name',
+            'codigo_prestador',
+            'codigo_prestador_formatted',
+            'nivel_complejidad',
+            'tipo_prestador',
+            'verificado_reps',
+            'servicios_activos',
+            'servicios_habilitados_count',
+            'created_at',
+        ]
+
+
+class HealthServiceSerializer(serializers.ModelSerializer):
+    """
+    Serializer for HealthService model.
+    
+    Handles serialization and validation of health service data,
+    including date validation and organization relationship.
+    """
+    
+    # Read-only computed fields
+    esta_vigente = serializers.ReadOnlyField()
+    dias_para_vencimiento = serializers.ReadOnlyField()
+    
+    # Related fields
+    health_organization_name = serializers.CharField(
+        source='health_organization.organization.razon_social', 
+        read_only=True
+    )
+    sede_nombre = serializers.CharField(source='sede_prestacion.nombre', read_only=True)
+    sede_direccion = serializers.CharField(source='sede_prestacion.direccion_completa', read_only=True)
+    
+    class Meta:
+        model = HealthService
+        fields = [
+            'id',
+            'health_organization',
+            'health_organization_name',
+            
+            # Service Information
+            'codigo_servicio',
+            'nombre_servicio',
+            'grupo_servicio',
+            'descripcion_servicio',
+            
+            # Dates and Validity
+            'fecha_habilitacion',
+            'fecha_vencimiento',
+            'esta_vigente',
+            'dias_para_vencimiento',
+            
+            # Status and Modality
+            'estado',
+            'modalidad',
+            
+            # Location and Capacity
+            'sede_prestacion',
+            'sede_nombre',
+            'sede_direccion',
+            'capacidad_instalada',
+            
+            # Regulatory Information
+            'numero_resolucion',
+            'entidad_autorizante',
+            'fecha_ultima_visita',
+            
+            # Additional Information
+            'observaciones',
+            'requiere_autorizacion',
+            'dias_atencion',
+            'horario_atencion',
+            
+            # Audit fields
+            'is_active',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = [
+            'id',
+            'esta_vigente',
+            'dias_para_vencimiento',
+            'health_organization_name',
+            'sede_nombre',
+            'sede_direccion',
+            'created_at',
+            'updated_at',
+        ]
+    
+    def validate_codigo_servicio(self, value):
+        """Validate service code format."""
+        if not value or not value.isdigit():
+            raise serializers.ValidationError(
+                _('El código del servicio debe ser numérico.')
+            )
+        
+        if len(value) < 3 or len(value) > 4:
+            raise serializers.ValidationError(
+                _('El código del servicio debe tener 3 o 4 dígitos.')
+            )
+        
+        return value
+    
+    def validate_sede_prestacion(self, value):
+        """Validate that sede belongs to the same organization."""
+        health_organization = self.initial_data.get('health_organization')
+        
+        if health_organization and hasattr(value, 'organization'):
+            # Get HealthOrganization instance
+            try:
+                health_org = HealthOrganization.objects.get(pk=health_organization)
+                if value.organization != health_org.organization:
+                    raise serializers.ValidationError(
+                        _('La sede debe pertenecer a la misma organización.')
+                    )
+            except HealthOrganization.DoesNotExist:
+                raise serializers.ValidationError(
+                    _('Organización de salud no encontrada.')
+                )
+        
+        return value
+    
+    def validate(self, attrs):
+        """Cross-field validation."""
+        fecha_habilitacion = attrs.get('fecha_habilitacion')
+        fecha_vencimiento = attrs.get('fecha_vencimiento')
+        
+        # Validate expiration date is after qualification date
+        if fecha_vencimiento and fecha_habilitacion:
+            if fecha_vencimiento <= fecha_habilitacion:
+                raise serializers.ValidationError({
+                    'fecha_vencimiento': _(
+                        'La fecha de vencimiento debe ser posterior a la fecha de habilitación.'
+                    )
+                })
+        
+        return attrs
+
+
+class HealthServiceCreateSerializer(HealthServiceSerializer):
+    """
+    Serializer for creating HealthService instances.
+    """
+    
+    health_organization = serializers.PrimaryKeyRelatedField(
+        queryset=HealthOrganization.objects.all(),
+        help_text=_('Organización de salud que prestará el servicio.')
+    )
+    
+    sede_prestacion = serializers.PrimaryKeyRelatedField(
+        queryset=Location.objects.all(),
+        help_text=_('Sede donde se prestará el servicio.')
+    )
+
+
+class HealthServiceListSerializer(serializers.ModelSerializer):
+    """
+    Simplified serializer for HealthService list views.
+    """
+    
+    health_organization_name = serializers.CharField(
+        source='health_organization.organization.razon_social', 
+        read_only=True
+    )
+    sede_nombre = serializers.CharField(source='sede_prestacion.nombre', read_only=True)
+    esta_vigente = serializers.ReadOnlyField()
+    dias_para_vencimiento = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = HealthService
+        fields = [
+            'id',
+            'health_organization_name',
+            'codigo_servicio',
+            'nombre_servicio',
+            'grupo_servicio',
+            'estado',
+            'modalidad',
+            'sede_nombre',
+            'fecha_habilitacion',
+            'fecha_vencimiento',
+            'esta_vigente',
+            'dias_para_vencimiento',
+            'created_at',
+        ]
+
+
+class HealthServicesByOrganizationSerializer(serializers.Serializer):
+    """
+    Serializer for filtering services by health organization.
+    """
+    
+    health_organization_id = serializers.UUIDField(
+        help_text=_('ID de la organización de salud.')
+    )
+    
+    grupo_servicio = serializers.ChoiceField(
+        choices=HealthService.GRUPO_SERVICIO_CHOICES,
+        required=False,
+        help_text=_('Filtrar por grupo de servicio.')
+    )
+    
+    estado = serializers.ChoiceField(
+        choices=HealthService.ESTADO_CHOICES,
+        required=False,
+        default='activo',
+        help_text=_('Filtrar por estado del servicio.')
+    )
+    
+    def validate_health_organization_id(self, value):
+        """Validate that the health organization exists."""
+        try:
+            health_org = HealthOrganization.objects.get(id=value)
+            return value
+        except HealthOrganization.DoesNotExist:
+            raise serializers.ValidationError(_('Organización de salud no encontrada.'))
+
+
+class REPSValidationSerializer(serializers.Serializer):
+    """
+    Serializer for REPS validation requests.
+    """
+    
+    codigo_prestador = serializers.CharField(
+        max_length=12,
+        min_length=12,
+        help_text=_('Código prestador de 12 dígitos para validar en REPS.')
+    )
+    
+    def validate_codigo_prestador(self, value):
+        """Validate provider code format."""
+        if not value.isdigit():
+            raise serializers.ValidationError(
+                _('El código prestador debe contener solo números.')
+            )
+        
+        return value
+
+
+class HealthServicesValidationSerializer(serializers.Serializer):
+    """
+    Serializer for validating services coherence with complexity level.
+    """
+    
+    services = serializers.ListField(
+        child=serializers.DictField(),
+        help_text=_('Lista de servicios a validar.')
+    )
+    
+    nivel_complejidad = serializers.ChoiceField(
+        choices=HealthOrganization.NIVEL_COMPLEJIDAD_CHOICES,
+        help_text=_('Nivel de complejidad de la organización.')
+    )
+    
+    def validate_services(self, value):
+        """Validate services list format."""
+        if not value:
+            raise serializers.ValidationError(
+                _('La lista de servicios no puede estar vacía.')
+            )
+        
+        for service in value:
+            if 'codigo_servicio' not in service:
+                raise serializers.ValidationError(
+                    _('Cada servicio debe incluir codigo_servicio.')
+                )
+        
+        return value

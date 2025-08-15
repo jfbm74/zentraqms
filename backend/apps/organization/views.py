@@ -20,7 +20,7 @@ from apps.authorization.drf_permissions import (
     CanUpdateOrganization,
     CanDeleteOrganization,
 )
-from .models import Organization, Location, SectorTemplate, AuditLog
+from .models import Organization, Location, SectorTemplate, AuditLog, HealthOrganization, HealthService
 from .signals import set_audit_context
 from .serializers import (
     OrganizationSerializer,
@@ -921,3 +921,462 @@ class SectorTemplateViewSet(viewsets.ModelViewSet):
         ]
 
         return Response({"sectors": sectors, "count": len(sectors)})
+
+
+class HealthViewSet(viewsets.ViewSet):
+    """
+    ViewSet for Health-related operations.
+    
+    Provides endpoints for REPS validation, health services catalog,
+    and health organization management.
+    """
+    
+    permission_classes = [permissions.IsAuthenticated]
+    
+    @action(detail=False, methods=['post'], url_path='validate-reps')
+    def validate_reps(self, request):
+        """
+        Validate a provider code against REPS (mock implementation).
+        
+        Args:
+            request: HTTP request with codigo_prestador in body
+            
+        Returns:
+            Response: Validation result with provider data if valid
+        """
+        codigo_prestador = request.data.get('codigo_prestador')
+        
+        if not codigo_prestador:
+            return Response(
+                {'error': _('El código prestador es requerido.')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validar formato básico
+        if len(codigo_prestador) != 12 or not codigo_prestador.isdigit():
+            return Response(
+                {
+                    'isValid': False,
+                    'message': _('El código prestador debe tener exactamente 12 dígitos.'),
+                    'providerData': None
+                },
+                status=status.HTTP_200_OK
+            )
+        
+        # Mock validation - Simular consulta a REPS
+        # En producción, aquí se haría la consulta real al API de REPS del MinSalud
+        is_valid = self._mock_reps_validation(codigo_prestador)
+        
+        if is_valid:
+            provider_data = self._get_mock_provider_data(codigo_prestador)
+            
+            return Response({
+                'isValid': True,
+                'message': _('Código válido en REPS'),
+                'providerData': provider_data,
+                'lastValidated': timezone.now().isoformat()
+            })
+        else:
+            return Response({
+                'isValid': False,
+                'message': _('Código no encontrado en REPS'),
+                'providerData': None
+            })
+    
+    def _mock_reps_validation(self, codigo_prestador):
+        """
+        Mock REPS validation logic.
+        
+        Args:
+            codigo_prestador (str): Provider code to validate
+            
+        Returns:
+            bool: True if code is considered valid
+        """
+        # Simular validación - códigos que empiecen con ciertos números son válidos
+        valid_prefixes = ['11', '25', '76', '05', '13', '17', '19', '20', '23', '27', '41', '47', '50', '52', '54', '63', '66', '68', '70', '73', '81', '85', '86', '88', '91', '94', '95', '97', '99']
+        prefix = codigo_prestador[:2]
+        
+        # También validar que no sea una secuencia obvia como 111111111111
+        is_sequence = len(set(codigo_prestador)) <= 2
+        
+        return prefix in valid_prefixes and not is_sequence
+    
+    def _get_mock_provider_data(self, codigo_prestador):
+        """
+        Get mock provider data for testing.
+        
+        Args:
+            codigo_prestador (str): Provider code
+            
+        Returns:
+            dict: Mock provider data
+        """
+        # Mapear códigos a datos mock
+        prefix = codigo_prestador[:2]
+        
+        mock_data = {
+            '11': {
+                'nombre': 'IPS DEMO BOGOTÁ',
+                'departamento': 'Bogotá D.C.',
+                'municipio': 'Bogotá',
+                'direccion': 'Calle 100 #15-20'
+            },
+            '25': {
+                'nombre': 'CLÍNICA DEMO CUNDINAMARCA',
+                'departamento': 'Cundinamarca',
+                'municipio': 'Soacha',
+                'direccion': 'Carrera 50 #25-30'
+            },
+            '76': {
+                'nombre': 'HOSPITAL DEMO VALLE',
+                'departamento': 'Valle del Cauca',
+                'municipio': 'Cali',
+                'direccion': 'Avenida 6N #23-45'
+            },
+            '05': {
+                'nombre': 'CENTRO MÉDICO DEMO ANTIOQUIA',
+                'departamento': 'Antioquia',
+                'municipio': 'Medellín',
+                'direccion': 'Carrera 70 #52-21'
+            }
+        }
+        
+        return mock_data.get(prefix, {
+            'nombre': f'IPS DEMO {prefix}',
+            'departamento': 'Colombia',
+            'municipio': 'Ciudad Demo',
+            'direccion': 'Dirección Demo'
+        })
+    
+    @action(detail=False, methods=['get'], url_path='services-catalog')
+    def services_catalog(self, request):
+        """
+        Get health services catalog according to Resolución 3100/2019.
+        
+        Args:
+            request: HTTP request
+            
+        Returns:
+            Response: List of available health services
+        """
+        # Catálogo simplificado de servicios de salud según Res. 3100/2019
+        catalog = [
+            # CONSULTA EXTERNA
+            {
+                'codigo': '101',
+                'nombre': 'Medicina General',
+                'grupo': 'consulta_externa',
+                'grupo_display': 'Consulta Externa',
+                'complejidad_minima': 'I',
+                'descripcion': 'Atención en medicina general'
+            },
+            {
+                'codigo': '201',
+                'nombre': 'Medicina Interna',
+                'grupo': 'consulta_externa',
+                'grupo_display': 'Consulta Externa',
+                'complejidad_minima': 'II',
+                'descripcion': 'Atención especializada en medicina interna'
+            },
+            {
+                'codigo': '329',
+                'nombre': 'Ortopedia y Traumatología',
+                'grupo': 'consulta_externa',
+                'grupo_display': 'Consulta Externa',
+                'complejidad_minima': 'II',
+                'descripcion': 'Atención especializada en ortopedia y traumatología'
+            },
+            {
+                'codigo': '338',
+                'nombre': 'Fisiatría',
+                'grupo': 'consulta_externa',
+                'grupo_display': 'Consulta Externa',
+                'complejidad_minima': 'II',
+                'descripcion': 'Medicina física y rehabilitación'
+            },
+            {
+                'codigo': '344',
+                'nombre': 'Fisioterapia',
+                'grupo': 'consulta_externa',
+                'grupo_display': 'Consulta Externa',
+                'complejidad_minima': 'I',
+                'descripcion': 'Terapia física y rehabilitación'
+            },
+            
+            # QUIRÚRGICOS
+            {
+                'codigo': '301',
+                'nombre': 'Cirugía Ortopédica',
+                'grupo': 'quirurgicos',
+                'grupo_display': 'Quirúrgicos',
+                'complejidad_minima': 'II',
+                'descripcion': 'Cirugía especializada en sistema musculoesquelético'
+            },
+            {
+                'codigo': '304',
+                'nombre': 'Cirugía de la Mano',
+                'grupo': 'quirurgicos',
+                'grupo_display': 'Quirúrgicos',
+                'complejidad_minima': 'III',
+                'descripcion': 'Cirugía especializada de la mano'
+            },
+            {
+                'codigo': '310',
+                'nombre': 'Cirugía General',
+                'grupo': 'quirurgicos',
+                'grupo_display': 'Quirúrgicos',
+                'complejidad_minima': 'II',
+                'descripcion': 'Cirugía general básica'
+            },
+            
+            # APOYO DIAGNÓSTICO
+            {
+                'codigo': '706',
+                'nombre': 'Radiología e Imágenes Diagnósticas',
+                'grupo': 'apoyo_diagnostico',
+                'grupo_display': 'Apoyo Diagnóstico',
+                'complejidad_minima': 'I',
+                'descripcion': 'Servicios de radiología e imágenes diagnósticas'
+            },
+            {
+                'codigo': '712',
+                'nombre': 'Toma de Muestras de Laboratorio Clínico',
+                'grupo': 'apoyo_diagnostico',
+                'grupo_display': 'Apoyo Diagnóstico',
+                'complejidad_minima': 'I',
+                'descripcion': 'Toma de muestras para análisis de laboratorio'
+            },
+            {
+                'codigo': '728',
+                'nombre': 'Laboratorio Clínico',
+                'grupo': 'apoyo_diagnostico',
+                'grupo_display': 'Apoyo Diagnóstico',
+                'complejidad_minima': 'I',
+                'descripcion': 'Análisis de laboratorio clínico'
+            },
+            
+            # INTERNACIÓN
+            {
+                'codigo': '101',
+                'nombre': 'Hospitalización General Adultos',
+                'grupo': 'internacion',
+                'grupo_display': 'Internación',
+                'complejidad_minima': 'I',
+                'descripcion': 'Hospitalización general para adultos'
+            },
+            {
+                'codigo': '102',
+                'nombre': 'Hospitalización General Pediátrica',
+                'grupo': 'internacion',
+                'grupo_display': 'Internación',
+                'complejidad_minima': 'II',
+                'descripcion': 'Hospitalización general pediátrica'
+            },
+            {
+                'codigo': '120',
+                'nombre': 'Cuidado Intermedio Adultos',
+                'grupo': 'internacion',
+                'grupo_display': 'Internación',
+                'complejidad_minima': 'II',
+                'descripcion': 'Unidad de cuidado intermedio para adultos'
+            },
+            
+            # URGENCIAS
+            {
+                'codigo': '501',
+                'nombre': 'Urgencias',
+                'grupo': 'urgencias',
+                'grupo_display': 'Urgencias',
+                'complejidad_minima': 'I',
+                'descripcion': 'Atención de urgencias médicas'
+            },
+            {
+                'codigo': '502',
+                'nombre': 'Observación',
+                'grupo': 'urgencias',
+                'grupo_display': 'Urgencias',
+                'complejidad_minima': 'I',
+                'descripcion': 'Observación médica en urgencias'
+            },
+            
+            # CUIDADOS INTENSIVOS
+            {
+                'codigo': '312',
+                'nombre': 'UCI Adultos',
+                'grupo': 'cuidados_intensivos',
+                'grupo_display': 'Cuidados Intensivos',
+                'complejidad_minima': 'III',
+                'descripcion': 'Unidad de cuidados intensivos para adultos'
+            },
+            {
+                'codigo': '314',
+                'nombre': 'UCI Pediátrica',
+                'grupo': 'cuidados_intensivos',
+                'grupo_display': 'Cuidados Intensivos',
+                'complejidad_minima': 'III',
+                'descripcion': 'Unidad de cuidados intensivos pediátrica'
+            }
+        ]
+        
+        # Filtrar por grupo si se solicita
+        grupo_filter = request.query_params.get('grupo')
+        if grupo_filter:
+            catalog = [s for s in catalog if s['grupo'] == grupo_filter]
+        
+        # Filtrar por nivel de complejidad si se solicita
+        complejidad_filter = request.query_params.get('complejidad')
+        if complejidad_filter:
+            # Mapear niveles de complejidad a números para comparación
+            complejidad_map = {'I': 1, 'II': 2, 'III': 3, 'IV': 4}
+            nivel_solicitado = complejidad_map.get(complejidad_filter, 0)
+            catalog = [
+                s for s in catalog 
+                if complejidad_map.get(s['complejidad_minima'], 0) <= nivel_solicitado
+            ]
+        
+        # Obtener grupos únicos para metadata
+        grupos = list(set([s['grupo'] for s in catalog]))
+        grupos_display = list(set([(s['grupo'], s['grupo_display']) for s in catalog]))
+        
+        return Response({
+            'services': catalog,
+            'count': len(catalog),
+            'grupos': grupos,
+            'grupos_display': dict(grupos_display),
+            'filters_applied': {
+                'grupo': grupo_filter,
+                'complejidad': complejidad_filter
+            }
+        })
+    
+    @action(detail=False, methods=['post'], url_path='validate-services')
+    def validate_services(self, request):
+        """
+        Validate services coherence with complexity level.
+        
+        Args:
+            request: HTTP request with services and nivel_complejidad
+            
+        Returns:
+            Response: Validation result
+        """
+        services = request.data.get('services', [])
+        nivel_complejidad = request.data.get('nivel_complejidad')
+        
+        if not services or not nivel_complejidad:
+            return Response(
+                {'error': _('Los servicios y nivel de complejidad son requeridos.')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Mapear niveles de complejidad
+        complejidad_map = {'I': 1, 'II': 2, 'III': 3, 'IV': 4}
+        nivel_organizacion = complejidad_map.get(nivel_complejidad, 0)
+        
+        if not nivel_organizacion:
+            return Response(
+                {'error': _('Nivel de complejidad inválido.')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Obtener catálogo de servicios
+        catalog_response = self.services_catalog(request)
+        catalog = catalog_response.data['services']
+        
+        # Crear diccionario de servicios por código
+        services_dict = {s['codigo']: s for s in catalog}
+        
+        validation_results = []
+        valid_count = 0
+        invalid_count = 0
+        
+        for service in services:
+            codigo_servicio = service.get('codigo_servicio')
+            service_info = services_dict.get(codigo_servicio)
+            
+            if not service_info:
+                validation_results.append({
+                    'codigo_servicio': codigo_servicio,
+                    'nombre_servicio': service.get('nombre_servicio', 'Desconocido'),
+                    'is_valid': False,
+                    'reason': _('Servicio no encontrado en catálogo')
+                })
+                invalid_count += 1
+                continue
+            
+            # Validar nivel de complejidad
+            complejidad_minima = complejidad_map.get(service_info['complejidad_minima'], 0)
+            
+            if nivel_organizacion >= complejidad_minima:
+                validation_results.append({
+                    'codigo_servicio': codigo_servicio,
+                    'nombre_servicio': service_info['nombre'],
+                    'is_valid': True,
+                    'reason': _('Servicio compatible con nivel de complejidad')
+                })
+                valid_count += 1
+            else:
+                validation_results.append({
+                    'codigo_servicio': codigo_servicio,
+                    'nombre_servicio': service_info['nombre'],
+                    'is_valid': False,
+                    'reason': _(
+                        'Servicio requiere nivel {} pero organización es nivel {}'
+                    ).format(service_info['complejidad_minima'], nivel_complejidad)
+                })
+                invalid_count += 1
+        
+        return Response({
+            'validation_results': validation_results,
+            'summary': {
+                'total_services': len(services),
+                'valid_services': valid_count,
+                'invalid_services': invalid_count,
+                'organization_level': nivel_complejidad,
+                'overall_valid': invalid_count == 0
+            }
+        })
+    
+    @action(detail=False, methods=['get'], url_path='complexity-levels')
+    def complexity_levels(self, request):
+        """
+        Get available complexity levels with descriptions.
+        
+        Args:
+            request: HTTP request
+            
+        Returns:
+            Response: List of complexity levels
+        """
+        levels = [
+            {
+                'code': 'I',
+                'name': 'Nivel I - Baja Complejidad',
+                'description': 'Atención básica, consulta externa, urgencias de baja complejidad',
+                'services_allowed': ['Medicina General', 'Urgencias', 'Hospitalización básica']
+            },
+            {
+                'code': 'II',
+                'name': 'Nivel II - Mediana Complejidad',
+                'description': 'Especialidades básicas, cirugía ambulatoria, hospitalización',
+                'services_allowed': ['Especialidades médicas', 'Cirugía general', 'UCI básica']
+            },
+            {
+                'code': 'III',
+                'name': 'Nivel III - Alta Complejidad',
+                'description': 'Especialidades avanzadas, alta tecnología, UCI especializada',
+                'services_allowed': ['Cirugías complejas', 'UCI especializada', 'Sub-especialidades']
+            },
+            {
+                'code': 'IV',
+                'name': 'Nivel IV - Máxima Complejidad',
+                'description': 'Procedimientos de máxima complejidad, investigación, trasplantes',
+                'services_allowed': ['Trasplantes', 'Cirugía cardiovascular', 'Neurocirugia compleja']
+            }
+        ]
+        
+        return Response({
+            'complexity_levels': levels,
+            'count': len(levels)
+        })

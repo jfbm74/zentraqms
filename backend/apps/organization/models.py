@@ -15,6 +15,7 @@ from django.core.validators import (
 )
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 from apps.common.models import FullBaseModel
 
 
@@ -1083,3 +1084,555 @@ class AuditLog(FullBaseModel):
 
         except Exception as e:
             return False, f"Error durante rollback: {str(e)}", None
+
+
+class HealthOrganization(FullBaseModel):
+    """
+    Extension for health sector organizations (IPS - Instituciones Prestadoras de Servicios de Salud).
+    
+    This model stores additional fields required for Colombian health institutions
+    to comply with Sistema Único de Habilitación (SUH) and REPS requirements.
+    """
+    
+    # Naturaleza Jurídica Choices (específicos para salud)
+    NATURALEZA_JURIDICA_CHOICES = [
+        ('privada', _('Privada')),
+        ('publica', _('Pública')),
+        ('mixta', _('Mixta')),
+    ]
+    
+    # Nivel de Complejidad Choices (según resolución 3100/2019)
+    NIVEL_COMPLEJIDAD_CHOICES = [
+        ('I', _('Nivel I - Baja Complejidad')),
+        ('II', _('Nivel II - Mediana Complejidad')),
+        ('III', _('Nivel III - Alta Complejidad')),
+        ('IV', _('Nivel IV - Máxima Complejidad')),
+    ]
+    
+    # Tipo de Prestador Choices
+    TIPO_PRESTADOR_CHOICES = [
+        ('IPS', _('IPS - Institución Prestadora de Servicios')),
+        ('HOSPITAL', _('Hospital')),
+        ('CLINICA', _('Clínica')),
+        ('CENTRO_MEDICO', _('Centro Médico')),
+        ('LABORATORIO', _('Laboratorio Clínico')),
+        ('CENTRO_DIAGNOSTICO', _('Centro de Diagnóstico')),
+        ('AMBULATORIO', _('Centro Ambulatorio')),
+        ('OTRO', _('Otro')),
+    ]
+    
+    # Tipo de Documento Choices para representante legal
+    TIPO_DOCUMENTO_CHOICES = [
+        ('CC', _('Cédula de Ciudadanía')),
+        ('CE', _('Cédula de Extranjería')),
+        ('PA', _('Pasaporte')),
+        ('NIT', _('NIT')),
+        ('TI', _('Tarjeta de Identidad')),
+    ]
+    
+    # Relación con Organization (OneToOne)
+    organization = models.OneToOneField(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='health_profile',
+        verbose_name=_('organización'),
+        help_text=_('Organización base a la que pertenece este perfil de salud.')
+    )
+    
+    # === INFORMACIÓN REPS ===
+    codigo_prestador = models.CharField(
+        _('código prestador REPS'),
+        max_length=12,
+        unique=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\d{12}$',
+                message=_('El código prestador debe tener exactamente 12 dígitos.')
+            )
+        ],
+        help_text=_('Código de 12 dígitos asignado por el Ministerio de Salud en REPS.')
+    )
+    
+    verificado_reps = models.BooleanField(
+        _('verificado en REPS'),
+        default=False,
+        help_text=_('Indica si el código prestador ha sido verificado contra REPS.')
+    )
+    
+    fecha_verificacion_reps = models.DateTimeField(
+        _('fecha verificación REPS'),
+        null=True,
+        blank=True,
+        help_text=_('Fecha y hora de la última verificación contra REPS.')
+    )
+    
+    datos_reps = models.JSONField(
+        _('datos REPS'),
+        null=True,
+        blank=True,
+        help_text=_('Datos adicionales obtenidos de REPS (nombre, dirección, etc.).')
+    )
+    
+    # === CLASIFICACIÓN INSTITUCIONAL ===
+    naturaleza_juridica = models.CharField(
+        _('naturaleza jurídica'),
+        max_length=10,
+        choices=NATURALEZA_JURIDICA_CHOICES,
+        help_text=_('Naturaleza jurídica de la institución de salud.')
+    )
+    
+    tipo_prestador = models.CharField(
+        _('tipo de prestador'),
+        max_length=20,
+        choices=TIPO_PRESTADOR_CHOICES,
+        default='IPS',
+        help_text=_('Tipo de prestador de servicios de salud.')
+    )
+    
+    nivel_complejidad = models.CharField(
+        _('nivel de complejidad'),
+        max_length=3,
+        choices=NIVEL_COMPLEJIDAD_CHOICES,
+        help_text=_('Nivel de complejidad según capacidad resolutiva.')
+    )
+    
+    # === REPRESENTANTE LEGAL ===
+    representante_tipo_documento = models.CharField(
+        _('tipo documento representante'),
+        max_length=3,
+        choices=TIPO_DOCUMENTO_CHOICES,
+        help_text=_('Tipo de documento del representante legal.')
+    )
+    
+    representante_numero_documento = models.CharField(
+        _('número documento representante'),
+        max_length=20,
+        help_text=_('Número de documento del representante legal.')
+    )
+    
+    representante_nombre_completo = models.CharField(
+        _('nombre completo representante'),
+        max_length=200,
+        help_text=_('Nombre completo del representante legal.')
+    )
+    
+    representante_telefono = models.CharField(
+        _('teléfono representante'),
+        max_length=15,
+        validators=[
+            RegexValidator(
+                regex=r'^\+?[\d\s\-\(\)]{7,15}$',
+                message=_('Número de teléfono debe tener un formato válido.')
+            )
+        ],
+        help_text=_('Teléfono de contacto del representante legal.')
+    )
+    
+    representante_email = models.EmailField(
+        _('email representante'),
+        help_text=_('Correo electrónico del representante legal.')
+    )
+    
+    # === INFORMACIÓN DE HABILITACIÓN ===
+    fecha_habilitacion = models.DateField(
+        _('fecha de habilitación'),
+        null=True,
+        blank=True,
+        help_text=_('Fecha de habilitación inicial de la institución.')
+    )
+    
+    resolucion_habilitacion = models.CharField(
+        _('resolución de habilitación'),
+        max_length=50,
+        blank=True,
+        help_text=_('Número de resolución que otorga la habilitación.')
+    )
+    
+    registro_especial = models.CharField(
+        _('registro especial'),
+        max_length=50,
+        blank=True,
+        help_text=_('Número de registro especial si aplica.')
+    )
+    
+    # === INFORMACIÓN ADICIONAL ===
+    servicios_habilitados_count = models.PositiveIntegerField(
+        _('cantidad servicios habilitados'),
+        default=0,
+        help_text=_('Contador de servicios habilitados (se actualiza automáticamente).')
+    )
+    
+    observaciones_salud = models.TextField(
+        _('observaciones de salud'),
+        blank=True,
+        max_length=1000,
+        help_text=_('Observaciones específicas del perfil de salud.')
+    )
+    
+    class Meta:
+        verbose_name = _('organización de salud')
+        verbose_name_plural = _('organizaciones de salud')
+        ordering = ['organization__razon_social']
+        indexes = [
+            models.Index(fields=['codigo_prestador']),
+            models.Index(fields=['nivel_complejidad']),
+            models.Index(fields=['tipo_prestador']),
+            models.Index(fields=['naturaleza_juridica']),
+            models.Index(fields=['verificado_reps']),
+        ]
+        constraints = [
+            # Asegurar que el código prestador sea único entre registros activos
+            models.UniqueConstraint(
+                fields=['codigo_prestador'],
+                condition=models.Q(deleted_at__isnull=True),
+                name='unique_active_codigo_prestador'
+            ),
+        ]
+    
+    def __str__(self):
+        """Return string representation of the health organization."""
+        return f"{self.organization.razon_social} - {self.codigo_prestador}"
+    
+    @property
+    def codigo_prestador_formatted(self):
+        """Return formatted provider code (XXXX-XXXX-XXXX)."""
+        if len(self.codigo_prestador) == 12:
+            return f"{self.codigo_prestador[:4]}-{self.codigo_prestador[4:8]}-{self.codigo_prestador[8:]}"
+        return self.codigo_prestador
+    
+    @property
+    def representante_documento_completo(self):
+        """Return complete legal representative document."""
+        return f"{self.representante_tipo_documento} {self.representante_numero_documento}"
+    
+    @property
+    def servicios_activos(self):
+        """Return count of active health services."""
+        return self.services.filter(estado='activo').count()
+    
+    def clean(self):
+        """Validate health organization data."""
+        super().clean()
+        
+        # Validar que la organización base sea del sector salud
+        if hasattr(self, 'organization') and self.organization:
+            if self.organization.sector_economico != 'salud':
+                raise ValidationError({
+                    'organization': _('La organización debe pertenecer al sector salud.')
+                })
+        
+        # Validar formato del código prestador
+        if self.codigo_prestador and len(self.codigo_prestador) != 12:
+            raise ValidationError({
+                'codigo_prestador': _('El código prestador debe tener exactamente 12 dígitos.')
+            })
+        
+        # Validar coherencia de nivel de complejidad con tipo de prestador
+        if self.nivel_complejidad == 'IV' and self.tipo_prestador not in ['HOSPITAL', 'CLINICA']:
+            raise ValidationError({
+                'nivel_complejidad': _('Solo hospitales y clínicas pueden tener nivel de complejidad IV.')
+            })
+    
+    def actualizar_contador_servicios(self):
+        """Update the services counter."""
+        self.servicios_habilitados_count = self.services.filter(estado='activo').count()
+        self.save(update_fields=['servicios_habilitados_count'])
+    
+    @classmethod
+    def get_by_codigo_prestador(cls, codigo):
+        """Get health organization by provider code."""
+        try:
+            return cls.objects.get(codigo_prestador=codigo, deleted_at__isnull=True)
+        except cls.DoesNotExist:
+            return None
+
+
+class HealthService(FullBaseModel):
+    """
+    Health services enabled for the organization according to REPS.
+    
+    This model stores all health services that the organization is authorized
+    to provide according to Resolución 3100/2019 and REPS registration.
+    """
+    
+    # Estado del Servicio Choices
+    ESTADO_CHOICES = [
+        ('activo', _('Activo')),
+        ('suspendido', _('Suspendido')),
+        ('cancelado', _('Cancelado')),
+        ('en_tramite', _('En Trámite')),
+    ]
+    
+    # Modalidad del Servicio Choices
+    MODALIDAD_CHOICES = [
+        ('intramural', _('Intramural')),
+        ('extramural', _('Extramural')),
+        ('telemedicina', _('Telemedicina')),
+        ('domiciliaria', _('Domiciliaria')),
+    ]
+    
+    # Grupo de Servicios Choices (según Res. 3100/2019)
+    GRUPO_SERVICIO_CHOICES = [
+        ('consulta_externa', _('Consulta Externa')),
+        ('apoyo_diagnostico', _('Apoyo Diagnóstico')),
+        ('quirurgicos', _('Quirúrgicos')),
+        ('internacion', _('Internación')),
+        ('cuidados_intensivos', _('Cuidados Intensivos')),
+        ('urgencias', _('Urgencias')),
+        ('otros', _('Otros')),
+    ]
+    
+    # Relación con HealthOrganization
+    health_organization = models.ForeignKey(
+        HealthOrganization,
+        on_delete=models.CASCADE,
+        related_name='services',
+        verbose_name=_('organización de salud'),
+        help_text=_('Organización de salud que presta este servicio.')
+    )
+    
+    # === INFORMACIÓN DEL SERVICIO ===
+    codigo_servicio = models.CharField(
+        _('código del servicio'),
+        max_length=10,
+        validators=[
+            RegexValidator(
+                regex=r'^\d{3,4}$',
+                message=_('El código del servicio debe tener 3 o 4 dígitos.')
+            )
+        ],
+        help_text=_('Código del servicio según Resolución 3100/2019.')
+    )
+    
+    nombre_servicio = models.CharField(
+        _('nombre del servicio'),
+        max_length=200,
+        help_text=_('Nombre completo del servicio de salud.')
+    )
+    
+    grupo_servicio = models.CharField(
+        _('grupo del servicio'),
+        max_length=25,
+        choices=GRUPO_SERVICIO_CHOICES,
+        help_text=_('Grupo al que pertenece el servicio.')
+    )
+    
+    descripcion_servicio = models.TextField(
+        _('descripción del servicio'),
+        blank=True,
+        max_length=500,
+        help_text=_('Descripción detallada del servicio.')
+    )
+    
+    # === FECHAS Y VIGENCIA ===
+    fecha_habilitacion = models.DateField(
+        _('fecha de habilitación'),
+        help_text=_('Fecha en que se habilitó el servicio.')
+    )
+    
+    fecha_vencimiento = models.DateField(
+        _('fecha de vencimiento'),
+        null=True,
+        blank=True,
+        help_text=_('Fecha de vencimiento de la habilitación (si aplica).')
+    )
+    
+    # === ESTADO Y MODALIDAD ===
+    estado = models.CharField(
+        _('estado'),
+        max_length=15,
+        choices=ESTADO_CHOICES,
+        default='activo',
+        help_text=_('Estado actual del servicio.')
+    )
+    
+    modalidad = models.CharField(
+        _('modalidad'),
+        max_length=15,
+        choices=MODALIDAD_CHOICES,
+        default='intramural',
+        help_text=_('Modalidad de prestación del servicio.')
+    )
+    
+    # === UBICACIÓN Y CAPACIDAD ===
+    sede_prestacion = models.ForeignKey(
+        Location,
+        on_delete=models.CASCADE,
+        related_name='health_services',
+        verbose_name=_('sede de prestación'),
+        help_text=_('Sede donde se presta el servicio.')
+    )
+    
+    capacidad_instalada = models.PositiveIntegerField(
+        _('capacidad instalada'),
+        null=True,
+        blank=True,
+        help_text=_('Capacidad instalada para el servicio (camas, consultorios, etc.).')
+    )
+    
+    # === INFORMACIÓN REGULATORIA ===
+    numero_resolucion = models.CharField(
+        _('número de resolución'),
+        max_length=50,
+        blank=True,
+        help_text=_('Número de resolución que autoriza el servicio.')
+    )
+    
+    entidad_autorizante = models.CharField(
+        _('entidad autorizante'),
+        max_length=100,
+        blank=True,
+        help_text=_('Entidad que autorizó el servicio (Secretaría de Salud, etc.).')
+    )
+    
+    fecha_ultima_visita = models.DateField(
+        _('fecha última visita'),
+        null=True,
+        blank=True,
+        help_text=_('Fecha de la última visita de habilitación o seguimiento.')
+    )
+    
+    # === INFORMACIÓN ADICIONAL ===
+    observaciones = models.TextField(
+        _('observaciones'),
+        blank=True,
+        max_length=500,
+        help_text=_('Observaciones adicionales sobre el servicio.')
+    )
+    
+    requiere_autorizacion = models.BooleanField(
+        _('requiere autorización'),
+        default=False,
+        help_text=_('Indica si el servicio requiere autorización previa.')
+    )
+    
+    dias_atencion = models.CharField(
+        _('días de atención'),
+        max_length=50,
+        blank=True,
+        help_text=_('Días de la semana en que se presta el servicio.')
+    )
+    
+    horario_atencion = models.CharField(
+        _('horario de atención'),
+        max_length=100,
+        blank=True,
+        help_text=_('Horario de atención del servicio.')
+    )
+    
+    class Meta:
+        verbose_name = _('servicio de salud')
+        verbose_name_plural = _('servicios de salud')
+        ordering = ['grupo_servicio', 'nombre_servicio']
+        indexes = [
+            models.Index(fields=['codigo_servicio']),
+            models.Index(fields=['estado']),
+            models.Index(fields=['grupo_servicio']),
+            models.Index(fields=['modalidad']),
+            models.Index(fields=['fecha_vencimiento']),
+            models.Index(fields=['health_organization', 'estado']),
+        ]
+        constraints = [
+            # Un servicio por código por organización por sede
+            models.UniqueConstraint(
+                fields=['health_organization', 'codigo_servicio', 'sede_prestacion'],
+                condition=models.Q(deleted_at__isnull=True),
+                name='unique_service_per_organization_location'
+            ),
+        ]
+    
+    def __str__(self):
+        """Return string representation of the health service."""
+        return f"{self.codigo_servicio} - {self.nombre_servicio}"
+    
+    @property
+    def esta_vigente(self):
+        """Check if service is currently valid."""
+        from django.utils import timezone
+        
+        if self.estado != 'activo':
+            return False
+        
+        if self.fecha_vencimiento:
+            return timezone.now().date() <= self.fecha_vencimiento
+        
+        return True
+    
+    @property
+    def dias_para_vencimiento(self):
+        """Get days until expiration."""
+        from django.utils import timezone
+        
+        if not self.fecha_vencimiento:
+            return None
+        
+        today = timezone.now().date()
+        if self.fecha_vencimiento > today:
+            return (self.fecha_vencimiento - today).days
+        else:
+            return 0  # Already expired
+    
+    def clean(self):
+        """Validate health service data."""
+        super().clean()
+        
+        # Validar que la fecha de vencimiento sea posterior a la habilitación
+        if self.fecha_vencimiento and self.fecha_habilitacion:
+            if self.fecha_vencimiento <= self.fecha_habilitacion:
+                raise ValidationError({
+                    'fecha_vencimiento': _('La fecha de vencimiento debe ser posterior a la fecha de habilitación.')
+                })
+        
+        # Validar que la sede pertenezca a la misma organización
+        if hasattr(self, 'sede_prestacion') and hasattr(self, 'health_organization'):
+            if self.sede_prestacion.organization != self.health_organization.organization:
+                raise ValidationError({
+                    'sede_prestacion': _('La sede debe pertenecer a la misma organización.')
+                })
+    
+    def save(self, *args, **kwargs):
+        """Override save to update organization service counter."""
+        super().save(*args, **kwargs)
+        
+        # Actualizar contador de servicios en la organización
+        if hasattr(self, 'health_organization'):
+            self.health_organization.actualizar_contador_servicios()
+    
+    def delete(self, *args, **kwargs):
+        """Override delete to update organization service counter."""
+        health_org = self.health_organization
+        super().delete(*args, **kwargs)
+        
+        # Actualizar contador de servicios en la organización
+        if health_org:
+            health_org.actualizar_contador_servicios()
+    
+    @classmethod
+    def get_servicios_por_grupo(cls, health_organization, grupo):
+        """Get services by group for a health organization."""
+        return cls.objects.filter(
+            health_organization=health_organization,
+            grupo_servicio=grupo,
+            estado='activo'
+        ).order_by('nombre_servicio')
+    
+    @classmethod
+    def get_servicios_proximos_vencer(cls, health_organization, dias=60):
+        """Get services expiring within specified days."""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        fecha_limite = timezone.now().date() + timedelta(days=dias)
+        
+        return cls.objects.filter(
+            health_organization=health_organization,
+            estado='activo',
+            fecha_vencimiento__lte=fecha_limite,
+            fecha_vencimiento__gte=timezone.now().date()
+        ).order_by('fecha_vencimiento')
+    
+    def marcar_como_vencido(self):
+        """Mark service as expired."""
+        self.estado = 'suspendido'
+        self.observaciones += f"\nServicio marcado como vencido automáticamente el {timezone.now().date()}"
+        self.save(update_fields=['estado', 'observaciones'])
