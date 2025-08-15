@@ -75,10 +75,13 @@ const HealthServicesSelector: React.FC<HealthServicesSelectorProps> = ({
   const [selectedGroup, setSelectedGroup] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newService, setNewService] = useState<Partial<SelectedService>>({});
+  const [newService, setNewService] = useState<Partial<SelectedService>>({
+    modalidad: 'intramural',
+    fecha_habilitacion: new Date().toISOString().split('T')[0]
+  });
 
   // Initialize Bootstrap tooltips
-  useBootstrapTooltips([selectedServices, validationResults], {
+  useBootstrapTooltips([], {
     placement: 'top',
     trigger: 'hover focus'
   });
@@ -186,13 +189,42 @@ const HealthServicesSelector: React.FC<HealthServicesSelectorProps> = ({
     }
   };
 
-  // Auto-validate when services or complexity level changes
-  useEffect(() => {
-    if (selectedServices.length > 0 && nivelComplejidad) {
-      const timeoutId = setTimeout(validateServices, 1000);
-      return () => clearTimeout(timeoutId);
+  // Handle adding service from modal
+  const handleAddService = () => {
+    if (!newService.codigo_servicio || !newService.nombre_servicio) {
+      return;
     }
-  }, [selectedServices, nivelComplejidad]);
+
+    // Check if service already exists
+    if (isServiceSelected(newService.codigo_servicio)) {
+      return;
+    }
+
+    const serviceToAdd: SelectedService = {
+      codigo_servicio: newService.codigo_servicio,
+      nombre_servicio: newService.nombre_servicio,
+      grupo_servicio: newService.grupo_servicio || 'otros',
+      modalidad: newService.modalidad || 'intramural',
+      fecha_habilitacion: newService.fecha_habilitacion || new Date().toISOString().split('T')[0],
+      observaciones: newService.observaciones
+    };
+
+    onChange([...selectedServices, serviceToAdd]);
+    setShowAddModal(false);
+    setNewService({
+      modalidad: 'intramural',
+      fecha_habilitacion: new Date().toISOString().split('T')[0]
+    });
+  };
+
+  // Reset modal when closing
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setNewService({
+      modalidad: 'intramural',
+      fecha_habilitacion: new Date().toISOString().split('T')[0]
+    });
+  };
 
   return (
     <div className={`health-services-selector ${className}`}>
@@ -206,150 +238,20 @@ const HealthServicesSelector: React.FC<HealthServicesSelectorProps> = ({
         </p>
       </div>
 
-      {/* Service Browser */}
-      <div className="card border-0 shadow-sm mb-4">
-        <div className="card-header bg-light">
-          <div className="row align-items-center">
-            <div className="col">
-              <h6 className="mb-0">
-                <i className="ri-search-line me-2"></i>
-                Catálogo de Servicios
-              </h6>
-            </div>
-            <div className="col-auto">
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                onClick={validateServices}
-                disabled={validationLoading || selectedServices.length === 0}
-              >
-                {validationLoading && (
-                  <span className="spinner-border spinner-border-sm me-1" role="status"></span>
-                )}
-                <i className="ri-shield-check-line me-1"></i>
-                Validar Servicios
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="card-body">
-          {/* Filters */}
-          <div className="row mb-3">
-            <div className="col-md-6">
-              <label className="form-label">Filtrar por Grupo</label>
-              <select
-                className="form-select"
-                value={selectedGroup}
-                onChange={(e) => setSelectedGroup(e.target.value)}
-                disabled={disabled}
-              >
-                <option value="">Todos los grupos</option>
-                {SERVICE_GROUPS.map(group => (
-                  <option key={group.value} value={group.value}>
-                    {group.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="col-md-6">
-              <label className="form-label">Buscar Servicio</label>
-              <div className="input-group">
-                <span className="input-group-text">
-                  <i className="ri-search-line"></i>
-                </span>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Buscar por nombre o código..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  disabled={disabled}
-                />
-                {searchTerm && (
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary"
-                    onClick={() => setSearchTerm('')}
-                  >
-                    <i className="ri-close-line"></i>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Service Groups */}
-          {loading ? (
-            <div className="text-center py-4">
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Cargando servicios...</span>
-              </div>
-              <p className="text-muted mt-2">Cargando catálogo de servicios...</p>
-            </div>
-          ) : (
-            <div className="row">
-              {Object.entries(servicesByGroup).map(([grupo, services]) => {
-                const groupConfig = SERVICE_GROUPS.find(g => g.value === grupo);
-                return (
-                  <div key={grupo} className="col-12 mb-4">
-                    <div className="card border-start border-3" style={{borderLeftColor: `var(--bs-${groupConfig?.color || 'primary'})`}}>
-                      <div className="card-header py-2">
-                        <h6 className="mb-0">
-                          <i className={`${groupConfig?.icon || 'ri-service-line'} me-2 text-${groupConfig?.color || 'primary'}`}></i>
-                          {groupConfig?.label || grupo}
-                          <span className="badge bg-light text-dark ms-2">{services.length}</span>
-                        </h6>
-                      </div>
-                      <div className="card-body">
-                        <div className="row">
-                          {services.map(service => (
-                            <div key={service.codigo} className="col-md-6 col-lg-4 mb-2">
-                              <div className={`border rounded p-2 h-100 ${isServiceSelected(service.codigo) ? 'border-success bg-light' : 'border-light'}`}>
-                                <div className="d-flex justify-content-between align-items-start mb-1">
-                                  <div className="flex-grow-1">
-                                    <h6 className="mb-1 font-size-14">
-                                      <code className="text-primary">{service.codigo}</code>
-                                    </h6>
-                                    <p className="mb-1 font-size-13">{service.nombre}</p>
-                                    <small className="text-muted">
-                                      Mín. Nivel {service.complejidad_minima}
-                                    </small>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    className={`btn btn-sm ${isServiceSelected(service.codigo) ? 'btn-success' : 'btn-outline-primary'}`}
-                                    onClick={() => isServiceSelected(service.codigo) ? removeService(service.codigo) : addService(service)}
-                                    disabled={disabled}
-                                    data-bs-toggle="tooltip"
-                                    title={isServiceSelected(service.codigo) ? 'Remover servicio' : 'Agregar servicio'}
-                                  >
-                                    <i className={`ri-${isServiceSelected(service.codigo) ? 'check' : 'add'}-line`}></i>
-                                  </button>
-                                </div>
-                                {service.descripcion && (
-                                  <p className="mb-0 font-size-12 text-muted">{service.descripcion}</p>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {filteredServices.length === 0 && !loading && (
-            <div className="text-center py-4">
-              <i className="ri-search-line text-muted" style={{fontSize: '3rem'}}></i>
-              <p className="text-muted mt-2">
-                {searchTerm || selectedGroup ? 'No se encontraron servicios con los filtros aplicados' : 'No hay servicios disponibles'}
-              </p>
-            </div>
-          )}
-        </div>
+      {/* Add Service Button */}
+      <div className="text-center mb-4">
+        <button
+          type="button"
+          className="btn btn-primary btn-lg"
+          onClick={() => setShowAddModal(true)}
+          disabled={disabled}
+        >
+          <i className="ri-add-line me-2"></i>
+          Agregar Servicio de Salud
+        </button>
+        <p className="text-muted mt-2">
+          Agregue los servicios que prestará su institución según su nivel de complejidad ({nivelComplejidad})
+        </p>
       </div>
 
       {/* Selected Services */}
@@ -448,78 +350,144 @@ const HealthServicesSelector: React.FC<HealthServicesSelectorProps> = ({
         </div>
       )}
 
-      {/* Validation Results */}
-      {validationResults && (
-        <div className="card border-0 shadow-sm">
-          <div className="card-header bg-info bg-opacity-10">
-            <h6 className="mb-0 text-info">
-              <i className="ri-shield-check-line me-2"></i>
-              Resultado de Validación
-            </h6>
-          </div>
-          <div className="card-body">
-            <div className="row mb-3">
-              <div className="col-md-3">
-                <div className="text-center">
-                  <h4 className="text-primary mb-1">{validationResults.summary?.total_services || 0}</h4>
-                  <small className="text-muted">Total Servicios</small>
-                </div>
+
+      {/* Add Service Modal */}
+      {showAddModal && (
+        <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  <i className="ri-add-line me-2 text-primary"></i>
+                  Agregar Servicio de Salud
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={handleCloseModal}
+                ></button>
               </div>
-              <div className="col-md-3">
-                <div className="text-center">
-                  <h4 className="text-success mb-1">{validationResults.summary?.valid_services || 0}</h4>
-                  <small className="text-muted">Válidos</small>
-                </div>
-              </div>
-              <div className="col-md-3">
-                <div className="text-center">
-                  <h4 className="text-warning mb-1">{validationResults.summary?.invalid_services || 0}</h4>
-                  <small className="text-muted">Con Alertas</small>
-                </div>
-              </div>
-              <div className="col-md-3">
-                <div className="text-center">
-                  <div className={`badge ${validationResults.summary?.overall_valid ? 'bg-success' : 'bg-warning'} p-2`}>
-                    <i className={`ri-${validationResults.summary?.overall_valid ? 'check' : 'alert'}-line me-1`}></i>
-                    {validationResults.summary?.overall_valid ? 'Válido' : 'Revisar'}
+              <div className="modal-body">
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label">
+                        Código del Servicio <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Ej: 105, 106, 201..."
+                        value={newService.codigo_servicio || ''}
+                        onChange={(e) => setNewService(prev => ({ ...prev, codigo_servicio: e.target.value }))}
+                      />
+                      <div className="form-text">
+                        Código oficial según clasificación de servicios de salud
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label">
+                        Grupo de Servicio <span className="text-danger">*</span>
+                      </label>
+                      <select
+                        className="form-select"
+                        value={newService.grupo_servicio || ''}
+                        onChange={(e) => setNewService(prev => ({ ...prev, grupo_servicio: e.target.value }))}
+                      >
+                        <option value="">Seleccione un grupo...</option>
+                        {SERVICE_GROUPS.map(group => (
+                          <option key={group.value} value={group.value}>
+                            {group.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
+
+                <div className="mb-3">
+                  <label className="form-label">
+                    Nombre del Servicio <span className="text-danger">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Ej: Cuidado Intensivo Adultos, Cirugía Cardiovascular..."
+                    value={newService.nombre_servicio || ''}
+                    onChange={(e) => setNewService(prev => ({ ...prev, nombre_servicio: e.target.value }))}
+                  />
+                </div>
+
+                <div className="row">
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label">Modalidad</label>
+                      <select
+                        className="form-select"
+                        value={newService.modalidad || 'intramural'}
+                        onChange={(e) => setNewService(prev => ({ ...prev, modalidad: e.target.value }))}
+                      >
+                        {MODALIDAD_OPTIONS.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="mb-3">
+                      <label className="form-label">Fecha de Habilitación</label>
+                      <input
+                        type="date"
+                        className="form-control"
+                        value={newService.fecha_habilitacion || ''}
+                        onChange={(e) => setNewService(prev => ({ ...prev, fecha_habilitacion: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label">Observaciones</label>
+                  <textarea
+                    className="form-control"
+                    rows={3}
+                    placeholder="Observaciones adicionales sobre el servicio..."
+                    value={newService.observaciones || ''}
+                    onChange={(e) => setNewService(prev => ({ ...prev, observaciones: e.target.value }))}
+                  ></textarea>
+                </div>
+
+                {/* Validation Alert */}
+                {newService.codigo_servicio && isServiceSelected(newService.codigo_servicio) && (
+                  <div className="alert alert-warning">
+                    <i className="ri-alert-line me-2"></i>
+                    Este servicio ya está agregado
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleCloseModal}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleAddService}
+                  disabled={!newService.codigo_servicio || !newService.nombre_servicio || isServiceSelected(newService.codigo_servicio || '')}
+                >
+                  <i className="ri-add-line me-1"></i>
+                  Agregar Servicio
+                </button>
               </div>
             </div>
-
-            {validationResults.validation_results && validationResults.validation_results.length > 0 && (
-              <div className="table-responsive">
-                <table className="table table-sm">
-                  <thead>
-                    <tr>
-                      <th>Código</th>
-                      <th>Servicio</th>
-                      <th>Estado</th>
-                      <th>Observación</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {validationResults.validation_results.map((result: any, index: number) => (
-                      <tr key={index}>
-                        <td>
-                          <code>{result.codigo_servicio}</code>
-                        </td>
-                        <td>{result.nombre_servicio}</td>
-                        <td>
-                          <span className={`badge ${result.is_valid ? 'bg-success' : 'bg-warning'}`}>
-                            <i className={`ri-${result.is_valid ? 'check' : 'alert'}-line me-1`}></i>
-                            {result.is_valid ? 'Válido' : 'Alerta'}
-                          </span>
-                        </td>
-                        <td>
-                          <small className="text-muted">{result.reason}</small>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
         </div>
       )}

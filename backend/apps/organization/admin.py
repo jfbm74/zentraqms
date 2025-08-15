@@ -5,7 +5,7 @@ Django Admin configuration for Organization module.
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
-from .models import Organization, Location, SectorTemplate, AuditLog
+from .models import Organization, Location, SectorTemplate, AuditLog, SedePrestadora, SedeServicio
 
 
 @admin.register(Organization)
@@ -322,6 +322,235 @@ class SectorTemplateAdmin(admin.ModelAdmin):
                 "fields": (
                     "aplicaciones_exitosas",
                     "fecha_ultima_aplicacion",
+                )
+            },
+        ),
+        (_("Estado"), {"fields": ("is_active",)}),
+        (
+            _("Auditoría"),
+            {
+                "fields": (
+                    "id",
+                    "created_at",
+                    "updated_at",
+                    "created_by",
+                    "updated_by",
+                ),
+                "classes": ("collapse",),
+            },
+        ),
+    )
+
+    def save_model(self, request, obj, form, change):
+        """Override save to set audit fields."""
+        if not change:  # Creating new object
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(SedePrestadora)
+class SedePrestadoraAdmin(admin.ModelAdmin):
+    """
+    Admin interface for SedePrestadora model.
+    """
+
+    list_display = [
+        "numero_sede",
+        "nombre_sede",
+        "health_organization",
+        "es_principal_badge",
+        "departamento",
+        "municipio",
+        "estado",
+        "is_active",
+        "created_at",
+    ]
+
+    list_filter = [
+        "health_organization",
+        "es_sede_principal",
+        "departamento",
+        "municipio",
+        "estado",
+        "tipo_sede",
+        "is_active",
+        "created_at",
+        "updated_at",
+    ]
+
+    search_fields = [
+        "numero_sede",
+        "nombre_sede",
+        "direccion",
+        "departamento",
+        "municipio",
+        "health_organization__nombre_organizacion",
+        "codigo_prestador",
+    ]
+
+    readonly_fields = [
+        "id",
+        "direccion_completa",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by",
+    ]
+
+    fieldsets = (
+        (
+            _("Información Básica"),
+            {
+                "fields": (
+                    "health_organization",
+                    "numero_sede",
+                    "nombre_sede",
+                    "es_sede_principal",
+                    "tipo_sede",
+                    "estado",
+                )
+            },
+        ),
+        (
+            _("Dirección"),
+            {
+                "fields": (
+                    "direccion",
+                    "departamento",
+                    "municipio",
+                    "barrio",
+                    "codigo_postal",
+                )
+            },
+        ),
+        (
+            _("Contacto"),
+            {
+                "fields": (
+                    "telefono_principal",
+                    "telefono_secundario",
+                    "email",
+                )
+            },
+        ),
+        (
+            _("Responsable de la Sede"),
+            {
+                "fields": (
+                    "nombre_responsable",
+                    "cargo_responsable",
+                    "telefono_responsable",
+                    "email_responsable",
+                )
+            },
+        ),
+        (
+            _("Información Operativa"),
+            {
+                "fields": (
+                    "numero_camas",
+                    "numero_consultorios",
+                    "numero_quirofanos",
+                    "atencion_24_horas",
+                    "fecha_habilitacion",
+                    "fecha_renovacion",
+                )
+            },
+        ),
+        (_("Estado"), {"fields": ("is_active",)}),
+        (
+            _("Auditoría"),
+            {
+                "fields": (
+                    "id",
+                    "created_at",
+                    "updated_at",
+                    "created_by",
+                    "updated_by",
+                ),
+                "classes": ("collapse",),
+            },
+        ),
+    )
+
+    def es_principal_badge(self, obj):
+        """Display badge for main sede."""
+        if obj.es_sede_principal:
+            return format_html(
+                '<span style="color: green; font-weight: bold;">✓ Principal</span>'
+            )
+        return format_html('<span style="color: gray;">○ Adicional</span>')
+
+    es_principal_badge.short_description = _("Es Principal")
+    es_principal_badge.admin_order_field = "es_sede_principal"
+
+    def save_model(self, request, obj, form, change):
+        """Override save to set audit fields."""
+        if not change:  # Creating new object
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(SedeServicio)
+class SedeServicioAdmin(admin.ModelAdmin):
+    """
+    Admin interface for SedeServicio model.
+    """
+
+    list_display = [
+        "sede",
+        "servicio",
+        "distintivo",
+        "fecha_habilitacion",
+        "estado_servicio",
+        "is_active",
+        "created_at",
+    ]
+
+    list_filter = [
+        "servicio",
+        "estado_servicio",
+        "fecha_habilitacion",
+        "is_active",
+        "created_at",
+        "updated_at",
+    ]
+
+    search_fields = [
+        "sede__numero_sede",
+        "sede__nombre_sede",
+        "servicio__nombre",
+        "distintivo",
+    ]
+
+    readonly_fields = [
+        "id",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by",
+    ]
+
+    fieldsets = (
+        (
+            _("Información del Servicio"),
+            {
+                "fields": (
+                    "sede",
+                    "servicio",
+                    "distintivo",
+                    "fecha_habilitacion",
+                    "estado_servicio",
+                )
+            },
+        ),
+        (
+            _("Detalles Adicionales"),
+            {
+                "fields": (
+                    "observaciones",
                 )
             },
         ),

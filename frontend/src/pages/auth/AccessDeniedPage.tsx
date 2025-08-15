@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "../../utils/SimpleRouter";
 import { useAuth } from "../../hooks/useAuth";
 import { usePermissions } from "../../hooks/usePermissions";
 import { RBACService } from "../../services/rbac.service";

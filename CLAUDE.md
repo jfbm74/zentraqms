@@ -56,14 +56,22 @@
 
 ## 📊 Estado del Sistema
 
-| Módulo | Completado | Tests | Documentación |
-|--------|------------|-------|---------------|
-| Autenticación | 100% | ✅ 15/15 | ✅ Completa |
-| Organizaciones | 95% | ✅ 22/22 | ✅ Completa |
-| Procesos | 15% | 🔧 3/20 | 📝 En progreso |
-| Auditorías | 10% | 🔧 2/15 | 📝 En progreso |
-| Indicadores | 5% | 🔧 1/10 | 📝 Pendiente |
-| Normograma | 5% | 🔧 0/10 | 📝 Pendiente |
+| Módulo | Completado | Funcional | Tests | En Producción |
+|--------|------------|-----------|-------|---------------|
+| Autenticación | 100% | ✅ | ✅ 15/15 | ✅ Sí |
+| Organizaciones | 95% | ✅ | ✅ 22/22 | ✅ Sí |
+| Procesos | 15% | ⚠️ | 🔧 0/20 | ❌ No |
+| Auditorías | 10% | ❌ | 🔧 0/15 | ❌ No |
+| Indicadores | 5% | ❌ | 🔧 0/10 | ❌ No |
+| Normograma | 5% | ❌ | 🔧 0/10 | ❌ No |
+
+### 🎯 Características Principales Implementadas
+- ✅ **Autenticación JWT** con refresh tokens automático
+- ✅ **RBAC** con 6 roles y permisos granulares
+- ✅ **Wizard de Organizaciones** con auto-save
+- ✅ **Gestión de Servicios de Salud** con modal UI
+- ✅ **Entrada Manual de Datos** (sin dependencias externas)
+- ✅ **Audit Trail** en todas las operaciones
 
 ## 🎯 Comandos Rápidos
 
@@ -109,3 +117,5 @@ cd frontend && npm run build
 ---
 
 💡 **Nota para Claude**: Este es tu punto de entrada principal. Para tareas específicas, navega a la documentación modular correspondiente en `./claude-modules/`
+- recuerda siempre que el puerto del frontend debe ser 3000, si hay que reiniciar debes hacer kill a los servicios que usan el mismo puerto.
+- recuerda que si el puerto 8000 esta ocupado, debes hacer kill para que nunca el backend cambie de puerto.

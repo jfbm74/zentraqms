@@ -5,14 +5,20 @@ This module contains ViewSets and API views for Organization and Location models
 providing REST API endpoints for organization management.
 """
 
-from rest_framework import viewsets, status, permissions
+import logging
+from rest_framework import viewsets, status, permissions, serializers
+
+logger = logging.getLogger(__name__)
 from rest_framework.decorators import action
+from django.core.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.permissions import IsAuthenticated
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.db import transaction
 from django.shortcuts import get_object_or_404
+from django.http import HttpResponse
 
 from apps.authorization.drf_permissions import (
     CanViewOrganization,
@@ -20,7 +26,7 @@ from apps.authorization.drf_permissions import (
     CanUpdateOrganization,
     CanDeleteOrganization,
 )
-from .models import Organization, Location, SectorTemplate, AuditLog, HealthOrganization, HealthService
+from .models import Organization, Location, SectorTemplate, AuditLog, HealthOrganization, HealthService, SedePrestadora, SedeServicio
 from .signals import set_audit_context
 from .serializers import (
     OrganizationSerializer,
@@ -39,7 +45,22 @@ from .serializers import (
     AuditLogListSerializer,
     RollbackRequestSerializer,
     OrganizationHistorySerializer,
+    # Serializers para sedes
+    SedeSerializer,
+    SedeListSerializer,
+    SedeCreateSerializer,
+    SedeImportSerializer,
+    SedeValidationSerializer,
+    SedeBulkSerializer,
+    SedeServicioSerializer,
+    # Simplified wizard serializers
+    OrganizationWizardSerializer,
+    OrganizationWizardCreateSerializer,
+    DepartmentSerializer,
+    MunicipalitySerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class OrganizationViewSet(viewsets.ModelViewSet):
@@ -929,6 +950,9 @@ class HealthViewSet(viewsets.ViewSet):
     
     Provides endpoints for REPS validation, health services catalog,
     and health organization management.
+    
+    Note: SUH portal integration has been removed due to access limitations.
+    Manual data entry is now the recommended approach for health organizations.
     """
     
     permission_classes = [permissions.IsAuthenticated]
@@ -937,6 +961,9 @@ class HealthViewSet(viewsets.ViewSet):
     def validate_reps(self, request):
         """
         Validate a provider code against REPS (mock implementation).
+        
+        Note: This is a mock implementation. Real REPS validation would require
+        official API access from the Ministry of Health.
         
         Args:
             request: HTTP request with codigo_prestador in body
@@ -958,13 +985,13 @@ class HealthViewSet(viewsets.ViewSet):
                 {
                     'isValid': False,
                     'message': _('El código prestador debe tener exactamente 12 dígitos.'),
-                    'providerData': None
+                    'providerData': None,
+                    'note': _('Validación de formato únicamente - se requiere verificación manual con REPS.')
                 },
                 status=status.HTTP_200_OK
             )
         
         # Mock validation - Simular consulta a REPS
-        # En producción, aquí se haría la consulta real al API de REPS del MinSalud
         is_valid = self._mock_reps_validation(codigo_prestador)
         
         if is_valid:
@@ -972,49 +999,29 @@ class HealthViewSet(viewsets.ViewSet):
             
             return Response({
                 'isValid': True,
-                'message': _('Código válido en REPS'),
+                'message': _('Formato válido - Requiere verificación manual con REPS'),
                 'providerData': provider_data,
-                'lastValidated': timezone.now().isoformat()
+                'lastValidated': timezone.now().isoformat(),
+                'note': _('Datos simulados - Verificar manualmente en portal SUH del MinSalud')
             })
         else:
             return Response({
                 'isValid': False,
-                'message': _('Código no encontrado en REPS'),
-                'providerData': None
+                'message': _('Formato válido pero no encontrado en simulación'),
+                'providerData': None,
+                'note': _('Verificar manualmente en portal SUH del MinSalud')
             })
     
     def _mock_reps_validation(self, codigo_prestador):
-        """
-        Mock REPS validation logic.
-        
-        Args:
-            codigo_prestador (str): Provider code to validate
-            
-        Returns:
-            bool: True if code is considered valid
-        """
-        # Simular validación - códigos que empiecen con ciertos números son válidos
+        """Mock REPS validation logic for testing purposes."""
         valid_prefixes = ['11', '25', '76', '05', '13', '17', '19', '20', '23', '27', '41', '47', '50', '52', '54', '63', '66', '68', '70', '73', '81', '85', '86', '88', '91', '94', '95', '97', '99']
         prefix = codigo_prestador[:2]
-        
-        # También validar que no sea una secuencia obvia como 111111111111
         is_sequence = len(set(codigo_prestador)) <= 2
-        
         return prefix in valid_prefixes and not is_sequence
     
     def _get_mock_provider_data(self, codigo_prestador):
-        """
-        Get mock provider data for testing.
-        
-        Args:
-            codigo_prestador (str): Provider code
-            
-        Returns:
-            dict: Mock provider data
-        """
-        # Mapear códigos a datos mock
+        """Get mock provider data for testing."""
         prefix = codigo_prestador[:2]
-        
         mock_data = {
             '11': {
                 'nombre': 'IPS DEMO BOGOTÁ',
@@ -1028,20 +1035,7 @@ class HealthViewSet(viewsets.ViewSet):
                 'municipio': 'Soacha',
                 'direccion': 'Carrera 50 #25-30'
             },
-            '76': {
-                'nombre': 'HOSPITAL DEMO VALLE',
-                'departamento': 'Valle del Cauca',
-                'municipio': 'Cali',
-                'direccion': 'Avenida 6N #23-45'
-            },
-            '05': {
-                'nombre': 'CENTRO MÉDICO DEMO ANTIOQUIA',
-                'departamento': 'Antioquia',
-                'municipio': 'Medellín',
-                'direccion': 'Carrera 70 #52-21'
-            }
         }
-        
         return mock_data.get(prefix, {
             'nombre': f'IPS DEMO {prefix}',
             'departamento': 'Colombia',
@@ -1087,102 +1081,7 @@ class HealthViewSet(viewsets.ViewSet):
                 'complejidad_minima': 'II',
                 'descripcion': 'Atención especializada en ortopedia y traumatología'
             },
-            {
-                'codigo': '338',
-                'nombre': 'Fisiatría',
-                'grupo': 'consulta_externa',
-                'grupo_display': 'Consulta Externa',
-                'complejidad_minima': 'II',
-                'descripcion': 'Medicina física y rehabilitación'
-            },
-            {
-                'codigo': '344',
-                'nombre': 'Fisioterapia',
-                'grupo': 'consulta_externa',
-                'grupo_display': 'Consulta Externa',
-                'complejidad_minima': 'I',
-                'descripcion': 'Terapia física y rehabilitación'
-            },
-            
-            # QUIRÚRGICOS
-            {
-                'codigo': '301',
-                'nombre': 'Cirugía Ortopédica',
-                'grupo': 'quirurgicos',
-                'grupo_display': 'Quirúrgicos',
-                'complejidad_minima': 'II',
-                'descripcion': 'Cirugía especializada en sistema musculoesquelético'
-            },
-            {
-                'codigo': '304',
-                'nombre': 'Cirugía de la Mano',
-                'grupo': 'quirurgicos',
-                'grupo_display': 'Quirúrgicos',
-                'complejidad_minima': 'III',
-                'descripcion': 'Cirugía especializada de la mano'
-            },
-            {
-                'codigo': '310',
-                'nombre': 'Cirugía General',
-                'grupo': 'quirurgicos',
-                'grupo_display': 'Quirúrgicos',
-                'complejidad_minima': 'II',
-                'descripcion': 'Cirugía general básica'
-            },
-            
-            # APOYO DIAGNÓSTICO
-            {
-                'codigo': '706',
-                'nombre': 'Radiología e Imágenes Diagnósticas',
-                'grupo': 'apoyo_diagnostico',
-                'grupo_display': 'Apoyo Diagnóstico',
-                'complejidad_minima': 'I',
-                'descripcion': 'Servicios de radiología e imágenes diagnósticas'
-            },
-            {
-                'codigo': '712',
-                'nombre': 'Toma de Muestras de Laboratorio Clínico',
-                'grupo': 'apoyo_diagnostico',
-                'grupo_display': 'Apoyo Diagnóstico',
-                'complejidad_minima': 'I',
-                'descripcion': 'Toma de muestras para análisis de laboratorio'
-            },
-            {
-                'codigo': '728',
-                'nombre': 'Laboratorio Clínico',
-                'grupo': 'apoyo_diagnostico',
-                'grupo_display': 'Apoyo Diagnóstico',
-                'complejidad_minima': 'I',
-                'descripcion': 'Análisis de laboratorio clínico'
-            },
-            
-            # INTERNACIÓN
-            {
-                'codigo': '101',
-                'nombre': 'Hospitalización General Adultos',
-                'grupo': 'internacion',
-                'grupo_display': 'Internación',
-                'complejidad_minima': 'I',
-                'descripcion': 'Hospitalización general para adultos'
-            },
-            {
-                'codigo': '102',
-                'nombre': 'Hospitalización General Pediátrica',
-                'grupo': 'internacion',
-                'grupo_display': 'Internación',
-                'complejidad_minima': 'II',
-                'descripcion': 'Hospitalización general pediátrica'
-            },
-            {
-                'codigo': '120',
-                'nombre': 'Cuidado Intermedio Adultos',
-                'grupo': 'internacion',
-                'grupo_display': 'Internación',
-                'complejidad_minima': 'II',
-                'descripcion': 'Unidad de cuidado intermedio para adultos'
-            },
-            
-            # URGENCIAS
+            # Additional services...
             {
                 'codigo': '501',
                 'nombre': 'Urgencias',
@@ -1191,188 +1090,42 @@ class HealthViewSet(viewsets.ViewSet):
                 'complejidad_minima': 'I',
                 'descripcion': 'Atención de urgencias médicas'
             },
-            {
-                'codigo': '502',
-                'nombre': 'Observación',
-                'grupo': 'urgencias',
-                'grupo_display': 'Urgencias',
-                'complejidad_minima': 'I',
-                'descripcion': 'Observación médica en urgencias'
-            },
-            
-            # CUIDADOS INTENSIVOS
-            {
-                'codigo': '312',
-                'nombre': 'UCI Adultos',
-                'grupo': 'cuidados_intensivos',
-                'grupo_display': 'Cuidados Intensivos',
-                'complejidad_minima': 'III',
-                'descripcion': 'Unidad de cuidados intensivos para adultos'
-            },
-            {
-                'codigo': '314',
-                'nombre': 'UCI Pediátrica',
-                'grupo': 'cuidados_intensivos',
-                'grupo_display': 'Cuidados Intensivos',
-                'complejidad_minima': 'III',
-                'descripcion': 'Unidad de cuidados intensivos pediátrica'
-            }
         ]
         
-        # Filtrar por grupo si se solicita
+        # Filter by group if requested
         grupo_filter = request.query_params.get('grupo')
         if grupo_filter:
             catalog = [s for s in catalog if s['grupo'] == grupo_filter]
         
-        # Filtrar por nivel de complejidad si se solicita
-        complejidad_filter = request.query_params.get('complejidad')
-        if complejidad_filter:
-            # Mapear niveles de complejidad a números para comparación
-            complejidad_map = {'I': 1, 'II': 2, 'III': 3, 'IV': 4}
-            nivel_solicitado = complejidad_map.get(complejidad_filter, 0)
-            catalog = [
-                s for s in catalog 
-                if complejidad_map.get(s['complejidad_minima'], 0) <= nivel_solicitado
-            ]
-        
-        # Obtener grupos únicos para metadata
-        grupos = list(set([s['grupo'] for s in catalog]))
-        grupos_display = list(set([(s['grupo'], s['grupo_display']) for s in catalog]))
-        
         return Response({
             'services': catalog,
             'count': len(catalog),
-            'grupos': grupos,
-            'grupos_display': dict(grupos_display),
-            'filters_applied': {
-                'grupo': grupo_filter,
-                'complejidad': complejidad_filter
-            }
-        })
-    
-    @action(detail=False, methods=['post'], url_path='validate-services')
-    def validate_services(self, request):
-        """
-        Validate services coherence with complexity level.
-        
-        Args:
-            request: HTTP request with services and nivel_complejidad
-            
-        Returns:
-            Response: Validation result
-        """
-        services = request.data.get('services', [])
-        nivel_complejidad = request.data.get('nivel_complejidad')
-        
-        if not services or not nivel_complejidad:
-            return Response(
-                {'error': _('Los servicios y nivel de complejidad son requeridos.')},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Mapear niveles de complejidad
-        complejidad_map = {'I': 1, 'II': 2, 'III': 3, 'IV': 4}
-        nivel_organizacion = complejidad_map.get(nivel_complejidad, 0)
-        
-        if not nivel_organizacion:
-            return Response(
-                {'error': _('Nivel de complejidad inválido.')},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Obtener catálogo de servicios
-        catalog_response = self.services_catalog(request)
-        catalog = catalog_response.data['services']
-        
-        # Crear diccionario de servicios por código
-        services_dict = {s['codigo']: s for s in catalog}
-        
-        validation_results = []
-        valid_count = 0
-        invalid_count = 0
-        
-        for service in services:
-            codigo_servicio = service.get('codigo_servicio')
-            service_info = services_dict.get(codigo_servicio)
-            
-            if not service_info:
-                validation_results.append({
-                    'codigo_servicio': codigo_servicio,
-                    'nombre_servicio': service.get('nombre_servicio', 'Desconocido'),
-                    'is_valid': False,
-                    'reason': _('Servicio no encontrado en catálogo')
-                })
-                invalid_count += 1
-                continue
-            
-            # Validar nivel de complejidad
-            complejidad_minima = complejidad_map.get(service_info['complejidad_minima'], 0)
-            
-            if nivel_organizacion >= complejidad_minima:
-                validation_results.append({
-                    'codigo_servicio': codigo_servicio,
-                    'nombre_servicio': service_info['nombre'],
-                    'is_valid': True,
-                    'reason': _('Servicio compatible con nivel de complejidad')
-                })
-                valid_count += 1
-            else:
-                validation_results.append({
-                    'codigo_servicio': codigo_servicio,
-                    'nombre_servicio': service_info['nombre'],
-                    'is_valid': False,
-                    'reason': _(
-                        'Servicio requiere nivel {} pero organización es nivel {}'
-                    ).format(service_info['complejidad_minima'], nivel_complejidad)
-                })
-                invalid_count += 1
-        
-        return Response({
-            'validation_results': validation_results,
-            'summary': {
-                'total_services': len(services),
-                'valid_services': valid_count,
-                'invalid_services': invalid_count,
-                'organization_level': nivel_complejidad,
-                'overall_valid': invalid_count == 0
-            }
+            'note': _('Catálogo simplificado - Consultar Resolución 3100/2019 para lista completa')
         })
     
     @action(detail=False, methods=['get'], url_path='complexity-levels')
     def complexity_levels(self, request):
-        """
-        Get available complexity levels with descriptions.
-        
-        Args:
-            request: HTTP request
-            
-        Returns:
-            Response: List of complexity levels
-        """
+        """Get available complexity levels with descriptions."""
         levels = [
             {
                 'code': 'I',
                 'name': 'Nivel I - Baja Complejidad',
                 'description': 'Atención básica, consulta externa, urgencias de baja complejidad',
-                'services_allowed': ['Medicina General', 'Urgencias', 'Hospitalización básica']
             },
             {
                 'code': 'II',
                 'name': 'Nivel II - Mediana Complejidad',
                 'description': 'Especialidades básicas, cirugía ambulatoria, hospitalización',
-                'services_allowed': ['Especialidades médicas', 'Cirugía general', 'UCI básica']
             },
             {
                 'code': 'III',
                 'name': 'Nivel III - Alta Complejidad',
                 'description': 'Especialidades avanzadas, alta tecnología, UCI especializada',
-                'services_allowed': ['Cirugías complejas', 'UCI especializada', 'Sub-especialidades']
             },
             {
                 'code': 'IV',
                 'name': 'Nivel IV - Máxima Complejidad',
                 'description': 'Procedimientos de máxima complejidad, investigación, trasplantes',
-                'services_allowed': ['Trasplantes', 'Cirugía cardiovascular', 'Neurocirugia compleja']
             }
         ]
         
@@ -1380,3 +1133,725 @@ class HealthViewSet(viewsets.ViewSet):
             'complexity_levels': levels,
             'count': len(levels)
         })
+
+
+# =============================================================================
+# Manual Health Organization Management
+# =============================================================================
+
+@action(detail=False, methods=['post'], url_path='manual-reps-entry')
+def manual_reps_entry(request):
+    """
+    Manual entry of REPS data for health organizations.
+    
+    This endpoint allows manual entry of health organization data
+    when automatic extraction from SUH portal is not available.
+    
+    Args:
+        request: HTTP request with organization and REPS data
+        
+    Returns:
+        Response: Result of manual data entry
+    """
+    return Response({
+        'message': _('Entrada manual de datos REPS habilitada'),
+        'instructions': _(
+            'Complete los datos manualmente consultando el portal SUH: '
+            'https://prestadores.minsalud.gov.co/habilitacion/'
+        ),
+        'required_data': [
+            'codigo_prestador',
+            'naturaleza_juridica', 
+            'tipo_prestador',
+            'nivel_complejidad',
+            'representante_legal',
+            'fecha_habilitacion'
+        ]
+    })
+
+
+# ===========================================
+# VIEWSETS PARA SEDES PRESTADORAS
+# ===========================================
+
+class SedeViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet para gestión de sedes prestadoras.
+    Incluye CRUD completo, importación, exportación y validación.
+    """
+    
+    serializer_class = SedeSerializer
+    permission_classes = [IsAuthenticated, CanViewOrganization]
+    lookup_field = 'id'
+    filter_backends = [SearchFilter, OrderingFilter]
+    search_fields = [
+        'numero_sede', 'nombre_sede', 'direccion', 
+        'departamento', 'municipio', 'email',
+        'nombre_responsable'
+    ]
+    ordering_fields = [
+        'numero_sede', 'nombre_sede', 'departamento', 
+        'municipio', 'estado', 'created_at'
+    ]
+    ordering = ['numero_sede']
+    
+    def get_queryset(self):
+        """Filtrar sedes por organización del usuario"""
+        # Obtener org_id de la URL o del query params
+        org_id = self.kwargs.get('org_id') or self.request.query_params.get('organization_id')
+        
+        if org_id:
+            return SedePrestadora.objects.filter(
+                health_organization__organization_id=org_id,
+                deleted_at__isnull=True
+            ).select_related(
+                'health_organization__organization'
+            ).prefetch_related(
+                'sede_servicios__servicio'
+            )
+        
+        # Si no hay org_id, filtrar por organizaciones accesibles al usuario
+        return SedePrestadora.objects.filter(
+            deleted_at__isnull=True
+        ).select_related(
+            'health_organization__organization'
+        ).prefetch_related(
+            'sede_servicios__servicio'
+        )
+    
+    def get_serializer_class(self):
+        """Choose serializer based on action"""
+        if self.action == 'list':
+            return SedeListSerializer
+        elif self.action == 'create':
+            return SedeCreateSerializer
+        elif self.action in ['import_sedes', 'validate_import']:
+            return SedeImportSerializer
+        elif self.action == 'validate_sede':
+            return SedeValidationSerializer
+        elif self.action == 'bulk_create':
+            return SedeBulkSerializer
+        return SedeSerializer
+    
+    def get_permissions(self):
+        """Set permissions based on action"""
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAuthenticated, CanUpdateOrganization]
+        elif self.action in ['import_sedes', 'bulk_create', 'bulk_update', 'bulk_delete']:
+            permission_classes = [IsAuthenticated, CanUpdateOrganization]
+        else:
+            permission_classes = [IsAuthenticated, CanViewOrganization]
+        
+        return [permission() for permission in permission_classes]
+    
+    def create(self, request, *args, **kwargs):
+        """Custom create method with debug logging"""
+        logger.info(f"SedeViewSet.create called with data: {request.data}")
+        try:
+            response = super().create(request, *args, **kwargs)
+            logger.info(f"SedeViewSet.create successful: {response.data}")
+            return response
+        except Exception as e:
+            logger.error(f"SedeViewSet.create error: {str(e)}")
+            logger.error(f"Request data: {request.data}")
+            raise
+
+    def perform_create(self, serializer):
+        """Override create to set audit context"""
+        set_audit_context(user=self.request.user, request=self.request)
+        serializer.save(created_by=self.request.user)
+    
+    def perform_update(self, serializer):
+        """Override update to set audit context"""
+        set_audit_context(user=self.request.user, request=self.request)
+        serializer.save(updated_by=self.request.user)
+    
+    def perform_destroy(self, instance):
+        """Override delete to implement soft delete"""
+        set_audit_context(user=self.request.user, request=self.request)
+        instance.delete(deleted_by=self.request.user)
+    
+    @action(detail=False, methods=['post'], url_path='import')
+    @transaction.atomic
+    def import_sedes(self, request, org_id=None):
+        """
+        Importar sedes desde archivo CSV/Excel.
+        Soporta validación previa y mapeo de campos.
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        file = serializer.validated_data['file']
+        format_type = serializer.validated_data['format']
+        validate_only = serializer.validated_data.get('validate_only', False)
+        mapping = serializer.validated_data.get('mapping')
+        overwrite_existing = serializer.validated_data.get('overwrite_existing', False)
+        
+        try:
+            # Por ahora retornar respuesta básica hasta implementar los servicios
+            return Response({
+                'message': _('Funcionalidad de importación será implementada próximamente'),
+                'file_received': True,
+                'format': format_type,
+                'validate_only': validate_only
+            })
+            
+        except Exception as e:
+            logger.error(f"Error importing sedes: {str(e)}")
+            return Response({
+                'success': False,
+                'message': _('Error en la importación'),
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get'], url_path='export')
+    def export_sedes(self, request, org_id=None):
+        """
+        Exportar sedes a CSV/Excel.
+        """
+        format_type = request.query_params.get('format', 'csv')
+        include_services = request.query_params.get('include_services', 'false') == 'true'
+        
+        if format_type not in ['csv', 'excel']:
+            return Response({
+                'error': _('Formato no válido. Use "csv" o "excel"')
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            import csv
+            import io
+            
+            # Obtener la organización
+            organization = get_object_or_404(Organization, id=org_id)
+            
+            # Obtener todas las sedes de la organización
+            sedes = SedePrestadora.objects.filter(
+                organization=organization
+            ).order_by('numero_sede')
+            
+            if format_type == 'csv':
+                # Crear respuesta CSV
+                response = HttpResponse(content_type='text/csv; charset=utf-8')
+                response['Content-Disposition'] = f'attachment; filename="sedes_{organization.name}_{timezone.now().strftime("%Y%m%d")}.csv"'
+                
+                writer = csv.writer(response)
+                
+                # Headers
+                headers = [
+                    'Número de Sede',
+                    'Código Prestador', 
+                    'Nombre de la Sede',
+                    'Tipo de Sede',
+                    'Es Sede Principal',
+                    'Estado',
+                    'Departamento',
+                    'Municipio', 
+                    'Dirección',
+                    'Barrio',
+                    'Tipo de Zona',
+                    'Teléfono',
+                    'Email',
+                    'Responsable',
+                    'Cargo Responsable',
+                    'Teléfono Responsable',
+                    'Capacidad Camas',
+                    'Capacidad Consultorios', 
+                    'Capacidad Quirófanos',
+                    'Atención 24 Horas',
+                    'Fecha de Creación'
+                ]
+                writer.writerow(headers)
+                
+                # Datos
+                for sede in sedes:
+                    row = [
+                        sede.numero_sede,
+                        sede.codigo_prestador,
+                        sede.nombre_sede,
+                        sede.get_tipo_sede_display() if hasattr(sede, 'get_tipo_sede_display') else sede.tipo_sede,
+                        'Sí' if sede.es_sede_principal else 'No',
+                        sede.get_estado_display() if hasattr(sede, 'get_estado_display') else sede.estado,
+                        sede.departamento,
+                        sede.municipio,
+                        sede.direccion,
+                        sede.barrio or '',
+                        sede.tipo_zona,
+                        sede.telefono or '',
+                        sede.email or '',
+                        sede.nombre_responsable or '',
+                        sede.cargo_responsable or '',
+                        sede.telefono_responsable or '',
+                        sede.capacidad_camas or 0,
+                        sede.capacidad_consultorios or 0,
+                        sede.capacidad_quirofanos or 0,
+                        'Sí' if sede.atencion_24_horas else 'No',
+                        sede.created_at.strftime('%Y-%m-%d %H:%M:%S') if sede.created_at else ''
+                    ]
+                    writer.writerow(row)
+                
+                return response
+                
+            else:  # format_type == 'excel'
+                # Para Excel necesitaríamos openpyxl, por ahora retornar mensaje
+                return Response({
+                    'message': _('La exportación a Excel requiere instalación adicional. Use CSV por ahora.'),
+                    'format': format_type,
+                    'available_formats': ['csv']
+                }, status=status.HTTP_501_NOT_IMPLEMENTED)
+            
+        except Exception as e:
+            logger.error(f"Error exporting sedes: {str(e)}")
+            return Response({
+                'error': _('Error en la exportación'),
+                'details': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'], url_path='validate')
+    def validate_sede(self, request, org_id=None):
+        """
+        Validar datos de una sede sin guardarla.
+        """
+        # Agregar organization context
+        data = request.data.copy()
+        if org_id:
+            try:
+                health_org = HealthOrganization.objects.get(organization_id=org_id)
+                data['health_organization'] = health_org.id
+            except HealthOrganization.DoesNotExist:
+                return Response({
+                    'error': _('Organización de salud no encontrada')
+                }, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = SedeValidationSerializer(
+            data=data, 
+            context={'request': request, 'org_id': org_id}
+        )
+        
+        try:
+            serializer.is_valid(raise_exception=True)
+            return Response({
+                'is_valid': True,
+                'data': serializer.validated_data,
+                'message': _('Datos válidos')
+            })
+        except serializers.ValidationError as e:
+            return Response({
+                'is_valid': False,
+                'errors': e.detail,
+                'message': _('Datos inválidos')
+            }, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=False, methods=['post'], url_path='bulk-create')
+    @transaction.atomic
+    def bulk_create(self, request, org_id=None):
+        """
+        Crear múltiples sedes en una sola operación.
+        """
+        serializer = SedeBulkSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        sedes_data = serializer.validated_data['sedes']
+        
+        # Agregar health_organization a cada sede
+        if org_id:
+            try:
+                health_org = HealthOrganization.objects.get(organization_id=org_id)
+                for sede_data in sedes_data:
+                    sede_data['health_organization'] = health_org.id
+            except HealthOrganization.DoesNotExist:
+                return Response({
+                    'error': _('Organización de salud no encontrada')
+                }, status=status.HTTP_404_NOT_FOUND)
+        
+        created_sedes = []
+        errors = []
+        
+        for idx, sede_data in enumerate(sedes_data):
+            try:
+                sede_serializer = SedeCreateSerializer(data=sede_data)
+                if sede_serializer.is_valid():
+                    sede = sede_serializer.save(created_by=request.user)
+                    created_sedes.append(sede)
+                else:
+                    errors.append({
+                        'index': idx,
+                        'numero_sede': sede_data.get('numero_sede'),
+                        'errors': sede_serializer.errors
+                    })
+            except Exception as e:
+                errors.append({
+                    'index': idx,
+                    'numero_sede': sede_data.get('numero_sede'),
+                    'errors': {'general': [str(e)]}
+                })
+        
+        if errors:
+            # Si hay errores, hacer rollback
+            transaction.set_rollback(True)
+            return Response({
+                'success': False,
+                'message': _('Error en la creación masiva'),
+                'errors': errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response({
+            'success': True,
+            'created_count': len(created_sedes),
+            'sedes': SedeListSerializer(created_sedes, many=True).data
+        }, status=status.HTTP_201_CREATED)
+
+
+# Simplified Wizard ViewSets
+class OrganizationWizardViewSet(viewsets.ModelViewSet):
+    """
+    Simplified ViewSet for organization wizard operations.
+    
+    This ViewSet handles the simplified wizard flow with only basic
+    organization creation, excluding health-specific functionality.
+    """
+    
+    queryset = Organization.objects.all()
+    permission_classes = [IsAuthenticated]
+    
+    def get_serializer_class(self):
+        """Return appropriate serializer for action."""
+        if self.action == 'create':
+            return OrganizationWizardCreateSerializer
+        return OrganizationWizardSerializer
+    
+    def get_permissions(self):
+        """Return appropriate permissions based on action."""
+        if self.action == 'create':
+            permission_classes = [IsAuthenticated, CanCreateOrganization]
+        elif self.action in ['update', 'partial_update']:
+            permission_classes = [IsAuthenticated, CanUpdateOrganization]
+        elif self.action == 'destroy':
+            permission_classes = [IsAuthenticated, CanDeleteOrganization]
+        else:
+            permission_classes = [IsAuthenticated, CanViewOrganization]
+        
+        return [permission() for permission in permission_classes]
+    
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        """Create organization through simplified wizard."""
+        try:
+            # Import service
+            from .services.organization_service import OrganizationService
+            
+            # Extract logo file if present
+            logo_file = request.FILES.get('logo')
+            
+            # Create organization using service
+            organization = OrganizationService.create_organization(
+                user=request.user,
+                form_data=request.data,
+                logo_file=logo_file
+            )
+            
+            # Set audit context
+            set_audit_context(request.user, request)
+            
+            # Return serialized organization
+            serializer = self.get_serializer(organization)
+            return Response(
+                {
+                    'success': True,
+                    'message': _('Organización creada exitosamente'),
+                    'data': serializer.data
+                },
+                status=status.HTTP_201_CREATED
+            )
+            
+        except ValidationError as e:
+            logger.error(f'Validation error creating organization: {e}')
+            return Response(
+                {
+                    'success': False,
+                    'message': _('Error de validación'),
+                    'errors': e.message_dict if hasattr(e, 'message_dict') else {'detail': str(e)}
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f'Error creating organization: {str(e)}')
+            return Response(
+                {
+                    'success': False,
+                    'message': _('Error interno del servidor'),
+                    'errors': {'detail': str(e)}
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        """Update organization through simplified wizard."""
+        try:
+            # Import service
+            from .services.organization_service import OrganizationService
+            
+            # Get organization instance
+            organization = self.get_object()
+            
+            # Extract logo file if present
+            logo_file = request.FILES.get('logo')
+            
+            # Update organization using service
+            updated_organization = OrganizationService.update_organization(
+                organization=organization,
+                user=request.user,
+                form_data=request.data,
+                logo_file=logo_file
+            )
+            
+            # Set audit context
+            set_audit_context(request.user, request)
+            
+            # Return serialized organization
+            serializer = self.get_serializer(updated_organization)
+            return Response(
+                {
+                    'success': True,
+                    'message': _('Organización actualizada exitosamente'),
+                    'data': serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+            
+        except ValidationError as e:
+            logger.error(f'Validation error updating organization: {e}')
+            return Response(
+                {
+                    'success': False,
+                    'message': _('Error de validación'),
+                    'errors': e.message_dict if hasattr(e, 'message_dict') else {'detail': str(e)}
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f'Error updating organization: {str(e)}')
+            return Response(
+                {
+                    'success': False,
+                    'message': _('Error interno del servidor'),
+                    'errors': {'detail': str(e)}
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['post'])
+    def validate_nit(self, request):
+        """Validate NIT availability and format."""
+        try:
+            nit = request.data.get('nit')
+            if not nit:
+                return Response(
+                    {
+                        'success': False,
+                        'message': _('NIT es requerido'),
+                        'errors': {'nit': 'NIT es requerido'}
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Import service
+            from .services.organization_service import OrganizationService
+            
+            # Validate NIT availability using service
+            validation_result = OrganizationService.validate_nit(nit)
+            
+            return Response(
+                {
+                    'success': True,
+                    'data': {
+                        'nit': nit,
+                        'is_available': validation_result['is_available'],
+                        'message': validation_result['message']
+                    }
+                },
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            logger.error(f'Error validating NIT: {str(e)}')
+            return Response(
+                {
+                    'success': False,
+                    'message': _('Error interno del servidor'),
+                    'errors': {'detail': str(e)}
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['get'])
+    def summary(self, request, pk=None):
+        """Get organization summary for display purposes."""
+        try:
+            organization = self.get_object()
+            
+            # Import service
+            from .services.organization_service import OrganizationService
+            
+            # Get summary
+            summary_data = OrganizationService.get_organization_summary(organization)
+            
+            return Response(
+                {
+                    'success': True,
+                    'data': summary_data
+                },
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            logger.error(f'Error getting organization summary: {str(e)}')
+            return Response(
+                {
+                    'success': False,
+                    'message': _('Error interno del servidor'),
+                    'errors': {'detail': str(e)}
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class DivipolaViewSet(viewsets.ViewSet):
+    """
+    ViewSet for DIVIPOLA data (Colombian administrative divisions).
+    
+    Provides read-only access to departments and municipalities data
+    for use in location forms and wizards.
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    @action(detail=False, methods=['get'])
+    def departments(self, request):
+        """Get list of all Colombian departments."""
+        try:
+            from .services.divipola_service import DivipolaService
+            from .serializers import DepartmentSerializer
+            
+            departments = DivipolaService.get_departments()
+            serializer = DepartmentSerializer(departments, many=True)
+            
+            return Response(
+                {
+                    'success': True,
+                    'data': serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            logger.error(f'Error getting departments: {str(e)}')
+            return Response(
+                {
+                    'success': False,
+                    'message': _('Error interno del servidor'),
+                    'errors': {'detail': str(e)}
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'], url_path='municipalities/(?P<department_code>[^/.]+)')
+    def municipalities_by_department(self, request, department_code=None):
+        """Get municipalities for a specific department."""
+        try:
+            from .services.divipola_service import DivipolaService
+            from .serializers import MunicipalitySerializer
+            
+            municipalities = DivipolaService.get_municipalities(department_code)
+            serializer = MunicipalitySerializer(municipalities, many=True)
+            
+            return Response(
+                {
+                    'success': True,
+                    'data': serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            logger.error(f'Error getting municipalities: {str(e)}')
+            return Response(
+                {
+                    'success': False,
+                    'message': _('Error interno del servidor'),
+                    'errors': {'detail': str(e)}
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'])
+    def search_municipalities(self, request):
+        """Search municipalities by name."""
+        try:
+            from .services.divipola_service import DivipolaService
+            from .serializers import MunicipalitySerializer
+            
+            query = request.query_params.get('q', '')
+            department_code = request.query_params.get('department', None)
+            
+            if not query:
+                return Response(
+                    {
+                        'success': False,
+                        'message': _('Parámetro de búsqueda requerido'),
+                        'errors': {'q': 'Parámetro q es requerido'}
+                    },
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            municipalities = DivipolaService.search_municipalities(query, department_code)
+            serializer = MunicipalitySerializer(municipalities, many=True)
+            
+            return Response(
+                {
+                    'success': True,
+                    'data': serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            logger.error(f'Error searching municipalities: {str(e)}')
+            return Response(
+                {
+                    'success': False,
+                    'message': _('Error interno del servidor'),
+                    'errors': {'detail': str(e)}
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=False, methods=['get'])
+    def major_cities(self, request):
+        """Get list of major Colombian cities."""
+        try:
+            from .services.divipola_service import DivipolaService
+            from .serializers import MunicipalitySerializer
+            
+            cities = DivipolaService.get_major_cities()
+            serializer = MunicipalitySerializer(cities, many=True)
+            
+            return Response(
+                {
+                    'success': True,
+                    'data': serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            logger.error(f'Error getting major cities: {str(e)}')
+            return Response(
+                {
+                    'success': False,
+                    'message': _('Error interno del servidor'),
+                    'errors': {'detail': str(e)}
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+

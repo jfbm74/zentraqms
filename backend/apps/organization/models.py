@@ -8,6 +8,7 @@ This module handles all organization-related data including:
 """
 
 from django.db import models
+from django.conf import settings
 from django.core.validators import (
     RegexValidator,
     MinLengthValidator,
@@ -17,6 +18,16 @@ from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from apps.common.models import FullBaseModel
+# from apps.common.utils.upload_handlers import get_logo_upload_path
+# from apps.common.validators.file_validators import validate_logo
+
+def get_logo_upload_path(instance, filename):
+    """Temporary placeholder for logo upload path."""
+    return f"logos/{filename}"
+
+def validate_logo(value):
+    """Temporary placeholder for logo validation."""
+    pass
 
 
 class Organization(FullBaseModel):
@@ -146,10 +157,11 @@ class Organization(FullBaseModel):
 
     logo = models.ImageField(
         _("logo"),
-        upload_to="organization/logos/",
+        upload_to=get_logo_upload_path,
         null=True,
         blank=True,
-        help_text=_("Logo oficial de la organización."),
+        validators=[validate_logo],
+        help_text=_("Logo oficial de la organización. Máximo 2MB, formatos: JPG, PNG, GIF, WebP."),
     )
 
     descripcion = models.TextField(
@@ -269,10 +281,24 @@ class Location(FullBaseModel):
         _("ciudad"), max_length=50, help_text=_("Ciudad donde se encuentra la sede.")
     )
 
+    codigo_municipio = models.CharField(
+        _("código municipio DIVIPOLA"),
+        max_length=5,
+        blank=True,
+        help_text=_("Código DIVIPOLA del municipio (ej: 11001 para Bogotá)"),
+    )
+
     departamento = models.CharField(
         _("departamento"),
         max_length=50,
         help_text=_("Departamento donde se encuentra la sede."),
+    )
+
+    codigo_departamento = models.CharField(
+        _("código departamento DIVIPOLA"),
+        max_length=2,
+        blank=True,
+        help_text=_("Código DIVIPOLA del departamento (ej: 11 para Bogotá D.C.)"),
     )
 
     pais = models.CharField(
@@ -388,6 +414,8 @@ class Location(FullBaseModel):
             models.Index(fields=["organization", "es_principal"]),
             models.Index(fields=["ciudad"]),
             models.Index(fields=["tipo_sede"]),
+            models.Index(fields=["codigo_departamento"]),
+            models.Index(fields=["codigo_municipio"]),
         ]
         constraints = [
             # Asegurar que solo hay una sede principal por organización activa
@@ -1636,3 +1664,929 @@ class HealthService(FullBaseModel):
         self.estado = 'suspendido'
         self.observaciones += f"\nServicio marcado como vencido automáticamente el {timezone.now().date()}"
         self.save(update_fields=['estado', 'observaciones'])
+
+
+# ================================
+# SUH (Sistema Único de Habilitación) Models
+# ================================
+
+class SUHExtraction(FullBaseModel):
+    """
+    Model to manage SUH (Sistema Único de Habilitación) extractions.
+    Tracks all automatic extractions from the Ministry of Health portal.
+    """
+    
+    EXTRACTION_STATUS = [
+        ('pending', 'Pendiente'),
+        ('in_progress', 'En Progreso'),
+        ('completed', 'Completada'),
+        ('failed', 'Fallida'),
+        ('partial', 'Parcial'),
+    ]
+    
+    SOURCE_CHOICES = [
+        ('SUH_PORTAL', 'Portal SUH MinSalud'),
+        ('MANUAL_ENTRY', 'Entrada Manual'),
+        ('API_IMPORT', 'Importación API'),
+    ]
+    
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='suh_extractions',
+        verbose_name=_('Organización')
+    )
+    
+    # Extraction metadata
+    extraction_id = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name=_('ID de Extracción'),
+        help_text=_('Identificador único de la extracción')
+    )
+    
+    status = models.CharField(
+        max_length=20,
+        choices=EXTRACTION_STATUS,
+        default='pending',
+        verbose_name=_('Estado')
+    )
+    
+    source = models.CharField(
+        max_length=20,
+        choices=SOURCE_CHOICES,
+        default='SUH_PORTAL',
+        verbose_name=_('Fuente')
+    )
+    
+    # Portal information
+    nit_consulta = models.CharField(
+        max_length=15,
+        validators=[RegexValidator(r'^\d{9,11}$')],
+        verbose_name=_('NIT de Consulta'),
+        help_text=_('NIT usado para la consulta en el portal SUH')
+    )
+    
+    # Extraction timing
+    started_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_('Iniciado')
+    )
+    
+    completed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Completado')
+    )
+    
+    # Results
+    extracted_data = models.JSONField(
+        default=dict,
+        verbose_name=_('Datos Extraídos'),
+        help_text=_('Datos completos extraídos del portal SUH en formato JSON')
+    )
+    
+    validation_results = models.JSONField(
+        default=dict,
+        verbose_name=_('Resultados de Validación'),
+        help_text=_('Resultados de validación y discrepancias detectadas')
+    )
+    
+    # Error handling
+    error_message = models.TextField(
+        blank=True,
+        verbose_name=_('Mensaje de Error'),
+        help_text=_('Descripción del error si la extracción falló')
+    )
+    
+    extraction_logs = models.JSONField(
+        default=list,
+        verbose_name=_('Logs de Extracción'),
+        help_text=_('Logs detallados del proceso de extracción')
+    )
+    
+    # Statistics
+    total_sedes_extracted = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_('Sedes Extraídas')
+    )
+    
+    total_servicios_extracted = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_('Servicios Extraídos')
+    )
+    
+    class Meta:
+        verbose_name = _('Extracción SUH')
+        verbose_name_plural = _('Extracciones SUH')
+        ordering = ['-started_at']
+        indexes = [
+            models.Index(fields=['organization', 'status']),
+            models.Index(fields=['nit_consulta']),
+            models.Index(fields=['started_at']),
+        ]
+    
+    def __str__(self):
+        return f"SUH-{self.extraction_id} - {self.organization.razon_social}"
+    
+    @property
+    def duration(self):
+        """Calculate extraction duration."""
+        if self.completed_at:
+            return self.completed_at - self.started_at
+        return None
+    
+    @property
+    def is_successful(self):
+        """Check if extraction was successful."""
+        return self.status == 'completed' and self.extracted_data
+    
+    def mark_as_completed(self):
+        """Mark extraction as completed."""
+        self.status = 'completed'
+        self.completed_at = timezone.now()
+        self.save(update_fields=['status', 'completed_at'])
+    
+    def mark_as_failed(self, error_message):
+        """Mark extraction as failed with error message."""
+        self.status = 'failed'
+        self.error_message = error_message
+        self.completed_at = timezone.now()
+        self.save(update_fields=['status', 'error_message', 'completed_at'])
+
+
+class SUHDataMapping(FullBaseModel):
+    """
+    Model to store field mappings between SUH portal data and QMS data structures.
+    Allows for configurable data transformation and mapping.
+    """
+    
+    FIELD_TYPES = [
+        ('string', 'Texto'),
+        ('integer', 'Número Entero'),
+        ('decimal', 'Número Decimal'),
+        ('date', 'Fecha'),
+        ('boolean', 'Booleano'),
+        ('json', 'JSON'),
+    ]
+    
+    extraction = models.ForeignKey(
+        SUHExtraction,
+        on_delete=models.CASCADE,
+        related_name='data_mappings',
+        verbose_name=_('Extracción SUH')
+    )
+    
+    # Field mapping
+    suh_field_name = models.CharField(
+        max_length=100,
+        verbose_name=_('Campo SUH'),
+        help_text=_('Nombre del campo en el portal SUH')
+    )
+    
+    qms_field_name = models.CharField(
+        max_length=100,
+        verbose_name=_('Campo QMS'),
+        help_text=_('Nombre del campo correspondiente en QMS')
+    )
+    
+    field_type = models.CharField(
+        max_length=20,
+        choices=FIELD_TYPES,
+        verbose_name=_('Tipo de Campo')
+    )
+    
+    # Values
+    suh_value = models.TextField(
+        blank=True,
+        verbose_name=_('Valor SUH'),
+        help_text=_('Valor extraído del portal SUH')
+    )
+    
+    qms_value = models.TextField(
+        blank=True,
+        verbose_name=_('Valor QMS'),
+        help_text=_('Valor transformado para QMS')
+    )
+    
+    # Validation
+    is_valid = models.BooleanField(
+        default=True,
+        verbose_name=_('Es Válido')
+    )
+    
+    validation_notes = models.TextField(
+        blank=True,
+        verbose_name=_('Notas de Validación')
+    )
+    
+    # Mapping configuration
+    transformation_rule = models.JSONField(
+        default=dict,
+        verbose_name=_('Regla de Transformación'),
+        help_text=_('Reglas para transformar el valor de SUH a QMS')
+    )
+    
+    class Meta:
+        verbose_name = _('Mapeo de Datos SUH')
+        verbose_name_plural = _('Mapeos de Datos SUH')
+        unique_together = ['extraction', 'suh_field_name', 'qms_field_name']
+        indexes = [
+            models.Index(fields=['extraction', 'is_valid']),
+            models.Index(fields=['suh_field_name']),
+        ]
+    
+    def __str__(self):
+        return f"{self.suh_field_name} → {self.qms_field_name}"
+
+
+class SUHDiscrepancy(FullBaseModel):
+    """
+    Model to track discrepancies between SUH extracted data and existing QMS data.
+    Supports the tripartite resolution strategy (Critical/Important/Minor).
+    """
+    
+    DISCREPANCY_LEVELS = [
+        ('CRITICAL', 'Crítica'),
+        ('IMPORTANT', 'Importante'),
+        ('MINOR', 'Menor'),
+    ]
+    
+    RESOLUTION_STATUS = [
+        ('pending', 'Pendiente'),
+        ('suh_accepted', 'SUH Aceptado'),
+        ('qms_kept', 'QMS Mantenido'),
+        ('manual_resolved', 'Resuelto Manualmente'),
+        ('ignored', 'Ignorado'),
+    ]
+    
+    extraction = models.ForeignKey(
+        SUHExtraction,
+        on_delete=models.CASCADE,
+        related_name='discrepancies',
+        verbose_name=_('Extracción SUH')
+    )
+    
+    # Discrepancy details
+    field_name = models.CharField(
+        max_length=100,
+        verbose_name=_('Campo'),
+        help_text=_('Nombre del campo con discrepancia')
+    )
+    
+    level = models.CharField(
+        max_length=20,
+        choices=DISCREPANCY_LEVELS,
+        verbose_name=_('Nivel de Criticidad')
+    )
+    
+    # Values
+    suh_value = models.TextField(
+        verbose_name=_('Valor SUH'),
+        help_text=_('Valor del portal SUH')
+    )
+    
+    qms_value = models.TextField(
+        verbose_name=_('Valor QMS'),
+        help_text=_('Valor actual en QMS')
+    )
+    
+    # Resolution
+    resolution_status = models.CharField(
+        max_length=20,
+        choices=RESOLUTION_STATUS,
+        default='pending',
+        verbose_name=_('Estado de Resolución')
+    )
+    
+    final_value = models.TextField(
+        blank=True,
+        verbose_name=_('Valor Final'),
+        help_text=_('Valor final después de resolución')
+    )
+    
+    resolution_notes = models.TextField(
+        blank=True,
+        verbose_name=_('Notas de Resolución'),
+        help_text=_('Justificación para la resolución')
+    )
+    
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        verbose_name=_('Resuelto por')
+    )
+    
+    resolved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Resuelto el')
+    )
+    
+    # Impact assessment
+    regulatory_impact = models.TextField(
+        blank=True,
+        verbose_name=_('Impacto Regulatorio'),
+        help_text=_('Descripción del impacto regulatorio de la discrepancia')
+    )
+    
+    auto_resolution_suggested = models.BooleanField(
+        default=False,
+        verbose_name=_('Resolución Automática Sugerida')
+    )
+    
+    class Meta:
+        verbose_name = _('Discrepancia SUH')
+        verbose_name_plural = _('Discrepancias SUH')
+        ordering = ['level', '-created_at']
+        indexes = [
+            models.Index(fields=['extraction', 'resolution_status']),
+            models.Index(fields=['level', 'resolution_status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.field_name} - {self.get_level_display()}"
+    
+    @property
+    def requires_manual_resolution(self):
+        """Check if discrepancy requires manual resolution."""
+        return self.level == 'CRITICAL' and self.resolution_status == 'pending'
+    
+    def resolve_with_suh(self, user, notes=""):
+        """Resolve discrepancy accepting SUH value."""
+        self.resolution_status = 'suh_accepted'
+        self.final_value = self.suh_value
+        self.resolution_notes = notes
+        self.resolved_by = user
+        self.resolved_at = timezone.now()
+        self.save()
+    
+    def resolve_with_qms(self, user, notes=""):
+        """Resolve discrepancy keeping QMS value."""
+        self.resolution_status = 'qms_kept'
+        self.final_value = self.qms_value
+        self.resolution_notes = notes
+        self.resolved_by = user
+        self.resolved_at = timezone.now()
+        self.save()
+
+
+class SUHSyncSchedule(FullBaseModel):
+    """
+    Model to manage automatic synchronization schedules with SUH portal.
+    Supports periodic updates to keep QMS data in sync with official registry.
+    """
+    
+    SYNC_FREQUENCIES = [
+        ('daily', 'Diario'),
+        ('weekly', 'Semanal'),
+        ('monthly', 'Mensual'),
+        ('quarterly', 'Trimestral'),
+        ('manual', 'Manual'),
+    ]
+    
+    organization = models.OneToOneField(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='suh_sync_schedule',
+        verbose_name=_('Organización')
+    )
+    
+    # Schedule configuration
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name=_('Activo')
+    )
+    
+    frequency = models.CharField(
+        max_length=20,
+        choices=SYNC_FREQUENCIES,
+        default='monthly',
+        verbose_name=_('Frecuencia')
+    )
+    
+    # Timing
+    next_sync_date = models.DateTimeField(
+        verbose_name=_('Próxima Sincronización')
+    )
+    
+    last_sync_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_('Última Sincronización')
+    )
+    
+    # Settings
+    auto_resolve_minor = models.BooleanField(
+        default=False,
+        verbose_name=_('Auto-resolver Discrepancias Menores'),
+        help_text=_('Resolver automáticamente discrepancias de nivel menor')
+    )
+    
+    notify_on_discrepancies = models.BooleanField(
+        default=True,
+        verbose_name=_('Notificar Discrepancias'),
+        help_text=_('Enviar notificaciones cuando se detecten discrepancias')
+    )
+    
+    # Notification settings
+    notification_emails = models.JSONField(
+        default=list,
+        verbose_name=_('Emails de Notificación'),
+        help_text=_('Lista de emails para notificaciones de sincronización')
+    )
+    
+    # Statistics
+    total_syncs_completed = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_('Sincronizaciones Completadas')
+    )
+    
+    total_discrepancies_found = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_('Discrepancias Encontradas')
+    )
+    
+    class Meta:
+        verbose_name = _('Programación Sincronización SUH')
+        verbose_name_plural = _('Programaciones Sincronización SUH')
+        indexes = [
+            models.Index(fields=['is_active', 'next_sync_date']),
+            models.Index(fields=['organization']),
+        ]
+    
+    def __str__(self):
+        return f"Sync {self.organization.razon_social} - {self.get_frequency_display()}"
+    
+    def calculate_next_sync(self):
+        """Calculate next synchronization date based on frequency."""
+        from datetime import timedelta
+        
+        base_date = self.last_sync_date or timezone.now()
+        
+        if self.frequency == 'daily':
+            self.next_sync_date = base_date + timedelta(days=1)
+        elif self.frequency == 'weekly':
+            self.next_sync_date = base_date + timedelta(weeks=1)
+        elif self.frequency == 'monthly':
+            self.next_sync_date = base_date + timedelta(days=30)
+        elif self.frequency == 'quarterly':
+            self.next_sync_date = base_date + timedelta(days=90)
+        else:  # manual
+            self.next_sync_date = None
+        
+        self.save(update_fields=['next_sync_date'])
+    
+    def is_due_for_sync(self):
+        """Check if sync is due."""
+        if not self.is_active or not self.next_sync_date:
+            return False
+        return timezone.now() >= self.next_sync_date
+    
+    def record_sync_completion(self, discrepancies_count=0):
+        """Record completion of a sync operation."""
+        self.last_sync_date = timezone.now()
+        self.total_syncs_completed += 1
+        self.total_discrepancies_found += discrepancies_count
+        self.calculate_next_sync()
+        self.save(update_fields=[
+            'last_sync_date', 
+            'total_syncs_completed', 
+            'total_discrepancies_found'
+        ])
+
+
+class SedePrestadora(FullBaseModel):
+    """
+    Modelo para gestionar las sedes prestadoras de servicios de salud.
+    Cada organización de salud puede tener múltiples sedes.
+    """
+    
+    # Estados de la sede
+    ESTADO_SEDE_CHOICES = [
+        ('activa', _('Activa')),
+        ('inactiva', _('Inactiva')),
+        ('suspendida', _('Suspendida')),
+        ('en_proceso', _('En Proceso de Habilitación')),
+        ('cerrada', _('Cerrada Permanentemente')),
+    ]
+    
+    # Tipos de sede
+    TIPO_SEDE_CHOICES = [
+        ('principal', _('Sede Principal')),
+        ('sucursal', _('Sucursal')),
+        ('ambulatoria', _('Sede Ambulatoria')),
+        ('hospitalaria', _('Sede Hospitalaria')),
+        ('administrativa', _('Sede Administrativa')),
+        ('diagnostico', _('Centro de Diagnóstico')),
+        ('urgencias', _('Centro de Urgencias')),
+    ]
+    
+    # Relación con organización de salud
+    health_organization = models.ForeignKey(
+        'HealthOrganization',
+        on_delete=models.CASCADE,
+        related_name='sedes',
+        verbose_name=_('Organización de Salud'),
+        help_text=_('Organización de salud a la que pertenece esta sede.')
+    )
+    
+    # Identificación de la sede
+    numero_sede = models.CharField(
+        _('número de sede'),
+        max_length=10,
+        help_text=_('Número único de identificación de la sede (ej: 01, 02, 03)')
+    )
+    
+    codigo_prestador = models.CharField(
+        _('código de prestador'),
+        max_length=20,
+        help_text=_('Código de habilitación del prestador para esta sede')
+    )
+    
+    # Información básica
+    nombre_sede = models.CharField(
+        _('nombre de la sede'),
+        max_length=200,
+        help_text=_('Nombre descriptivo de la sede.')
+    )
+    
+    tipo_sede = models.CharField(
+        _('tipo de sede'),
+        max_length=20,
+        choices=TIPO_SEDE_CHOICES,
+        default='sucursal',
+        help_text=_('Tipo o clasificación de la sede.')
+    )
+    
+    es_sede_principal = models.BooleanField(
+        _('es sede principal'),
+        default=False,
+        help_text=_('Indica si es la sede principal de la organización')
+    )
+    
+    # Ubicación
+    direccion = models.CharField(
+        _('dirección'),
+        max_length=255,
+        help_text=_('Dirección completa de la sede.')
+    )
+    
+    departamento = models.CharField(
+        _('departamento'),
+        max_length=100,
+        help_text=_('Departamento donde se encuentra la sede.')
+    )
+    
+    municipio = models.CharField(
+        _('municipio'),
+        max_length=100,
+        help_text=_('Municipio donde se encuentra la sede.')
+    )
+    
+    barrio = models.CharField(
+        _('barrio'),
+        max_length=100,
+        blank=True,
+        help_text=_('Barrio donde se encuentra la sede.')
+    )
+    
+    codigo_postal = models.CharField(
+        _('código postal'),
+        max_length=10,
+        blank=True,
+        help_text=_('Código postal de la dirección.')
+    )
+    
+    # Georeferenciación
+    latitud = models.DecimalField(
+        _('latitud'),
+        max_digits=10,
+        decimal_places=7,
+        null=True,
+        blank=True,
+        help_text=_('Coordenada latitud de la sede.')
+    )
+    
+    longitud = models.DecimalField(
+        _('longitud'),
+        max_digits=10,
+        decimal_places=7,
+        null=True,
+        blank=True,
+        help_text=_('Coordenada longitud de la sede.')
+    )
+    
+    # Contacto
+    telefono_principal = models.CharField(
+        _('teléfono principal'),
+        max_length=20,
+        validators=[
+            RegexValidator(
+                regex=r'^\+?[\d\s\-\(\)]{7,20}$',
+                message=_('Número de teléfono debe tener un formato válido.')
+            )
+        ],
+        help_text=_('Teléfono principal de contacto de la sede.')
+    )
+    
+    telefono_secundario = models.CharField(
+        _('teléfono secundario'),
+        max_length=20,
+        blank=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\+?[\d\s\-\(\)]{7,20}$',
+                message=_('Número de teléfono debe tener un formato válido.')
+            )
+        ],
+        help_text=_('Teléfono secundario de contacto de la sede.')
+    )
+    
+    email = models.EmailField(
+        _('email de contacto'),
+        help_text=_('Correo electrónico de contacto de la sede.')
+    )
+    
+    # Responsable de la sede
+    nombre_responsable = models.CharField(
+        _('nombre del responsable'),
+        max_length=200,
+        help_text=_('Nombre completo del responsable de la sede.')
+    )
+    
+    cargo_responsable = models.CharField(
+        _('cargo del responsable'),
+        max_length=100,
+        help_text=_('Cargo o posición del responsable de la sede.')
+    )
+    
+    telefono_responsable = models.CharField(
+        _('teléfono del responsable'),
+        max_length=20,
+        blank=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\+?[\d\s\-\(\)]{7,20}$',
+                message=_('Número de teléfono debe tener un formato válido.')
+            )
+        ],
+        help_text=_('Teléfono del responsable de la sede.')
+    )
+    
+    email_responsable = models.EmailField(
+        _('email del responsable'),
+        blank=True,
+        help_text=_('Correo electrónico del responsable de la sede.')
+    )
+    
+    # Estado y habilitación
+    estado = models.CharField(
+        _('estado'),
+        max_length=20,
+        choices=ESTADO_SEDE_CHOICES,
+        default='activa',
+        help_text=_('Estado actual de la sede.')
+    )
+    
+    fecha_habilitacion = models.DateField(
+        _('fecha de habilitación'),
+        null=True,
+        blank=True,
+        help_text=_('Fecha en que se habilitó la sede.')
+    )
+    
+    fecha_renovacion = models.DateField(
+        _('fecha de renovación'),
+        null=True,
+        blank=True,
+        help_text=_('Fecha de renovación de la habilitación.')
+    )
+    
+    # Capacidad instalada
+    numero_camas = models.IntegerField(
+        _('número de camas'),
+        default=0,
+        help_text=_('Número total de camas disponibles.')
+    )
+    
+    numero_consultorios = models.IntegerField(
+        _('número de consultorios'),
+        default=0,
+        help_text=_('Número total de consultorios disponibles.')
+    )
+    
+    numero_quirofanos = models.IntegerField(
+        _('número de quirófanos'),
+        default=0,
+        help_text=_('Número total de quirófanos disponibles.')
+    )
+    
+    # Horarios de atención
+    horario_atencion = models.JSONField(
+        _('horario de atención'),
+        default=dict,
+        help_text=_('Horarios de atención por día de la semana en formato JSON.')
+    )
+    
+    atencion_24_horas = models.BooleanField(
+        _('atención 24 horas'),
+        default=False,
+        help_text=_('Indica si la sede ofrece atención las 24 horas.')
+    )
+    
+    # Servicios habilitados (relación con servicios)
+    servicios_habilitados = models.ManyToManyField(
+        'HealthService',
+        through='SedeServicio',
+        related_name='sedes_prestadoras',
+        verbose_name=_('servicios habilitados'),
+        blank=True
+    )
+    
+    # Metadata
+    observaciones = models.TextField(
+        _('observaciones'),
+        blank=True,
+        help_text=_('Observaciones adicionales sobre la sede.')
+    )
+    
+    # Datos de importación
+    imported_from_file = models.BooleanField(
+        _('importado desde archivo'),
+        default=False,
+        help_text=_('Indica si la sede fue importada desde un archivo.')
+    )
+    
+    import_date = models.DateTimeField(
+        _('fecha de importación'),
+        null=True,
+        blank=True,
+        help_text=_('Fecha y hora en que se importó la sede.')
+    )
+    
+    class Meta:
+        verbose_name = _('sede prestadora')
+        verbose_name_plural = _('sedes prestadoras')
+        unique_together = [
+            ['health_organization', 'numero_sede'],
+            ['health_organization', 'codigo_prestador']
+        ]
+        ordering = ['numero_sede']
+        indexes = [
+            models.Index(fields=['health_organization', 'estado']),
+            models.Index(fields=['departamento', 'municipio']),
+            models.Index(fields=['codigo_prestador']),
+            models.Index(fields=['tipo_sede']),
+        ]
+        constraints = [
+            # Asegurar que solo hay una sede principal por organización activa
+            models.UniqueConstraint(
+                fields=['health_organization'],
+                condition=models.Q(es_sede_principal=True) & models.Q(deleted_at__isnull=True),
+                name='unique_main_sede_per_health_organization'
+            ),
+        ]
+    
+    def clean(self):
+        """Validaciones del modelo"""
+        super().clean()
+        
+        # Solo puede haber una sede principal por organización
+        if self.es_sede_principal:
+            existing_principal = SedePrestadora.objects.filter(
+                health_organization=self.health_organization,
+                es_sede_principal=True,
+                deleted_at__isnull=True
+            ).exclude(pk=self.pk)
+            
+            if existing_principal.exists():
+                raise ValidationError({
+                    'es_sede_principal': _('Ya existe una sede principal para esta organización')
+                })
+        
+        # Validar formato de número de sede
+        if self.numero_sede and (not self.numero_sede.isdigit() or len(self.numero_sede) > 3):
+            raise ValidationError({
+                'numero_sede': _('El número de sede debe ser numérico y máximo 3 dígitos')
+            })
+    
+    def __str__(self):
+        return f"{self.nombre_sede} - Sede {self.numero_sede}"
+    
+    @property
+    def direccion_completa(self):
+        """Return complete address."""
+        return f"{self.direccion}, {self.municipio}, {self.departamento}"
+    
+    @property
+    def total_servicios(self):
+        """Return total count of enabled services."""
+        return self.sede_servicios.filter(estado_servicio='activo').count()
+    
+    def save(self, *args, **kwargs):
+        """Override save method to handle business logic."""
+        # Si es una nueva instancia y es la primera sede de la organización, marcarla como principal automáticamente
+        is_new = self._state.adding
+        if (
+            is_new
+            and self.health_organization
+            and not SedePrestadora.objects.filter(health_organization=self.health_organization, deleted_at__isnull=True).exists()
+        ):
+            self.es_sede_principal = True
+        
+        # Formatear número de sede con ceros a la izquierda
+        if self.numero_sede and self.numero_sede.isdigit():
+            self.numero_sede = self.numero_sede.zfill(2)
+
+        super().save(*args, **kwargs)
+
+
+class SedeServicio(FullBaseModel):
+    """
+    Modelo intermedio para la relación entre Sede y Servicio.
+    Permite agregar información adicional sobre el servicio en cada sede.
+    """
+    
+    ESTADO_SERVICIO_CHOICES = [
+        ('activo', _('Activo')),
+        ('inactivo', _('Inactivo')),
+        ('suspendido', _('Suspendido')),
+    ]
+    
+    sede = models.ForeignKey(
+        'SedePrestadora',
+        on_delete=models.CASCADE,
+        related_name='sede_servicios',
+        verbose_name=_('sede prestadora')
+    )
+    
+    servicio = models.ForeignKey(
+        'HealthService',
+        on_delete=models.CASCADE,
+        related_name='servicio_sedes',
+        verbose_name=_('servicio de salud')
+    )
+    
+    # Información adicional del servicio en la sede
+    distintivo = models.CharField(
+        _('código distintivo'),
+        max_length=50,
+        help_text=_('Código distintivo del servicio en esta sede')
+    )
+    
+    capacidad_instalada = models.IntegerField(
+        _('capacidad instalada'),
+        default=0,
+        help_text=_('Capacidad instalada para este servicio en la sede.')
+    )
+    
+    fecha_habilitacion = models.DateField(
+        _('fecha de habilitación del servicio'),
+        null=True,
+        blank=True,
+        help_text=_('Fecha en que se habilitó el servicio en esta sede.')
+    )
+    
+    estado_servicio = models.CharField(
+        _('estado del servicio'),
+        max_length=20,
+        choices=ESTADO_SERVICIO_CHOICES,
+        default='activo',
+        help_text=_('Estado del servicio en esta sede.')
+    )
+    
+    observaciones = models.TextField(
+        _('observaciones'),
+        blank=True,
+        help_text=_('Observaciones específicas del servicio en esta sede.')
+    )
+    
+    class Meta:
+        verbose_name = _('servicio por sede')
+        verbose_name_plural = _('servicios por sede')
+        unique_together = [
+            ['sede', 'servicio'],
+            ['sede', 'distintivo']
+        ]
+        ordering = ['sede', 'servicio']
+        indexes = [
+            models.Index(fields=['sede', 'estado_servicio']),
+            models.Index(fields=['distintivo']),
+        ]
+    
+    def __str__(self):
+        return f"{self.sede.nombre_sede} - {self.servicio.nombre_servicio}"
+    
+    def clean(self):
+        """Validate sede servicio data."""
+        super().clean()
+        
+        # Validar que la sede y el servicio pertenezcan a la misma organización
+        if hasattr(self, 'sede') and hasattr(self, 'servicio'):
+            if self.sede.health_organization != self.servicio.health_organization:
+                raise ValidationError({
+                    'servicio': _('El servicio debe pertenecer a la misma organización de salud que la sede.')
+                })

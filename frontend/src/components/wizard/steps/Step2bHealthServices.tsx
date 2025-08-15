@@ -39,7 +39,7 @@ const Step2bHealthServices: React.FC<Step2bProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Initialize Bootstrap tooltips
-  useBootstrapTooltips([selectedServices], {
+  useBootstrapTooltips([], {
     placement: 'top',
     trigger: 'hover focus',
     delay: { show: 200, hide: 100 },

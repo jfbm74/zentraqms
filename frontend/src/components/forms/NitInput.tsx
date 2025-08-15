@@ -95,21 +95,12 @@ const NitInput: React.FC<NitInputProps> = ({
 
     const formattedValue = formatNit(cleanValue);
 
-    setState((prev) => {
-      const newState = {
-        ...prev,
-        nit: cleanValue,
-        formattedNit: formattedValue,
-        showValidation: cleanValue.length > 0,
-      };
-      
-      // Call onChange with current verification digit from previous state
-      if (onChange) {
-        onChange(cleanValue, prev.verificationDigit);
-      }
-      
-      return newState;
-    });
+    setState((prev) => ({
+      ...prev,
+      nit: cleanValue,
+      formattedNit: formattedValue,
+      showValidation: cleanValue.length > 0,
+    }));
   };
 
   /**
@@ -118,20 +109,11 @@ const NitInput: React.FC<NitInputProps> = ({
   const handleDvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const dvValue = e.target.value.replace(/\D/g, "").slice(0, 1);
 
-    setState((prev) => {
-      const newState = {
-        ...prev,
-        verificationDigit: dvValue,
-        showValidation: prev.nit.length > 0 || dvValue.length > 0,
-      };
-      
-      // Call onChange with the current NIT value from state
-      if (onChange) {
-        onChange(prev.nit, dvValue);
-      }
-      
-      return newState;
-    });
+    setState((prev) => ({
+      ...prev,
+      verificationDigit: dvValue,
+      showValidation: prev.nit.length > 0 || dvValue.length > 0,
+    }));
   };
 
   /**
@@ -170,25 +152,44 @@ const NitInput: React.FC<NitInputProps> = ({
   };
 
   /**
-   * Initialize from prop values
+   * Initialize from prop values - only when props actually change
    */
+  const lastPropsRef = useRef({ value: "", verificationDigit: "" });
+  
   useEffect(() => {
     const cleanNitValue = value ? value.replace(/\D/g, "") : "";
     const cleanDvValue = verificationDigit ? verificationDigit.replace(/\D/g, "").slice(0, 1) : "";
     
-    // Only update if the values are different from current state
-    if (cleanNitValue !== state.nit || cleanDvValue !== state.verificationDigit) {
+    // Only update if the props have actually changed (not just a re-render)
+    if (cleanNitValue !== lastPropsRef.current.value || cleanDvValue !== lastPropsRef.current.verificationDigit) {
+      lastPropsRef.current = { value: cleanNitValue, verificationDigit: cleanDvValue };
+      
       const formattedValue = formatNit(cleanNitValue);
 
-      setState((prev) => ({
-        ...prev,
+      setState({
         nit: cleanNitValue,
         verificationDigit: cleanDvValue,
         formattedNit: formattedValue,
         showValidation: cleanNitValue.length > 0 || cleanDvValue.length > 0,
-      }));
+      });
     }
-  }, [value, verificationDigit, state.nit, state.verificationDigit]);
+  }, [value, verificationDigit]);
+
+  /**
+   * Handle onChange callback when state changes
+   */
+  const lastCallbackValuesRef = useRef({ nit: "", verificationDigit: "" });
+  
+  useEffect(() => {
+    // Only call onChange if values have actually changed
+    if (onChange && (
+      state.nit !== lastCallbackValuesRef.current.nit || 
+      state.verificationDigit !== lastCallbackValuesRef.current.verificationDigit
+    )) {
+      lastCallbackValuesRef.current = { nit: state.nit, verificationDigit: state.verificationDigit };
+      onChange(state.nit, state.verificationDigit);
+    }
+  }, [state.nit, state.verificationDigit, onChange]);
 
   // Determine input state classes
   const getInputStateClass = () => {

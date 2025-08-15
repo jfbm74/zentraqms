@@ -134,9 +134,53 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Media files
+# Media files (uploads de usuarios)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Configuración de uploads
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # 5MB - archivos más grandes van a disco
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB máximo en memoria
+FILE_UPLOAD_TEMP_DIR = BASE_DIR / 'media' / 'temp' / 'uploads'
+
+# Configuraciones de seguridad para uploads
+FILE_UPLOAD_PERMISSIONS = 0o644
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
+
+# Límites de uploads por tipo
+UPLOAD_LIMITS = {
+    'image': {
+        'max_size_mb': 5,
+        'allowed_extensions': ['.jpg', '.jpeg', '.png', '.gif', '.webp'],
+        'max_width': 2048,
+        'max_height': 2048,
+    },
+    'document': {
+        'max_size_mb': 25,
+        'allowed_extensions': ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt'],
+    },
+    'certificate': {
+        'max_size_mb': 15,
+        'allowed_extensions': ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'],
+    },
+    'audit': {
+        'max_size_mb': 50,
+        'allowed_extensions': ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.zip', '.rar', '.7z'],
+    },
+    'evidence': {
+        'max_size_mb': 30,
+        'allowed_extensions': ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.mp4', '.avi', '.mov'],
+    },
+    'import': {
+        'max_size_mb': 10,
+        'allowed_extensions': ['.csv', '.xls', '.xlsx'],
+    },
+}
+
+# Configuración para limpieza automática de archivos temporales
+AUTO_CLEANUP_ENABLED = True
+AUTO_CLEANUP_TEMP_FILES_DAYS = 7  # Limpiar archivos temp después de 7 días
+AUTO_CLEANUP_IMPORT_FILES_DAYS = 30  # Limpiar archivos de importación después de 30 días
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

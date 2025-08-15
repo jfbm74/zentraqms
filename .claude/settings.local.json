@@ -47,7 +47,10 @@
       "Bash(npm config get:*)",
       "Bash(sed:*)",
       "Bash(git push:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm run dev:*)",
+      "Bash(./venv/bin/python:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": [],

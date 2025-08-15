@@ -1,31 +1,51 @@
 # 🏛️ Arquitectura del Sistema - ZentraQMS
 
 ## 📋 Índice
-1. [Visión General](#visión-general)
-2. [Arquitectura de Alto Nivel](#arquitectura-de-alto-nivel)
+1. [Estado Actual del Sistema](#estado-actual-del-sistema)
+2. [Arquitectura Implementada](#arquitectura-implementada)
 3. [Decisiones Arquitectónicas](#decisiones-arquitectónicas)
-4. [Componentes del Sistema](#componentes-del-sistema)
-5. [Flujos de Datos](#flujos-de-datos)
-6. [Seguridad](#seguridad)
-7. [Escalabilidad](#escalabilidad)
+4. [Módulos Completados](#módulos-completados)
+5. [Módulos en Desarrollo](#módulos-en-desarrollo)
+6. [Stack Tecnológico](#stack-tecnológico)
+7. [Flujos de Datos](#flujos-de-datos)
+8. [Seguridad](#seguridad)
+9. [Roadmap de Desarrollo](#roadmap-de-desarrollo)
 
-## 🎯 Visión General
+## 🎯 Estado Actual del Sistema
 
-ZentraQMS implementa una arquitectura de tres capas con separación clara de responsabilidades:
+### Resumen Ejecutivo
+ZentraQMS es un Sistema de Gestión de Calidad (QMS) para instituciones de salud colombianas, actualmente en fase de desarrollo activo con módulos core completados y funcionando en producción.
 
+### Métricas de Implementación
+```
+╔══════════════════════╦════════════╦═══════════╦═════════════╗
+║ Módulo               ║ Completado ║ Funcional ║ En Producción║
+╠══════════════════════╬════════════╬═══════════╬═════════════╣
+║ Autenticación        ║ 100%       ║ ✅        ║ ✅          ║
+║ Organizaciones       ║ 95%        ║ ✅        ║ ✅          ║
+║ Procesos            ║ 15%        ║ ⚠️        ║ ❌          ║
+║ Auditorías          ║ 10%        ║ ❌        ║ ❌          ║
+║ Indicadores         ║ 5%         ║ ❌        ║ ❌          ║
+║ Normograma          ║ 5%         ║ ❌        ║ ❌          ║
+╚══════════════════════╩════════════╩═══════════╩═════════════╝
+```
+
+## 🏗️ Arquitectura Implementada
+
+### Arquitectura Actual Simplificada
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Capa de Presentación                      │
-│                   React 19 + TypeScript                      │
-│                    Velzon 4.4.1 Template                     │
+│            React 19 + TypeScript + Velzon 4.4.1             │
+│              (Auto-save, Wizards, Modals)                   │
 └───────────────────────────┬─────────────────────────────────┘
-                            │ REST API (JSON)
+                           │ REST API (JSON)
 ┌───────────────────────────┴─────────────────────────────────┐
 │                     Capa de Negocio                          │
 │                  Django 5.0 + DRF 3.15                       │
-│              JWT Auth + RBAC + Business Logic                │
+│          JWT Auth + RBAC + Validación Manual                 │
 └───────────────────────────┬─────────────────────────────────┘
-                            │ ORM
+                           │ ORM
 ┌───────────────────────────┴─────────────────────────────────┐
 │                      Capa de Datos                           │
 │                     PostgreSQL 15                            │
@@ -33,410 +53,394 @@ ZentraQMS implementa una arquitectura de tres capas con separación clara de res
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 🏗️ Arquitectura de Alto Nivel
-
-### Componentes Principales
+### Componentes Implementados y Funcionando
 
 ```mermaid
 graph TB
-    subgraph "Frontend"
-        UI[UI Components<br/>Velzon 4.4.1]
-        RC[React Components]
-        CTX[Context API]
-        HOOKS[Custom Hooks]
+    subgraph "Frontend [COMPLETADO]"
+        UI[Velzon Components]
+        AUTH_UI[Login/Logout]
+        ORG_UI[Organization Wizard]
+        DASH[Dashboard]
+        NAV[Navigation]
     end
     
-    subgraph "Backend"
-        API[REST API<br/>DRF]
-        AUTH[Authentication<br/>JWT]
-        RBAC[Authorization<br/>RBAC]
-        BL[Business Logic]
-        VAL[Validators]
+    subgraph "Backend [COMPLETADO]"
+        JWT[JWT Authentication]
+        RBAC[RBAC System]
+        ORG_API[Organization API]
+        PERM[Permission System]
     end
     
-    subgraph "Database"
+    subgraph "Database [ACTIVO]"
         PG[(PostgreSQL)]
-        CACHE[(Redis Cache)]
+        AUDIT[Audit Logs]
     end
     
-    subgraph "External"
-        MAIL[Email Service]
-        STORAGE[File Storage]
-        MONITOR[Monitoring]
+    subgraph "Eliminado/Simplificado"
+        style SUH fill:#ffcccc
+        style REPS fill:#ffcccc
+        SUH[SUH Integration ❌]
+        REPS[REPS Validation ❌]
     end
     
-    UI --> RC
-    RC --> CTX
-    RC --> HOOKS
-    CTX --> API
-    API --> AUTH
-    API --> RBAC
-    API --> BL
-    BL --> VAL
-    BL --> PG
-    API --> CACHE
-    BL --> MAIL
-    BL --> STORAGE
-    API --> MONITOR
+    UI --> AUTH_UI
+    UI --> ORG_UI
+    AUTH_UI --> JWT
+    ORG_UI --> ORG_API
+    JWT --> PG
+    RBAC --> PG
+    ORG_API --> PG
+    ORG_API --> AUDIT
 ```
 
 ## 🎯 Decisiones Arquitectónicas
 
-### ADR-001: Uso de Django + React
-**Contexto**: Necesidad de un backend robusto con frontend moderno.
-**Decisión**: Django para backend, React para frontend.
-**Consecuencias**: 
-- ✅ Ecosistema maduro
-- ✅ Amplia documentación
-- ✅ Comunidad activa
-- ❌ Dos tecnologías para mantener
+### ADR-001: Arquitectura Monolítica Modular ✅
+**Contexto**: Necesidad de desarrollo rápido con equipo pequeño
+**Decisión**: Monolito modular con Django + React
+**Estado**: IMPLEMENTADO
+**Beneficios Obtenidos**:
+- ✅ Desarrollo rápido
+- ✅ Deployment simplificado
+- ✅ Menor complejidad operacional
+- ✅ Debugging más sencillo
 
-### ADR-002: JWT para Autenticación
-**Contexto**: Sistema stateless y escalable.
-**Decisión**: JWT con refresh tokens.
-**Consecuencias**:
-- ✅ Stateless
-- ✅ Escalable horizontalmente
-- ✅ Compatible con microservicios
-- ❌ Complejidad en revocación
+### ADR-002: JWT con Refresh Tokens ✅
+**Contexto**: Autenticación stateless y segura
+**Decisión**: JWT con access (15min) y refresh (7 días) tokens
+**Estado**: COMPLETAMENTE IMPLEMENTADO
+**Resultados**:
+- ✅ Auto-refresh transparente
+- ✅ Sesiones seguras
+- ✅ Logout efectivo
+- ✅ Manejo de expiración
 
-### ADR-003: RBAC Personalizado
-**Contexto**: Control granular de permisos por módulo.
-**Decisión**: Sistema RBAC propio con permisos modulares.
-**Consecuencias**:
-- ✅ Control total sobre permisos
-- ✅ Adaptado a necesidades específicas
-- ❌ Mayor complejidad de desarrollo
+### ADR-003: RBAC Granular ✅
+**Contexto**: Control fino de permisos por módulo
+**Decisión**: Sistema RBAC con permisos por endpoint
+**Estado**: IMPLEMENTADO Y FUNCIONANDO
+**Características**:
+- ✅ 6 roles predefinidos
+- ✅ Permisos por módulo
+- ✅ Gates de autorización
+- ✅ Hooks de permisos
 
-### ADR-004: Soft Deletes + Audit Trails
-**Contexto**: Requisitos de auditoría para sector salud.
-**Decisión**: Todos los modelos con soft delete y audit trail.
-**Consecuencias**:
-- ✅ Trazabilidad completa
-- ✅ Cumplimiento normativo
-- ❌ Mayor uso de almacenamiento
+### ADR-004: Eliminación de Dependencias Externas 🆕
+**Contexto**: SUH y REPS causaban complejidad y errores
+**Decisión**: Entrada manual de datos, sin scraping
+**Estado**: IMPLEMENTADO
+**Mejoras**:
+- ✅ Sin dependencias externas
+- ✅ Mayor confiabilidad
+- ✅ Flujos simplificados
+- ✅ Mejor UX
 
-### ADR-005: Plantilla Velzon 4.4.1
-**Contexto**: Acelerar desarrollo de UI profesional.
-**Decisión**: Usar plantilla comercial Velzon.
-**Consecuencias**:
-- ✅ UI profesional inmediata
-- ✅ Componentes probados
-- ✅ Ahorro de tiempo
-- ❌ Dependencia de terceros
+### ADR-005: Auto-save y Estado Persistente ✅
+**Contexto**: Prevenir pérdida de datos en formularios largos
+**Decisión**: Auto-save con debounce de 1 segundo
+**Estado**: IMPLEMENTADO EN WIZARD
+**Beneficios**:
+- ✅ Sin pérdida de datos
+- ✅ Mejor experiencia usuario
+- ✅ Reducción de frustraciones
 
-## 🔧 Componentes del Sistema
+## 📦 Módulos Completados
 
-### Backend Components
+### 1. Módulo de Autenticación (100%) ✅
 
-#### 1. Authentication Module
+#### Características Implementadas:
+- ✅ Login con email/contraseña
+- ✅ JWT tokens (access + refresh)
+- ✅ Auto-refresh de tokens
+- ✅ Logout con invalidación
+- ✅ Protección de rutas
+- ✅ Manejo de sesiones expiradas
+
+#### Estructura del Código:
+```
+backend/apps/authentication/
+├── models.py          # User model extendido
+├── serializers.py     # JWT serializers
+├── views.py          # Login/Logout/Refresh endpoints
+├── utils.py          # Token helpers
+└── tests.py          # 15 tests pasando
+
+frontend/src/
+├── contexts/AuthContext.tsx    # Estado global auth
+├── hooks/useAuth.ts           # Hook de autenticación
+├── services/authService.ts    # API calls
+└── pages/auth/                # UI components
+```
+
+### 2. Módulo de Organizaciones (95%) ✅
+
+#### Características Implementadas:
+- ✅ Wizard multi-paso con navegación
+- ✅ Información básica (Step 1)
+- ✅ Organización de salud (Step 3b) - entrada manual
+- ✅ Servicios de salud (Step 3c) - modal UI
+- ✅ Auto-save en todos los pasos
+- ✅ Validación en tiempo real
+- ✅ Persistencia de estado
+
+#### Simplificaciones Exitosas:
+- ❌ ~~Integración SUH~~ → ✅ Entrada manual
+- ❌ ~~Validación REPS~~ → ✅ Campo de texto simple
+- ❌ ~~Scraping externo~~ → ✅ Formularios directos
+
+#### Estructura:
+```
+backend/apps/organization/
+├── models.py         # Organization, HealthOrganization, HealthService
+├── serializers.py    # Nested serializers con validación
+├── views.py         # ViewSets con auto-save
+├── validators.py    # NIT validation
+└── tests.py         # 22 tests pasando
+
+frontend/src/
+├── pages/organization/wizard/    # Wizard container
+├── components/wizard/steps/      # Step components
+├── components/forms/             # Form components
+└── hooks/useOrganizationWizard.ts # Estado del wizard
+```
+
+## 🔧 Módulos en Desarrollo
+
+### 3. Módulo de Procesos (15%) ⚠️
+**Estado**: Estructura básica creada
+**Pendiente**:
+- [ ] Modelos de datos completos
+- [ ] API endpoints
+- [ ] UI de gestión
+- [ ] Mapeo de procesos
+- [ ] Versionado
+
+### 4. Módulo de Auditorías (10%) 🔧
+**Estado**: Scaffolding inicial
+**Pendiente**:
+- [ ] Sistema de planificación
+- [ ] Checklists
+- [ ] Informes
+- [ ] Seguimiento de hallazgos
+
+### 5. Módulo de Indicadores (5%) 📊
+**Estado**: Concepto definido
+**Pendiente**:
+- [ ] KPIs configurables
+- [ ] Dashboards
+- [ ] Alertas
+- [ ] Reportes
+
+### 6. Módulo de Normograma (5%) 📜
+**Estado**: Análisis inicial
+**Pendiente**:
+- [ ] Gestión de normativas
+- [ ] Matriz de cumplimiento
+- [ ] Alertas de actualización
+
+## 💻 Stack Tecnológico
+
+### Backend (Estable y Funcionando)
 ```python
-apps/authentication/
-├── models.py       # User model extendido
-├── serializers.py  # JWT serializers
-├── views.py        # Login/Logout/Refresh
-├── middleware.py   # JWT validation
-└── utils.py        # Token helpers
+# Versiones en Producción
+Django==5.0.0
+djangorestframework==3.15.0
+django-cors-headers==4.3.0
+djangorestframework-simplejwt==5.3.0
+psycopg2-binary==2.9.9
+python-decouple==3.8
 ```
 
-#### 2. Authorization Module
-```python
-apps/authorization/
-├── models.py       # Role, Permission
-├── permissions.py  # Permission classes
-├── decorators.py   # @permission_required
-├── services.py     # RBAC logic
-└── mixins.py       # Permission mixins
+### Frontend (Optimizado y Estable)
+```json
+{
+  "dependencies": {
+    "react": "^19.0.0",
+    "typescript": "^5.3.0",
+    "react-router-dom": "^6.20.0",
+    "bootstrap": "^5.3.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "axios": "^1.6.0"
+  }
+}
 ```
 
-#### 3. Organization Module
-```python
-apps/organization/
-├── models.py       # Organization, Location, Template
-├── serializers.py  # Nested serializers
-├── views.py        # CRUD + Wizard
-├── signals.py      # Post-save actions
-└── validators.py   # NIT validation
-```
-
-### Frontend Components
-
-#### 1. Context Providers
-```typescript
-contexts/
-├── AuthContext.tsx      // Authentication state
-├── PermissionContext.tsx // RBAC state
-├── OrganizationContext.tsx // Org data
-└── ThemeContext.tsx     // UI theme
-```
-
-#### 2. Custom Hooks
-```typescript
-hooks/
-├── useAuth.ts          // Auth operations
-├── usePermissions.ts   // Permission checks
-├── useApi.ts          // API calls
-├── useToast.ts        // Notifications
-└── useWizard.ts       // Wizard navigation
-```
-
-#### 3. UI Components
-```typescript
-components/
-├── common/            // Shared components
-├── forms/            // Form components
-├── layout/           // Layout components
-├── wizard/           // Wizard steps
-└── dashboard/        // Dashboard widgets
-```
+### DevOps (Configurado)
+- Docker + Docker Compose
+- PostgreSQL 15 en contenedor
+- Hot reload en desarrollo
+- Git workflow establecido
 
 ## 🔄 Flujos de Datos
 
-### Flujo de Autenticación
+### Flujo de Autenticación (Implementado)
 ```
-1. Usuario ingresa credenciales
-2. Frontend → POST /api/v1/auth/login/
-3. Backend valida credenciales
-4. Backend genera JWT tokens (access + refresh)
-5. Frontend almacena tokens en localStorage
-6. Frontend incluye token en headers subsecuentes
-7. Backend valida token en cada request
-8. Token expira → Auto-refresh con refresh token
+1. Login → POST /api/v1/auth/login/
+2. Recibe tokens (access + refresh)
+3. Almacena en localStorage
+4. Auto-refresh antes de expiración
+5. Logout → Limpia tokens
 ```
 
-### Flujo de Autorización
+### Flujo del Wizard (Funcionando)
 ```
-1. Usuario intenta acceder a recurso
-2. Frontend verifica permiso local (optimista)
-3. Request incluye JWT token
-4. Backend extrae usuario del token
-5. Backend verifica permisos RBAC
-6. Permitir/Denegar basado en permisos
-7. Log de auditoría de la acción
-```
-
-### Flujo de Datos CRUD
-```
-1. Usuario inicia operación CRUD
-2. Frontend valida datos localmente
-3. Frontend → API request con datos
-4. Backend valida permisos
-5. Backend valida datos (serializers)
-6. Backend ejecuta operación DB
-7. Backend registra audit trail
-8. Backend → Response con datos actualizados
-9. Frontend actualiza estado local
-10. Frontend muestra feedback al usuario
+1. Carga datos existentes o inicia nuevo
+2. Usuario completa paso
+3. Auto-save después de 1 segundo
+4. Backend valida y guarda
+5. Navegación libre entre pasos
+6. Estado persistente entre sesiones
 ```
 
 ## 🔐 Seguridad
 
-### Capas de Seguridad
+### Implementado y Activo
+- ✅ JWT authentication
+- ✅ RBAC authorization
+- ✅ CORS configurado
+- ✅ CSRF protection
+- ✅ Input validation
+- ✅ SQL injection prevention (ORM)
+- ✅ XSS protection
+- ✅ Audit logging
 
-1. **Frontend**
-   - Sanitización de inputs
-   - Validación de formularios
-   - HTTPS only
-   - Content Security Policy
-
-2. **API**
-   - JWT Authentication
-   - RBAC Authorization
-   - Rate limiting
-   - CORS configuration
-   - CSRF protection
-
-3. **Backend**
-   - Input validation
-   - SQL injection prevention (ORM)
-   - XSS protection
-   - Password hashing (bcrypt)
-   - Audit logging
-
-4. **Database**
-   - Encrypted connections
-   - Row-level security
-   - Backup encryption
-   - Access control
-
-### Headers de Seguridad
+### Headers de Seguridad (Configurados)
 ```python
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True  # En producción
+CSRF_COOKIE_SECURE = True     # En producción
 ```
 
-## 📈 Escalabilidad
+## 📈 Performance y Optimizaciones
 
-### Estrategias de Escalamiento
+### Mejoras Implementadas
+- ✅ Eliminación de scraping (SUH/REPS)
+- ✅ Reducción de llamadas API
+- ✅ Auto-save con debounce
+- ✅ Lazy loading de componentes
+- ✅ Queries optimizadas con select_related
+- ✅ Índices en campos frecuentes
 
-#### Horizontal Scaling
-```
-┌──────────┐     ┌──────────┐     ┌──────────┐
-│  App 1   │     │  App 2   │     │  App 3   │
-└────┬─────┘     └────┬─────┘     └────┬─────┘
-     │                │                │
-     └────────────────┼────────────────┘
-                      │
-              ┌───────┴────────┐
-              │  Load Balancer │
-              └───────┬────────┘
-                      │
-              ┌───────┴────────┐
-              │   PostgreSQL   │
-              │   (Primary)    │
-              └───────┬────────┘
-                      │
-        ┌─────────────┼─────────────┐
-        │                           │
-┌───────┴────────┐         ┌───────┴────────┐
-│  PG Replica 1  │         │  PG Replica 2  │
-└────────────────┘         └────────────────┘
-```
+### Métricas Actuales
+- Login: < 500ms
+- Carga del wizard: < 1s
+- Auto-save: < 300ms
+- Navegación entre pasos: instantánea
 
-#### Caching Strategy
-1. **Redis Cache**: Session data, frequently accessed data
-2. **CDN**: Static assets (JS, CSS, images)
-3. **Database Query Cache**: Complex queries
-4. **Application Cache**: Computed results
+## 🚀 Roadmap de Desarrollo
 
-#### Performance Optimizations
-- Database indexing on frequently queried fields
-- Lazy loading for large datasets
-- Pagination for lists
-- Async task processing (Celery)
-- Connection pooling
-- Query optimization (select_related, prefetch_related)
+### Fase 1: Consolidación (Actual) ✅
+- [x] Estabilizar módulos core
+- [x] Eliminar dependencias problemáticas
+- [x] Mejorar UX del wizard
+- [x] Completar tests unitarios
 
-## 🔄 Patrones de Integración
+### Fase 2: Módulo de Procesos (Próximo) 🎯
+**Timeline**: 2-3 semanas
+- [ ] Diseño de modelos de procesos
+- [ ] CRUD de procesos
+- [ ] Mapeo y diagramación
+- [ ] Versionado de procesos
+- [ ] Integración con organizaciones
 
-### API REST Patterns
-```
-GET    /api/v1/resources/          # List
-POST   /api/v1/resources/          # Create
-GET    /api/v1/resources/{id}/     # Retrieve
-PUT    /api/v1/resources/{id}/     # Update
-PATCH  /api/v1/resources/{id}/     # Partial update
-DELETE /api/v1/resources/{id}/     # Delete
+### Fase 3: Módulo de Auditorías
+**Timeline**: 3-4 semanas
+- [ ] Planificación de auditorías
+- [ ] Gestión de checklists
+- [ ] Registro de hallazgos
+- [ ] Generación de informes
+- [ ] Seguimiento de acciones
 
-# Custom actions
-POST   /api/v1/resources/{id}/approve/
-POST   /api/v1/resources/{id}/reject/
-GET    /api/v1/resources/{id}/audit-trail/
-```
+### Fase 4: Módulo de Indicadores
+**Timeline**: 2-3 semanas
+- [ ] Definición de KPIs
+- [ ] Dashboard interactivo
+- [ ] Sistema de alertas
+- [ ] Reportes automáticos
 
-### WebSocket (Futuro)
-```
-ws://api.zentraqms.com/ws/notifications/
-ws://api.zentraqms.com/ws/real-time-updates/
-```
+### Fase 5: Módulo de Normograma
+**Timeline**: 2 semanas
+- [ ] Gestión de normativas
+- [ ] Matriz de cumplimiento
+- [ ] Sistema de notificaciones
 
-## 📊 Monitoreo y Observabilidad
+## 🎯 Prioridades Inmediatas
 
-### Logging
-```python
-LOGGING = {
-    'version': 1,
-    'handlers': {
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': 'logs/django.log',
-        },
-        'audit': {
-            'class': 'logging.FileHandler',
-            'filename': 'logs/audit.log',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['file'],
-            'level': 'INFO',
-        },
-        'audit': {
-            'handlers': ['audit'],
-            'level': 'INFO',
-        },
-    },
-}
-```
+1. **Completar Módulo de Procesos** (Critical)
+   - Es la base para auditorías e indicadores
+   - Solicitado por usuarios piloto
+   
+2. **Mejorar Dashboard** (High)
+   - Widgets informativos
+   - Accesos rápidos
+   - Resumen de estado
 
-### Métricas Clave
-- Response time (P50, P95, P99)
-- Error rate
-- Active users
-- API calls per minute
-- Database query time
-- Cache hit ratio
+3. **Optimizar Performance** (Medium)
+   - Implementar paginación
+   - Cache de consultas frecuentes
+   - Compresión de assets
 
-## 🚀 Deployment Architecture
+## 📊 Lecciones Aprendidas
 
-### Producción
-```
-┌─────────────────┐
-│   CloudFlare    │
-│      (CDN)      │
-└────────┬────────┘
-         │
-┌────────┴────────┐
-│   Nginx        │
-│ (Load Balancer) │
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    │         │
-┌───┴──┐  ┌──┴───┐
-│ App1 │  │ App2 │
-└───┬──┘  └──┬───┘
-    │         │
-    └────┬────┘
-         │
-┌────────┴────────┐
-│   PostgreSQL    │
-│   (Primary)     │
-└─────────────────┘
+### ✅ Decisiones Acertadas
+1. **Eliminar SUH/REPS**: Simplificó enormemente el sistema
+2. **Auto-save**: Mejoró significativamente la UX
+3. **Modal para servicios**: Evitó problemas de renderizado
+4. **RBAC granular**: Flexibilidad para diferentes instituciones
+
+### ❌ Errores Evitados
+1. **No sobre-ingenierizar**: Soluciones simples primero
+2. **No depender de APIs externas**: Control total del flujo
+3. **No crear componentes custom**: Usar Velzon siempre
+4. **No optimizar prematuramente**: Funcionalidad primero
+
+## 🔧 Configuración de Desarrollo
+
+### Ambiente Local Funcional
+```bash
+# Backend (Puerto 8000)
+cd backend
+python manage.py runserver
+
+# Frontend (Puerto 3000)
+cd frontend
+npm run dev
+
+# Database
+docker-compose up -d postgres
 ```
 
-### Desarrollo
-```
-┌─────────────────┐
-│  Docker Compose │
-├─────────────────┤
-│  - Frontend     │
-│  - Backend      │
-│  - PostgreSQL   │
-│  - Redis        │
-└─────────────────┘
+### Tests
+```bash
+# Backend - 37 tests pasando
+cd backend && python manage.py test
+
+# Frontend - Tests pendientes
+cd frontend && npm run test
 ```
 
-## 🔄 Ciclo de Vida de Datos
+## 💡 Notas Técnicas
 
-### Creación
-1. Validación en frontend
-2. Validación en backend
-3. Guardado en DB con audit trail
-4. Notificación a usuarios relevantes
+### Patrones Implementados
+- **Repository Pattern**: Servicios para lógica de negocio
+- **Factory Pattern**: Creación de objetos complejos
+- **Observer Pattern**: Auto-save y actualizaciones
+- **Strategy Pattern**: Validaciones intercambiables
 
-### Actualización
-1. Verificación de permisos
-2. Validación de cambios
-3. Registro de versión anterior
-4. Actualización con timestamp
-5. Notificación de cambios
-
-### Eliminación (Soft Delete)
-1. Verificación de permisos especiales
-2. Marcado como eliminado
-3. Registro de quién y cuándo
-4. Datos permanecen para auditoría
-
-### Archivado
-1. Datos antiguos movidos a tablas de archivo
-2. Disponibles para consulta histórica
-3. No afectan performance de producción
+### Convenciones Establecidas
+- API RESTful con verbos HTTP estándar
+- Nombres en inglés para código
+- UI en español para usuarios
+- Comentarios en puntos críticos
+- Tests para funcionalidad core
 
 ---
 
-💡 **Nota**: Esta arquitectura está diseñada para soportar el crecimiento esperado del sistema y cumplir con los requisitos regulatorios del sector salud colombiano.
+**Estado del Documento**: Actualizado al 2025-01-15
+**Versión**: 2.0.0
+**Mantiene**: Equipo de Arquitectura ZentraQMS
+
+💡 **Para Desarrolladores**: Este documento refleja el estado REAL del sistema. Use los módulos completados como referencia para nuevos desarrollos. Evite dependencias externas y priorice simplicidad sobre complejidad.

@@ -7,7 +7,7 @@ providing API serialization and validation.
 
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
-from .models import Organization, Location, SectorTemplate, AuditLog, HealthOrganization, HealthService
+from .models import Organization, Location, SectorTemplate, AuditLog, HealthOrganization, HealthService, SedePrestadora, SedeServicio
 
 
 class LocationSerializer(serializers.ModelSerializer):
@@ -450,7 +450,7 @@ class LocationWizardStep1Serializer(serializers.ModelSerializer):
             dict: Validated attributes
         """
         # Validar campos obligatorios para sede principal
-        required_fields = ["nombre", "direccion", "ciudad", "departamento"]
+        required_fields = ["nombre", "direccion", "municipio", "departamento"]
 
         for field in required_fields:
             if not attrs.get(field):
@@ -1288,3 +1288,584 @@ class HealthServicesValidationSerializer(serializers.Serializer):
                 )
         
         return value
+
+
+# ===========================================
+# SERIALIZERS PARA SEDES PRESTADORAS
+# ===========================================
+
+class SedeServicioSerializer(serializers.ModelSerializer):
+    """Serializer para servicios en una sede"""
+    
+    nombre_servicio = serializers.CharField(source='servicio.nombre_servicio', read_only=True)
+    codigo_servicio = serializers.CharField(source='servicio.codigo_servicio', read_only=True)
+    grupo_servicio = serializers.CharField(source='servicio.grupo_servicio', read_only=True)
+    
+    class Meta:
+        model = SedeServicio
+        fields = [
+            'id',
+            'servicio',
+            'codigo_servicio',
+            'nombre_servicio', 
+            'grupo_servicio',
+            'distintivo',
+            'capacidad_instalada',
+            'fecha_habilitacion',
+            'estado_servicio',
+            'observaciones',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def validate_distintivo(self, value):
+        """Validate that distintivo is unique within the sede."""
+        sede = self.context.get('sede')
+        if sede:
+            existing = SedeServicio.objects.filter(
+                sede=sede, 
+                distintivo=value
+            ).exclude(pk=self.instance.pk if self.instance else None)
+            
+            if existing.exists():
+                raise serializers.ValidationError(
+                    _('Ya existe un servicio con este código distintivo en la sede.')
+                )
+        return value
+
+
+class SedeSerializer(serializers.ModelSerializer):
+    """Serializer principal para sedes prestadoras"""
+    
+    servicios_habilitados = SedeServicioSerializer(
+        source='sede_servicios',
+        many=True,
+        read_only=True
+    )
+    total_servicios = serializers.SerializerMethodField()
+    direccion_completa = serializers.ReadOnlyField()
+    
+    # Campos para mostrar información de la organización de salud
+    organization_name = serializers.CharField(
+        source='health_organization.organization.razon_social', 
+        read_only=True
+    )
+    codigo_prestador_organizacion = serializers.CharField(
+        source='health_organization.codigo_prestador', 
+        read_only=True
+    )
+    
+    class Meta:
+        model = SedePrestadora
+        fields = [
+            'id',
+            'health_organization',
+            'organization_name',
+            'codigo_prestador_organizacion',
+            'numero_sede',
+            'codigo_prestador',
+            'nombre_sede',
+            'tipo_sede',
+            'es_sede_principal',
+            'direccion',
+            'departamento',
+            'municipio',
+            'barrio',
+            'codigo_postal',
+            'direccion_completa',
+            'latitud',
+            'longitud',
+            'telefono_principal',
+            'telefono_secundario',
+            'email',
+            'nombre_responsable',
+            'cargo_responsable',
+            'telefono_responsable',
+            'email_responsable',
+            'estado',
+            'fecha_habilitacion',
+            'fecha_renovacion',
+            'numero_camas',
+            'numero_consultorios',
+            'numero_quirofanos',
+            'horario_atencion',
+            'atencion_24_horas',
+            'servicios_habilitados',
+            'total_servicios',
+            'observaciones',
+            'imported_from_file',
+            'import_date',
+            'is_active',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = [
+            'id', 'direccion_completa', 'total_servicios', 'organization_name',
+            'codigo_prestador_organizacion', 'created_at', 'updated_at'
+        ]
+    
+    def get_total_servicios(self, obj):
+        """Get total count of active services in the sede."""
+        return obj.total_servicios
+    
+    def validate_numero_sede(self, value):
+        """Validar formato de número de sede"""
+        if not value.isdigit() or len(value) > 3:
+            raise serializers.ValidationError(
+                _("El número de sede debe ser numérico y máximo 3 dígitos")
+            )
+        return value.zfill(2)  # Formatear con ceros a la izquierda
+    
+    def validate_codigo_prestador(self, value):
+        """Validar formato de código prestador"""
+        if not value or len(value) < 9:
+            raise serializers.ValidationError(
+                _("El código de prestador debe tener al menos 9 caracteres")
+            )
+        return value
+    
+    def validate_email(self, value):
+        """Validar formato de email"""
+        if value:
+            try:
+                from django.core.validators import validate_email
+                validate_email(value)
+            except ValidationError:
+                raise serializers.ValidationError(_("Email inválido"))
+        return value
+    
+    def validate(self, data):
+        """Validaciones cruzadas"""
+        # Validar sede principal única por organización
+        if data.get('es_sede_principal'):
+            health_org = data.get('health_organization') or (
+                self.instance.health_organization if self.instance else None
+            )
+            
+            if health_org:
+                existing = SedePrestadora.objects.filter(
+                    health_organization=health_org,
+                    es_sede_principal=True,
+                    deleted_at__isnull=True
+                ).exclude(pk=self.instance.pk if self.instance else None)
+                
+                if existing.exists():
+                    raise serializers.ValidationError({
+                        'es_sede_principal': _('Ya existe una sede principal para esta organización')
+                    })
+        
+        # Validar unicidad de número de sede por organización
+        if data.get('numero_sede'):
+            health_org = data.get('health_organization') or (
+                self.instance.health_organization if self.instance else None
+            )
+            
+            if health_org:
+                existing = SedePrestadora.objects.filter(
+                    health_organization=health_org,
+                    numero_sede=data['numero_sede'],
+                    deleted_at__isnull=True
+                ).exclude(pk=self.instance.pk if self.instance else None)
+                
+                if existing.exists():
+                    raise serializers.ValidationError({
+                        'numero_sede': _('Ya existe una sede con este número para esta organización')
+                    })
+        
+        # Validar unicidad de código prestador por organización
+        if data.get('codigo_prestador'):
+            health_org = data.get('health_organization') or (
+                self.instance.health_organization if self.instance else None
+            )
+            
+            if health_org:
+                existing = SedePrestadora.objects.filter(
+                    health_organization=health_org,
+                    codigo_prestador=data['codigo_prestador'],
+                    deleted_at__isnull=True
+                ).exclude(pk=self.instance.pk if self.instance else None)
+                
+                if existing.exists():
+                    raise serializers.ValidationError({
+                        'codigo_prestador': _('Ya existe una sede con este código prestador para esta organización')
+                    })
+        
+        return data
+
+
+class SedeListSerializer(serializers.ModelSerializer):
+    """Serializer simplificado para listado de sedes"""
+    
+    total_servicios = serializers.SerializerMethodField()
+    direccion_completa = serializers.ReadOnlyField()
+    organization_name = serializers.CharField(
+        source='health_organization.organization.razon_social', 
+        read_only=True
+    )
+    
+    class Meta:
+        model = SedePrestadora
+        fields = [
+            'id',
+            'numero_sede',
+            'nombre_sede',
+            'tipo_sede',
+            'es_sede_principal',
+            'direccion_completa',
+            'departamento',
+            'municipio',
+            'telefono_principal',
+            'email',
+            'estado',
+            'total_servicios',
+            'atencion_24_horas',
+            'organization_name',
+            'created_at',
+        ]
+    
+    def get_total_servicios(self, obj):
+        return obj.total_servicios
+
+
+class SedeCreateSerializer(serializers.ModelSerializer):
+    """Serializer para creación de sedes con validaciones estrictas"""
+    
+    class Meta:
+        model = SedePrestadora
+        fields = [
+            'health_organization',
+            'numero_sede',
+            'codigo_prestador',
+            'nombre_sede',
+            'tipo_sede',
+            'es_sede_principal',
+            'direccion',
+            'departamento',
+            'municipio',
+            'barrio',
+            'codigo_postal',
+            'latitud',
+            'longitud',
+            'telefono_principal',
+            'telefono_secundario',
+            'email',
+            'nombre_responsable',
+            'cargo_responsable',
+            'telefono_responsable',
+            'email_responsable',
+            'estado',
+            'fecha_habilitacion',
+            'fecha_renovacion',
+            'numero_camas',
+            'numero_consultorios',
+            'numero_quirofanos',
+            'horario_atencion',
+            'atencion_24_horas',
+            'observaciones',
+        ]
+    
+    def validate(self, data):
+        """Validaciones específicas para creación"""
+        # Validar campos requeridos
+        required_fields = [
+            'numero_sede', 'codigo_prestador', 'nombre_sede',
+            'direccion', 'departamento', 'municipio',
+            'telefono_principal', 'email', 'nombre_responsable',
+            'cargo_responsable'
+        ]
+        
+        for field in required_fields:
+            if not data.get(field):
+                raise serializers.ValidationError({
+                    field: _('Este campo es obligatorio')
+                })
+        
+        # Si es la primera sede, debe ser principal
+        health_org = data.get('health_organization')
+        if health_org:
+            existing_sedes = SedePrestadora.objects.filter(
+                health_organization=health_org,
+                deleted_at__isnull=True
+            ).exists()
+            
+            if not existing_sedes and not data.get('es_sede_principal'):
+                data['es_sede_principal'] = True
+        
+        return super().validate(data)
+
+
+class SedeImportSerializer(serializers.Serializer):
+    """Serializer para importación de sedes desde archivo"""
+    
+    file = serializers.FileField(
+        help_text=_('Archivo CSV o Excel con datos de sedes')
+    )
+    format = serializers.ChoiceField(
+        choices=['csv', 'excel'],
+        default='csv',
+        help_text=_('Formato del archivo')
+    )
+    mapping = serializers.JSONField(
+        required=False,
+        help_text=_('Mapeo de columnas del archivo a campos del modelo')
+    )
+    validate_only = serializers.BooleanField(
+        default=False,
+        help_text=_('Solo validar sin importar')
+    )
+    overwrite_existing = serializers.BooleanField(
+        default=False,
+        help_text=_('Sobrescribir sedes existentes con mismo número')
+    )
+    
+    def validate_file(self, value):
+        """Validar archivo de importación"""
+        # Validar tamaño máximo (10 MB)
+        if value.size > 10 * 1024 * 1024:
+            raise serializers.ValidationError(
+                _("El archivo no debe superar los 10 MB")
+            )
+        
+        # Validar extensión según formato
+        ext = value.name.split('.')[-1].lower()
+        format_type = self.initial_data.get('format', 'csv')
+        
+        valid_extensions = {
+            'csv': ['csv'],
+            'excel': ['xlsx', 'xls']
+        }
+        
+        if ext not in valid_extensions.get(format_type, []):
+            raise serializers.ValidationError(
+                _("Extensión de archivo inválida para el formato seleccionado")
+            )
+        
+        return value
+    
+    def validate_mapping(self, value):
+        """Validar mapeo de columnas"""
+        if value:
+            required_fields = [
+                'numero_sede', 'nombre_sede', 'direccion',
+                'departamento', 'municipio', 'telefono_principal',
+                'email', 'nombre_responsable', 'cargo_responsable'
+            ]
+            
+            mapped_fields = list(value.values())
+            missing_fields = [field for field in required_fields if field not in mapped_fields]
+            
+            if missing_fields:
+                raise serializers.ValidationError(
+                    _("Faltan mapeos para campos obligatorios: {}").format(
+                        ', '.join(missing_fields)
+                    )
+                )
+        
+        return value
+
+
+class SedeValidationSerializer(serializers.Serializer):
+    """Serializer para validar datos de sede sin guardar"""
+    
+    numero_sede = serializers.CharField(max_length=10)
+    codigo_prestador = serializers.CharField(max_length=20)
+    nombre_sede = serializers.CharField(max_length=200)
+    tipo_sede = serializers.ChoiceField(choices=SedePrestadora.TIPO_SEDE_CHOICES)
+    es_sede_principal = serializers.BooleanField(default=False)
+    direccion = serializers.CharField(max_length=255)
+    departamento = serializers.CharField(max_length=100)
+    municipio = serializers.CharField(max_length=100)
+    telefono_principal = serializers.CharField(max_length=20)
+    email = serializers.EmailField()
+    nombre_responsable = serializers.CharField(max_length=200)
+    cargo_responsable = serializers.CharField(max_length=100)
+    
+    def validate(self, data):
+        """Validaciones completas sin persistir"""
+        # Aplicar las mismas validaciones que SedeSerializer
+        sede_serializer = SedeSerializer(data=data, context=self.context)
+        
+        try:
+            sede_serializer.is_valid(raise_exception=True)
+            return data
+        except serializers.ValidationError as e:
+            raise e
+
+
+class SedeBulkSerializer(serializers.Serializer):
+    """Serializer para operaciones en lote de sedes"""
+    
+    sedes = serializers.ListField(
+        child=SedeCreateSerializer(),
+        min_length=1,
+        help_text=_('Lista de sedes para crear')
+    )
+    
+    def validate_sedes(self, value):
+        """Validar lista de sedes para operaciones en lote"""
+        # Validar que no haya números de sede duplicados
+        numeros_sede = [sede['numero_sede'] for sede in value if 'numero_sede' in sede]
+        if len(numeros_sede) != len(set(numeros_sede)):
+            raise serializers.ValidationError(
+                _('Hay números de sede duplicados en la lista')
+            )
+        
+        # Validar que solo haya una sede principal
+        sedes_principales = [sede for sede in value if sede.get('es_sede_principal')]
+        if len(sedes_principales) > 1:
+            raise serializers.ValidationError(
+                _('Solo puede haber una sede principal en la lista')
+            )
+        
+        return value
+
+
+
+# Simplified Wizard Serializers
+class OrganizationWizardSerializer(serializers.ModelSerializer):
+    """
+    Simplified serializer for organization wizard.
+    
+    This serializer handles only the basic organization data required
+    for the simplified wizard flow, excluding health-specific fields.
+    """
+    
+    logo = serializers.ImageField(required=False, allow_null=True)
+    nit_completo = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = Organization
+        fields = [
+            'id',
+            'razon_social',
+            'nit',
+            'digito_verificacion',
+            'nit_completo',
+            'email_contacto',
+            'telefono_principal',
+            'website',
+            'descripcion',
+            'logo',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'nit_completo', 'created_at', 'updated_at']
+    
+    def validate_razon_social(self, value):
+        """Validate organization name."""
+        from .validators import validate_razon_social
+        validate_razon_social(value)
+        return value
+    
+    def validate_nit(self, value):
+        """Validate NIT format."""
+        from .validators import validate_nit_format
+        validate_nit_format(value)
+        
+        # Check uniqueness for new organizations
+        if not self.instance:
+            if Organization.objects.filter(nit=value).exists():
+                raise serializers.ValidationError(
+                    _('Ya existe una organización con este NIT.')
+                )
+        return value
+    
+    def validate_digito_verificacion(self, value):
+        """Validate verification digit."""
+        from .validators import validate_verification_digit
+        validate_verification_digit(value)
+        return value
+    
+    def validate_email_contacto(self, value):
+        """Validate contact email."""
+        if value:
+            from .validators import validate_email_domain
+            validate_email_domain(value)
+        return value
+    
+    def validate_telefono_principal(self, value):
+        """Validate phone number."""
+        if value:
+            from .validators import validate_colombian_phone
+            validate_colombian_phone(value)
+        return value
+    
+    def validate_website(self, value):
+        """Validate website URL."""
+        if value:
+            from .validators import validate_website_url
+            validate_website_url(value)
+        return value
+    
+    def validate_descripcion(self, value):
+        """Validate description length."""
+        if value:
+            from .validators import validate_description_length
+            validate_description_length(value)
+        return value
+    
+    def validate_logo(self, value):
+        """Validate logo upload."""
+        if value:
+            # Validate file type
+            allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+            if value.content_type not in allowed_types:
+                raise serializers.ValidationError(
+                    _('Formato de imagen no válido. Use JPEG, PNG, GIF o WebP.')
+                )
+            
+            # Validate file size (max 5MB)
+            max_size = 5 * 1024 * 1024  # 5MB
+            if value.size > max_size:
+                raise serializers.ValidationError(
+                    _('La imagen es demasiado grande. Tamaño máximo: 5MB.')
+                )
+        
+        return value
+    
+    def create(self, validated_data):
+        """Create organization with default values for simplified wizard."""
+        # Set default values for non-wizard fields
+        validated_data.setdefault('tipo_organizacion', 'empresa_privada')
+        validated_data.setdefault('sector_economico', 'servicios')
+        validated_data.setdefault('tamaño_empresa', 'pequeña')
+        
+        return super().create(validated_data)
+
+
+class OrganizationWizardCreateSerializer(OrganizationWizardSerializer):
+    """Serializer for creating organizations through the wizard."""
+    
+    class Meta(OrganizationWizardSerializer.Meta):
+        fields = [
+            'razon_social',
+            'nit',
+            'digito_verificacion',
+            'email_contacto',
+            'telefono_principal',
+            'website',
+            'descripcion',
+            'logo',
+        ]
+
+
+class DivipolaSerializer(serializers.Serializer):
+    """Serializer for DIVIPOLA data (departments and municipalities)."""
+    
+    code = serializers.CharField(max_length=5)
+    name = serializers.CharField(max_length=100)
+
+
+class DepartmentSerializer(DivipolaSerializer):
+    """Serializer for department data."""
+    
+    capital = serializers.CharField(max_length=100)
+
+
+class MunicipalitySerializer(DivipolaSerializer):
+    """Serializer for municipality data."""
+    
+    department_code = serializers.CharField(max_length=2)
+    department_name = serializers.CharField(max_length=100, required=False)
+

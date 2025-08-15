@@ -32,6 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisible }) => {
 
   /**
    * Define menu structure with RBAC permissions
+   * Based on current module implementation status (Autenticación ✅, Organizaciones ✅)
    */
   const allMenuItems: MenuItem[] = useMemo(
     () => [
@@ -43,137 +44,32 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisible }) => {
         // Dashboard is accessible to all authenticated users
       },
       {
-        id: "procesos",
-        label: "Gestión de Procesos",
-        icon: "ri-file-list-3-line",
-        permissions: ["processes.read", "processes.*"],
+        id: "organizacion",
+        label: "Mi Organización",
+        icon: "ri-building-4-line",
+        permissions: ["organization.read", "organization.*"],
         children: [
           {
-            id: "procesos-lista",
-            label: "Lista de Procesos",
-            icon: "ri-file-list-line",
-            path: "/procesos",
-            permissions: ["processes.read", "processes.*"],
+            id: "organizacion-perfil",
+            label: "Perfil Institucional",
+            icon: "ri-building-line",
+            path: "/organizacion/perfil",
+            permissions: ["organization.read", "organization.*"],
           },
           {
-            id: "procesos-nuevo",
-            label: "Nuevo Proceso",
-            icon: "ri-file-add-line",
-            path: "/procesos/nuevo",
-            permissions: ["processes.create", "processes.*"],
+            id: "organizacion-sedes",
+            label: "Sedes y Servicios",
+            icon: "ri-hospital-line",
+            path: "/organizacion/sedes",
+            permissions: ["organization.read", "organization.*"],
           },
           {
-            id: "procesos-mapa",
-            label: "Mapa de Procesos",
-            icon: "ri-flow-chart",
-            path: "/procesos/mapa",
-            permissions: ["processes.read", "processes.*"],
-          },
-        ],
-      },
-      {
-        id: "normograma",
-        label: "Normograma",
-        icon: "ri-book-open-line",
-        permissions: ["documents.read", "documents.*"],
-        children: [
-          {
-            id: "normograma-documentos",
-            label: "Documentos",
-            icon: "ri-folder-line",
-            path: "/normograma",
-            permissions: ["documents.read", "documents.*"],
-          },
-          {
-            id: "normograma-buscar",
-            label: "Búsqueda Avanzada",
-            icon: "ri-search-line",
-            path: "/normograma/buscar",
-            permissions: ["documents.read", "documents.*"],
-          },
-          {
-            id: "normograma-categorias",
-            label: "Categorías",
-            icon: "ri-folder-2-line",
-            path: "/normograma/categorias",
-            permissions: ["documents.update", "documents.*"],
+            id: "organizacion-configuracion",
+            label: "Configuración",
+            icon: "ri-settings-3-line",
+            path: "/organizacion/configuracion",
+            permissions: ["organization.update", "organization.*"],
             roles: ["admin", "super_admin", "coordinador"],
-          },
-        ],
-      },
-      {
-        id: "auditorias",
-        label: "Auditorías",
-        icon: "ri-search-eye-line",
-        permissions: ["audits.read", "audits.*"],
-        children: [
-          {
-            id: "auditorias-lista",
-            label: "Lista de Auditorías",
-            icon: "ri-file-list-2-line",
-            path: "/auditorias",
-            permissions: ["audits.read", "audits.*"],
-          },
-          {
-            id: "auditorias-nueva",
-            label: "Nueva Auditoría",
-            icon: "ri-add-circle-line",
-            path: "/auditorias/nueva",
-            permissions: ["audits.create", "audits.*"],
-            roles: ["admin", "super_admin", "coordinador", "auditor"],
-          },
-          {
-            id: "auditorias-calendario",
-            label: "Calendario",
-            icon: "ri-calendar-line",
-            path: "/auditorias/calendario",
-            permissions: ["audits.read", "audits.*"],
-          },
-          {
-            id: "auditorias-hallazgos",
-            label: "Hallazgos",
-            icon: "ri-error-warning-line",
-            path: "/auditorias/hallazgos",
-            permissions: ["audits.read", "audits.*"],
-          },
-        ],
-      },
-      {
-        id: "indicadores",
-        label: "Indicadores de Gestión",
-        icon: "ri-line-chart-line",
-        permissions: [
-          "indicators.read",
-          "indicators.*",
-          "reports.read",
-          "reports.*",
-        ],
-        children: [
-          {
-            id: "indicadores-dashboard",
-            label: "Dashboard KPIs",
-            icon: "ri-dashboard-line",
-            path: "/indicadores",
-            permissions: [
-              "indicators.read",
-              "indicators.*",
-              "reports.read",
-              "reports.*",
-            ],
-          },
-          {
-            id: "indicadores-lista",
-            label: "Lista de Indicadores",
-            icon: "ri-bar-chart-line",
-            path: "/indicadores/lista",
-            permissions: ["indicators.read", "indicators.*"],
-          },
-          {
-            id: "indicadores-reportes",
-            label: "Reportes",
-            icon: "ri-file-chart-line",
-            path: "/indicadores/reportes",
-            permissions: ["reports.read", "reports.*", "reports.export"],
           },
         ],
       },
@@ -200,12 +96,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisible }) => {
             roles: ["super_admin"],
           },
           {
-            id: "configuracion-sistema",
-            label: "Sistema",
-            icon: "ri-computer-line",
-            path: "/configuracion/sistema",
-            permissions: ["settings.update", "system.admin"],
-            roles: ["super_admin"],
+            id: "configuracion-organizacion",
+            label: "Configuración Inicial",
+            icon: "ri-settings-3-line",
+            path: "/organization/wizard",
+            permissions: ["organization.create", "organization.*"],
+            roles: ["admin", "super_admin"],
           },
         ],
       },
@@ -328,33 +224,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisible }) => {
               .filter((item) => ["dashboard"].includes(item.id))
               .map((item) => renderMenuItem(item))}
 
-            {/* Management Section - Show if user can manage processes, documents, or audits */}
-            {(capabilities.canManageProcesses ||
-              capabilities.canManageDocuments ||
-              capabilities.canManageAudits) && (
-              <>
-                <li className="menu-title">
-                  <span>GESTIÓN</span>
-                </li>
-                {menuItems
-                  .filter((item) =>
-                    ["procesos", "normograma", "auditorias"].includes(item.id),
-                  )
-                  .map((item) => renderMenuItem(item))}
-              </>
-            )}
-
-            {/* Reports & Analysis - Show if user can view reports */}
-            {capabilities.canViewReports && (
-              <>
-                <li className="menu-title">
-                  <span>REPORTES & ANÁLISIS</span>
-                </li>
-                {menuItems
-                  .filter((item) => ["indicadores"].includes(item.id))
-                  .map((item) => renderMenuItem(item))}
-              </>
-            )}
+            {/* Organization Management */}
+            <li className="menu-title">
+              <span>ORGANIZACIÓN</span>
+            </li>
+            {menuItems
+              .filter((item) => ["organizacion"].includes(item.id))
+              .map((item) => renderMenuItem(item))}
 
             {/* Administration - Show only to admin users */}
             {(capabilities.canManageUsers || capabilities.canManageSystem) && (
@@ -365,16 +241,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isVisible }) => {
                 {menuItems
                   .filter((item) => ["configuracion"].includes(item.id))
                   .map((item) => renderMenuItem(item))}
-              </>
-            )}
-
-            {/* Role-specific sections */}
-            {capabilities.isSuperAdmin && (
-              <>
-                <li className="menu-title">
-                  <span>SUPER ADMIN</span>
-                </li>
-                {/* Add super admin specific menu items here */}
               </>
             )}
           </ul>

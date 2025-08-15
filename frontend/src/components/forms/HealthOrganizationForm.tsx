@@ -41,7 +41,6 @@ interface HealthOrganizationFormProps {
   data: Partial<HealthOrganizationData>;
   errors: Partial<HealthOrganizationData>;
   onChange: (data: Partial<HealthOrganizationData>) => void;
-  onValidateReps?: (codigo: string) => Promise<{valid: boolean; data?: any; error?: string}>;
   className?: string;
 }
 
@@ -82,18 +81,11 @@ const HealthOrganizationForm: React.FC<HealthOrganizationFormProps> = ({
   data,
   errors,
   onChange,
-  onValidateReps,
   className = ""
 }) => {
-  const [repsValidationLoading, setRepsValidationLoading] = useState(false);
-  const [repsValidationResult, setRepsValidationResult] = useState<{
-    valid?: boolean;
-    message?: string;
-    data?: any;
-  }>({});
 
   // Initialize Bootstrap tooltips
-  useBootstrapTooltips([data, errors], {
+  useBootstrapTooltips([], {
     placement: 'top',
     trigger: 'hover focus',
     delay: { show: 300, hide: 100 },
@@ -152,16 +144,6 @@ const HealthOrganizationForm: React.FC<HealthOrganizationFormProps> = ({
     }
   };
 
-  // Auto-validate when codigo_prestador changes and has 12 digits
-  useEffect(() => {
-    if (data.codigo_prestador && data.codigo_prestador.length === 12 && onValidateReps) {
-      const timeoutId = setTimeout(() => {
-        handleRepsValidation();
-      }, 1000); // Debounce validation
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [data.codigo_prestador]);
 
   return (
     <div className={`health-organization-form ${className}`}>
@@ -185,7 +167,7 @@ const HealthOrganizationForm: React.FC<HealthOrganizationFormProps> = ({
         </div>
         <div className="card-body">
           <div className="row">
-            <div className="col-lg-8">
+            <div className="col-12">
               <div className="mb-3">
                 <label className="form-label d-flex align-items-center" htmlFor="codigo-prestador">
                   Código Prestador REPS <span className="text-danger ms-1">*</span>
@@ -195,44 +177,21 @@ const HealthOrganizationForm: React.FC<HealthOrganizationFormProps> = ({
                     ariaLabel="Información sobre el código REPS"
                   />
                 </label>
-                <div className="input-group">
-                  <span className="input-group-text">
-                    <i className="ri-government-line"></i>
-                  </span>
-                  <input
-                    type="text"
-                    className={`form-control ${errors.codigo_prestador ? "is-invalid" : ""} ${
-                      repsValidationResult.valid === true ? "is-valid" : ""
-                    }`}
-                    id="codigo-prestador"
-                    placeholder="110012345678"
-                    value={data.codigo_prestador || ""}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '').slice(0, 12);
-                      handleInputChange("codigo_prestador", value);
-                    }}
-                    maxLength={12}
-                    pattern="[0-9]{12}"
-                    aria-describedby="codigo-prestador-help"
-                    aria-required="true"
-                  />
-                  {repsValidationLoading && (
-                    <span className="input-group-text">
-                      <div className="spinner-border spinner-border-sm" role="status">
-                        <span className="visually-hidden">Validando...</span>
-                      </div>
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    className="btn btn-outline-primary"
-                    onClick={handleRepsValidation}
-                    disabled={repsValidationLoading || !data.codigo_prestador || data.codigo_prestador.length !== 12}
-                  >
-                    <i className="ri-search-line me-1"></i>
-                    Validar
-                  </button>
-                </div>
+                <input
+                  type="text"
+                  className={`form-control ${errors.codigo_prestador ? "is-invalid" : ""}`}
+                  id="codigo-prestador"
+                  placeholder="110012345678"
+                  value={data.codigo_prestador || ""}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '').slice(0, 12);
+                    handleInputChange("codigo_prestador", value);
+                  }}
+                  maxLength={12}
+                  pattern="[0-9]{12}"
+                  aria-describedby="codigo-prestador-help"
+                  aria-required="true"
+                />
                 <div id="codigo-prestador-help" className="form-text">
                   <small className="text-muted">
                     Formato: 12 dígitos numéricos. Ejemplo: 110012345678
@@ -244,28 +203,7 @@ const HealthOrganizationForm: React.FC<HealthOrganizationFormProps> = ({
                     {errors.codigo_prestador}
                   </div>
                 )}
-                {repsValidationResult.message && (
-                  <div className={`alert ${repsValidationResult.valid ? 'alert-success' : 'alert-warning'} mt-2 py-2`}>
-                    <i className={`${repsValidationResult.valid ? 'ri-checkbox-circle-line' : 'ri-alert-line'} me-1`}></i>
-                    <small>{repsValidationResult.message}</small>
-                  </div>
-                )}
               </div>
-            </div>
-            <div className="col-lg-4">
-              {data.verificado_reps && repsValidationResult.data && (
-                <div className="alert alert-success p-3">
-                  <h6 className="alert-heading mb-2">
-                    <i className="ri-checkbox-circle-line me-1"></i>
-                    Verificado en REPS
-                  </h6>
-                  <small>
-                    <strong>Nombre:</strong> {repsValidationResult.data.nombre}<br/>
-                    <strong>Ubicación:</strong> {repsValidationResult.data.municipio}, {repsValidationResult.data.departamento}<br/>
-                    <strong>Verificado:</strong> {new Date(data.fecha_verificacion_reps || '').toLocaleDateString()}
-                  </small>
-                </div>
-              )}
             </div>
           </div>
         </div>

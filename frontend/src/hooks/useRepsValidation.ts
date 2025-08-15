@@ -42,16 +42,24 @@ export const useRepsValidation = (): UseRepsValidationReturn => {
     setIsLoading(true);
     
     try {
-      // Call the health validation endpoint
-      const response = await apiClient.post('/organization/health/validate-reps/', {
-        codigo_prestador: codigo
+      // Call the SUH validation endpoint (using existing SUH service)
+      const response = await apiClient.get('/api/v1/suh/validate-nit/', {
+        params: {
+          nit: codigo.substring(0, 9), // Extract NIT from REPS code
+          dv: codigo.substring(9, 10)  // Extract verification digit
+        }
       });
 
       const result: RepsValidationResult = {
-        isValid: response.data.isValid,
-        message: response.data.message,
-        providerData: response.data.providerData || undefined,
-        lastValidated: response.data.lastValidated
+        isValid: response.data.valid || false,
+        message: response.data.message || 'Validación completada',
+        providerData: response.data.prestador_info ? {
+          nombre: response.data.prestador_info.razon_social,
+          departamento: '',
+          municipio: '',
+          direccion: ''
+        } : undefined,
+        lastValidated: new Date().toISOString()
       };
 
       setLastResult(result);

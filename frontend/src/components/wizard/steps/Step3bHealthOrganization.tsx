@@ -6,7 +6,6 @@
  */
 import React from "react";
 import HealthOrganizationForm from "../../forms/HealthOrganizationForm";
-import { useRepsValidation } from "../../../hooks/useRepsValidation";
 import { useBootstrapTooltips } from "../../../hooks/useBootstrapTooltips";
 
 // Types for Health Organization in wizard context
@@ -43,6 +42,8 @@ interface Step3bProps {
   errors: Partial<HealthOrganizationData>;
   onChange: (data: Partial<HealthOrganizationData>) => void;
   organizationName?: string;
+  organizationId?: string;
+  organizationNit?: string;
   selectedSector?: string;
   showIntroduction?: boolean;
 }
@@ -52,29 +53,23 @@ const Step3bHealthOrganization: React.FC<Step3bProps> = ({
   errors,
   onChange,
   organizationName = "",
+  organizationId = "",
+  organizationNit = "",
   selectedSector = "",
   showIntroduction = true
 }) => {
-  const { validateReps } = useRepsValidation();
+  // Manual configuration is the only available option
+  const configMethod = 'manual';
 
   // Initialize Bootstrap tooltips
-  useBootstrapTooltips([data, errors], {
+  useBootstrapTooltips([], {
     placement: 'top',
     trigger: 'hover focus',
     delay: { show: 200, hide: 100 },
     animation: true
   });
 
-  // Handle REPS validation
-  const handleValidateReps = async (codigo: string) => {
-    try {
-      const result = await validateReps(codigo);
-      return result;
-    } catch (error) {
-      console.error('Error validating REPS:', error);
-      return { valid: false, error: 'Error al validar REPS' };
-    }
-  };
+
 
   return (
     <div className="health-organization-step">
@@ -90,8 +85,8 @@ const Step3bHealthOrganization: React.FC<Step3bProps> = ({
                   Configuración para el Sector Salud
                 </h5>
                 <p className="mb-2">
-                  Has seleccionado <strong>"{selectedSector}"</strong> como sector económico para <strong>{organizationName}</strong>.
-                  Ahora necesitamos información específica requerida por la normatividad colombiana para instituciones de salud.
+                  <strong>{organizationName}</strong> será configurada como una institución prestadora de servicios de salud.
+                  Complete la información manualmente con validaciones en tiempo real para garantizar cumplimiento normativo.
                 </p>
                 <hr className="my-3" />
                 <div className="row text-center">
@@ -129,6 +124,7 @@ const Step3bHealthOrganization: React.FC<Step3bProps> = ({
         </div>
       )}
 
+
       {/* Progress indicator */}
       <div className="mb-4">
         <div className="d-flex justify-content-between align-items-center mb-2">
@@ -159,45 +155,44 @@ const Step3bHealthOrganization: React.FC<Step3bProps> = ({
         </small>
       </div>
 
-      {/* Health Organization Form */}
-      <HealthOrganizationForm
-        data={data}
-        errors={errors}
-        onChange={onChange}
-        onValidateReps={handleValidateReps}
-        className="wizard-health-form"
-      />
 
-      {/* Integration Notice */}
-      <div className="mt-4">
-        <div className="card border-0 bg-light">
-          <div className="card-body p-3">
-            <div className="row align-items-center">
-              <div className="col-md-8">
-                <h6 className="card-title mb-1">
-                  <i className="ri-lightbulb-line me-2 text-warning"></i>
-                  Configuración Automática del QMS
-                </h6>
-                <p className="card-text mb-0">
-                  <small className="text-muted">
-                    Basándose en esta información, ZentraQMS configurará automáticamente los módulos 
-                    específicos para instituciones de salud, incluyendo PAMEC, SUH, y SOGCS según aplique.
-                  </small>
-                </p>
-              </div>
-              <div className="col-md-4 text-center">
-                <div className="d-flex justify-content-center align-items-center gap-2">
-                  <div className="text-center">
-                    <i className="ri-cpu-line text-primary" style={{ fontSize: '1.5rem' }}></i>
-                    <br />
-                    <small className="text-muted">QMS Inteligente</small>
-                  </div>
-                </div>
-              </div>
+      {/* Health Organization Form - Manual entry with validation */}
+      <div className="mb-4">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h6 className="mb-0">
+            <i className="ri-edit-line me-2 text-primary"></i>
+            Información de Salud
+          </h6>
+          <div className="badge bg-info-subtle text-info px-3 py-2">
+            <i className="ri-edit-line me-1"></i>
+            Entrada Manual
+          </div>
+        </div>
+        
+        <div className="alert alert-info border-0 mb-3">
+          <div className="d-flex align-items-start">
+            <i className="ri-information-line text-info me-2 mt-1"></i>
+            <div>
+              <h6 className="alert-heading mb-1">Información de Salud</h6>
+              <p className="mb-0">
+                Complete la información de su institución de salud. 
+                Consulte el portal SUH del MinSalud para verificar la información oficial: 
+                <a href="https://prestadores.minsalud.gov.co/habilitacion/" target="_blank" rel="noopener noreferrer" className="alert-link ms-1">
+                  Portal de Habilitación <i className="ri-external-link-line"></i>
+                </a>
+              </p>
             </div>
           </div>
         </div>
+        
+        <HealthOrganizationForm
+          data={data}
+          errors={errors}
+          onChange={onChange}
+          className="wizard-health-form"
+        />
       </div>
+
 
       {/* Help Section */}
       <div className="mt-3">

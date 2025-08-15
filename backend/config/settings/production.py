@@ -108,5 +108,63 @@ ADMIN_URL = config('ADMIN_URL', default='admin/')
 # Monitoring and health checks
 HEALTH_CHECK_PATH = config('HEALTH_CHECK_PATH', default='/health/')
 
-# Create logs directory
+# Configuración de Media Files para Producción
+# En producción, se recomienda usar un servicio de almacenamiento en la nube como AWS S3
+USE_S3_STORAGE = config('USE_S3_STORAGE', default=False, cast=bool)
+
+if USE_S3_STORAGE:
+    # Configuración para AWS S3
+    AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
+    AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
+    AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='us-east-1')
+    AWS_S3_CUSTOM_DOMAIN = config('AWS_S3_CUSTOM_DOMAIN', default=None)
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',
+    }
+    AWS_DEFAULT_ACL = 'private'  # Archivos privados por defecto
+    AWS_S3_FILE_OVERWRITE = False  # No sobrescribir archivos
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    
+    # Usar S3 para media files
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    MEDIA_URL = f'https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/'
+else:
+    # Configuración de media files para servidor tradicional
+    MEDIA_ROOT = config('MEDIA_ROOT', default=str(BASE_DIR / 'media'))  # noqa: F405
+    MEDIA_URL = config('MEDIA_URL', default='/media/')
+
+# Límites más estrictos para producción
+UPLOAD_LIMITS.update({  # noqa: F405
+    'image': {
+        'max_size_mb': 3,  # Más restrictivo en producción
+        'allowed_extensions': ['.jpg', '.jpeg', '.png', '.webp'],
+        'max_width': 1920,
+        'max_height': 1920,
+    },
+    'document': {
+        'max_size_mb': 20,  # Más restrictivo
+        'allowed_extensions': ['.pdf', '.doc', '.docx', '.xls', '.xlsx'],
+    }
+})
+
+# Configuración de seguridad para uploads en producción
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024  # 2MB en producción
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024   # 5MB en producción
+
+# Configuración de limpieza automática más agresiva en producción
+AUTO_CLEANUP_TEMP_FILES_DAYS = 3  # Limpiar archivos temp cada 3 días
+AUTO_CLEANUP_IMPORT_FILES_DAYS = 15  # Limpiar imports cada 15 días
+
+# Monitoreo de almacenamiento
+STORAGE_MONITORING = {
+    'enabled': True,
+    'alert_threshold_gb': 80,  # Alerta cuando se superen 80GB
+    'cleanup_threshold_gb': 100,  # Limpieza automática a los 100GB
+    'notification_emails': config('STORAGE_ALERT_EMAILS', default='').split(',')
+}
+
+# Create logs and media directories
 os.makedirs(BASE_DIR / 'logs', exist_ok=True)  # noqa: F405
+os.makedirs(BASE_DIR / 'media', exist_ok=True)  # noqa: F405
+os.makedirs(BASE_DIR / 'media' / 'temp' / 'uploads', exist_ok=True)  # noqa: F405

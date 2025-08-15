@@ -56,7 +56,7 @@ const Step1bHealthOrganization: React.FC<Step1bProps> = ({
   const { validateReps } = useRepsValidation();
 
   // Initialize Bootstrap tooltips
-  useBootstrapTooltips([data, errors], {
+  useBootstrapTooltips([], {
     placement: 'top',
     trigger: 'hover focus',
     delay: { show: 200, hide: 100 },

@@ -31,7 +31,7 @@ const Step1OrganizationData: React.FC<Step1Props> = ({
   onChange,
 }) => {
   // Initialize Bootstrap tooltips with custom hook
-  useBootstrapTooltips([data, errors], {
+  useBootstrapTooltips([], {
     placement: 'top',
     trigger: 'hover focus',
     delay: { show: 200, hide: 100 },
