@@ -1,91 +1,111 @@
-# 🎯 Instrucciones para Claude - ZentraQMS
+# 🎯 ZentraQMS - Arquitectura Modular Claude
 
-## 🚨 DIRECTIVA PRINCIPAL
+## 🏥 Contexto del Proyecto
 
-**OBLIGATORIO**: Este proyecto utiliza la plantilla **Velzon 4.4.1** que fue comprada. SIEMPRE debes usar los componentes, estilos y recursos de esta plantilla en lugar de crear nuevos desde cero o usar recursos externos.
+**ZentraQMS** es un Sistema de Gestión de Calidad (QMS) integral diseñado específicamente para instituciones de salud en Colombia, cumpliendo con normativas nacionales y estándares ISO 9001:2015.
 
-**Ubicación**: `/Users/juan.bustamante/personal/Velzon_4.4.1/React-TS/Master/`
-
-## ⚡ FLUJO OBLIGATORIO
-
-1. **BUSCAR** en Velzon si existe un componente similar
-2. **COPIAR** el componente completo al proyecto ZentraQMS  
-3. **ADAPTAR** el componente a las necesidades específicas
-4. **NUNCA** crear desde cero si existe en Velzon
-5. **NUNCA** usar recursos externos (CDNs, APIs de imágenes)
-
-## 🚫 PROHIBIDO
-
-- ❌ Usar `ui-avatars.com` → ✅ Usar `/assets/images/users/`
-- ❌ Usar `flagcdn.com` → ✅ Usar `/assets/images/flags/`  
-- ❌ Crear componentes desde cero si existen en Velzon
-- ❌ Referencias directas a carpeta de Velzon en imports
-
-## 📋 CHECKLIST OBLIGATORIO
-
-Antes de implementar CUALQUIER funcionalidad:
-
-- [ ] ¿Busqué en Velzon si existe algo similar?
-- [ ] ¿Copié el componente de Velzon al proyecto?
-- [ ] ¿Copié todos los assets necesarios?
-- [ ] ¿Adapté los imports para usar recursos locales?
-- [ ] ¿Traduje textos a español?
-- [ ] ¿Adapté el contenido al contexto QMS?
-
-## 🚨 PRIMER PASO OBLIGATORIO
-
-**ANTES DE CUALQUIER DESARROLLO**: Revisar [docs/claude/common-traps.md](./docs/claude/common-traps.md) para evitar los 8 errores más frecuentes del proyecto.
+### Stack Tecnológico Principal
+- **Backend**: Django 5.0 + DRF 3.15 + PostgreSQL 15
+- **Frontend**: React 19 + TypeScript 5.3 + Vite 5.0
+- **UI Template**: Velzon 4.4.1 (Licencia comercial)
+- **DevOps**: Docker + GitHub Actions
+- **Testing**: pytest (Backend) + Vitest (Frontend)
 
 ## 📚 DOCUMENTACIÓN MODULAR
 
-Para información detallada, consultar:
+### 🎯 Documentos Principales
+- **[Contexto General](./claude.md)** - Visión general del sistema
+- **[Convenciones](./claude-modules/conventions.claude.md)** - Estándares de código obligatorios
+- **[Arquitectura](./claude-modules/architecture/README.claude.md)** - Decisiones arquitectónicas
 
-### 📖 Contexto Principal
-- **[docs/claude/project-context.md](./docs/claude/project-context.md)** - Contexto completo del proyecto
+### 🚀 Guías de Desarrollo
+- **[Backend Guide](./claude-modules/backend/README.claude.md)** - Django + DRF
+- **[Frontend Guide](./claude-modules/frontend/README.claude.md)** - React + TypeScript
+- **[Velzon Integration](./claude-modules/frontend/velzon-guide.claude.md)** - Uso de la plantilla
+- **[Testing Strategy](./claude-modules/testing/README.claude.md)** - Estrategias de pruebas
 
-### 🚨 Prevención de Errores  
-- **[docs/claude/common-traps.md](./docs/claude/common-traps.md)** - 8 errores críticos + soluciones
+### 📦 Módulos del Sistema
+- **[Autenticación](./claude-modules/auth/README.claude.md)** - JWT + RBAC ✅
+- **[Organizaciones](./claude-modules/organization/README.claude.md)** - Gestión institucional ✅
+- **[Procesos](./claude-modules/processes/README.claude.md)** - Mapeo de procesos 🔧
+- **[Auditorías](./claude-modules/audits/README.claude.md)** - Sistema de auditorías 🔧
+- **[Indicadores](./claude-modules/indicators/README.claude.md)** - KPIs y métricas 🔧
+- **[Normograma](./claude-modules/normogram/README.claude.md)** - Gestión normativa 🔧
 
-### 🎨 Desarrollo UI
-- **[docs/claude/velzon-components.md](./docs/claude/velzon-components.md)** - Mapeo Velzon → QMS (80+ componentes)
-- **[docs/claude/development-patterns.md](./docs/claude/development-patterns.md)** - 10 patrones clave
+### 🔧 Configuración y Despliegue
+- **[Deployment](./claude-modules/deployment/README.claude.md)** - Docker + CI/CD
+- **[Security](./claude-modules/security/README.claude.md)** - Políticas de seguridad
+- **[Performance](./claude-modules/performance/README.claude.md)** - Optimización
 
-### 🔧 APIs y Backend
-- **[docs/claude/api-endpoints.md](./docs/claude/api-endpoints.md)** - Endpoints completos
-- **[docs/claude/rbac-system.md](./docs/claude/rbac-system.md)** - Sistema de permisos
+## 🚨 DIRECTIVAS CRÍTICAS
 
-### 🧪 Testing y Calidad
-- **[docs/claude/testing-guidelines.md](./docs/claude/testing-guidelines.md)** - Estrategias de testing
+### Velzon Template - USO OBLIGATORIO
+```
+⚠️ NUNCA crear componentes desde cero si existen en Velzon
+✅ SIEMPRE buscar primero en: /Users/juan.bustamante/personal/Velzon_4.4.1/React-TS/Master/
+✅ Copiar → Adaptar → Traducir al español
+❌ NO usar CDNs externos (ui-avatars, flagcdn, etc.)
+```
 
-## 📊 ESTADO ACTUAL
+### Flujo de Desarrollo Obligatorio
+1. **Consultar** documentación modular específica
+2. **Verificar** componentes existentes en Velzon
+3. **Seguir** convenciones establecidas
+4. **Testear** toda funcionalidad nueva
+5. **Documentar** cambios significativos
 
-- **Backend**: Django 5.0 + DRF (✅ 34/34 tests)
-- **Frontend**: React 19 + TypeScript (✅ 113/113 tests) 
-- **UI Base**: Velzon 4.4.1 template
-- **Módulos**: ✅ Auth + Organizations | 🔧 Procesos, Auditorías, KPIs
+## 📊 Estado del Sistema
 
-## 🎯 COMANDOS ESENCIALES
+| Módulo | Completado | Tests | Documentación |
+|--------|------------|-------|---------------|
+| Autenticación | 100% | ✅ 15/15 | ✅ Completa |
+| Organizaciones | 95% | ✅ 22/22 | ✅ Completa |
+| Procesos | 15% | 🔧 3/20 | 📝 En progreso |
+| Auditorías | 10% | 🔧 2/15 | 📝 En progreso |
+| Indicadores | 5% | 🔧 1/10 | 📝 Pendiente |
+| Normograma | 5% | 🔧 0/10 | 📝 Pendiente |
+
+## 🎯 Comandos Rápidos
 
 ```bash
 # Desarrollo
-cd backend && python manage.py runserver --settings=config.settings.development
-cd frontend && npm run dev
+make dev              # Inicia backend y frontend
+make test             # Ejecuta todos los tests
+make docs             # Genera documentación
 
-# Testing  
+# Backend específico
+cd backend && python manage.py runserver --settings=config.settings.development
 cd backend && python manage.py test --settings=config.settings.testing
+
+# Frontend específico  
+cd frontend && npm run dev
 cd frontend && npm run test
+cd frontend && npm run build
 ```
 
-## 🚨 RECORDATORIO FINAL
+## 🧭 Navegación Rápida por Contexto
 
-**NUNCA OLVIDES**: Antes de crear CUALQUIER componente:
+### Para implementar una nueva feature:
+1. Revisar **[Convenciones](./claude-modules/conventions.claude.md)**
+2. Consultar módulo específico en **[claude-modules/](./claude-modules/)**
+3. Verificar componentes en **[Velzon Guide](./claude-modules/frontend/velzon-guide.claude.md)**
 
-1. ¿Existe esto en Velzon?
-2. ¿Puedo copiarlo y adaptarlo?  
-3. ¿Estoy usando recursos locales?
+### Para resolver problemas:
+1. Consultar **[Common Traps](./docs/claude/common-traps.md)**
+2. Revisar **[Troubleshooting](./claude-modules/troubleshooting/README.claude.md)**
 
-**Esta plantilla costó dinero y debe ser aprovechada al máximo.**
+### Para optimizar rendimiento:
+1. Ver **[Performance Guide](./claude-modules/performance/README.claude.md)**
+2. Aplicar **[Best Practices](./claude-modules/common/patterns.claude.md)**
+
+## 🔐 Principios Fundamentales
+
+1. **Velzon First**: Usar componentes existentes de la plantilla
+2. **Test Driven**: Escribir tests antes del código
+3. **RBAC Everywhere**: Validar permisos en cada endpoint
+4. **Audit Everything**: Registrar todas las operaciones
+5. **Colombian Context**: Cumplir normativa de salud colombiana
 
 ---
 
-💡 **Para más detalles**: Consultar la documentación modular en `docs/claude/`
+💡 **Nota para Claude**: Este es tu punto de entrada principal. Para tareas específicas, navega a la documentación modular correspondiente en `./claude-modules/`
