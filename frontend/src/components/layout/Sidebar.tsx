@@ -1,255 +1,171 @@
-import React, { useState, useMemo } from "react";
-import { usePermissions } from "../../hooks/usePermissions";
-import { PermissionGate } from "../common/PermissionGate";
+import React, { useEffect, useState, useRef } from "react";
+import { Link } from "../../utils/SimpleRouter";
+import { useAuth } from "../../hooks/useAuth";
+import VerticalLayout from "./VerticalLayout.tsx";
+//import logo
 import logoSm from "../../assets/images/logo-sm.png";
+import logoDark from "../../assets/images/logo-dark.png";
 import logoLight from "../../assets/images/logo-light.png";
+import avatar1 from "../../assets/images/users/avatar-1.jpg";
 
 interface SidebarProps {
-  isVisible: boolean;
+  layoutType?: string;
+  isVisible?: boolean;
 }
 
-interface MenuItem {
-  id: string;
-  label: string;
-  icon: string;
-  path?: string;
-  children?: MenuItem[];
-  // RBAC fields (Phase 5)
-  permission?: string;
-  permissions?: string[];
-  role?: string;
-  roles?: string[];
-  requireAllPermissions?: string[];
-  requireAllRoles?: string[];
-}
+const Sidebar: React.FC<SidebarProps> = ({ layoutType = "vertical", isVisible = true }) => {
+  const { user, logout } = useAuth();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-const Sidebar: React.FC<SidebarProps> = ({ isVisible }) => {
-  const [expandedMenus, setExpandedMenus] = useState<string[]>(["dashboard"]);
-  const { getUserCapabilities } = usePermissions();
+  useEffect(() => {
+    const verticalOverlay = document.getElementsByClassName("vertical-overlay");
+    if (verticalOverlay) {
+      verticalOverlay[0]?.addEventListener("click", function () {
+        document.body.classList.remove("vertical-sidebar-enable");
+      });
+    }
+  });
 
-  // Get user capabilities for dynamic menu generation
-  const capabilities = getUserCapabilities();
-
-  /**
-   * Define menu structure with RBAC permissions
-   * Based on current module implementation status (Autenticación ✅, Organizaciones ✅)
-   */
-  const allMenuItems: MenuItem[] = useMemo(
-    () => [
-      {
-        id: "dashboard",
-        label: "Dashboard",
-        icon: "ri-dashboard-2-line",
-        path: "/",
-        // Dashboard is accessible to all authenticated users
-      },
-      {
-        id: "organizacion",
-        label: "Mi Organización",
-        icon: "ri-building-4-line",
-        permissions: ["organization.read", "organization.*"],
-        children: [
-          {
-            id: "organizacion-perfil",
-            label: "Perfil Institucional",
-            icon: "ri-building-line",
-            path: "/organizacion/perfil",
-            permissions: ["organization.read", "organization.*"],
-          },
-          {
-            id: "organizacion-sedes",
-            label: "Sedes y Servicios",
-            icon: "ri-hospital-line",
-            path: "/organizacion/sedes",
-            permissions: ["organization.read", "organization.*"],
-          },
-          {
-            id: "organizacion-configuracion",
-            label: "Configuración",
-            icon: "ri-settings-3-line",
-            path: "/organizacion/configuracion",
-            permissions: ["organization.update", "organization.*"],
-            roles: ["admin", "super_admin", "coordinador"],
-          },
-        ],
-      },
-      {
-        id: "configuracion",
-        label: "Configuración",
-        icon: "ri-settings-2-line",
-        roles: ["admin", "super_admin"],
-        children: [
-          {
-            id: "configuracion-usuarios",
-            label: "Usuarios",
-            icon: "ri-user-line",
-            path: "/configuracion/usuarios",
-            permissions: ["users.read", "users.*"],
-            roles: ["admin", "super_admin"],
-          },
-          {
-            id: "configuracion-roles",
-            label: "Roles y Permisos",
-            icon: "ri-shield-user-line",
-            path: "/configuracion/roles",
-            permissions: ["roles.read", "roles.*", "permissions.*"],
-            roles: ["super_admin"],
-          },
-          {
-            id: "configuracion-organizacion",
-            label: "Configuración Inicial",
-            icon: "ri-settings-3-line",
-            path: "/organization/wizard",
-            permissions: ["organization.create", "organization.*"],
-            roles: ["admin", "super_admin"],
-          },
-        ],
-      },
-    ],
-    [],
-  );
-
-  /**
-   * Filter menu items based on user permissions and roles
-   */
-  const menuItems = useMemo(() => {
-    const filterMenuItems = (items: MenuItem[]): MenuItem[] => {
-      return items
-        .map((item) => {
-          // Filter children first
-          const filteredChildren = item.children
-            ? filterMenuItems(item.children)
-            : undefined;
-
-          // If item has children, include it only if it has visible children
-          if (item.children) {
-            return filteredChildren && filteredChildren.length > 0
-              ? { ...item, children: filteredChildren }
-              : null;
-          }
-
-          // For leaf items, check permissions/roles
-          return item;
-        })
-        .filter((item): item is MenuItem => item !== null);
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
     };
 
-    return filterMenuItems(allMenuItems);
-  }, [allMenuItems]);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
-  const toggleMenu = (menuId: string) => {
-    setExpandedMenus((prev) =>
-      prev.includes(menuId)
-        ? prev.filter((id) => id !== menuId)
-        : [...prev, menuId],
-    );
+  const addEventListenerOnSmHoverMenu = () => {
+    // add listener Sidebar Hover icon on change layout from setting
+    if (document.documentElement.getAttribute('data-sidebar-size') === 'sm-hover') {
+      document.documentElement.setAttribute('data-sidebar-size', 'sm-hover-active');
+    } else if (document.documentElement.getAttribute('data-sidebar-size') === 'sm-hover-active') {
+      document.documentElement.setAttribute('data-sidebar-size', 'sm-hover');
+    } else {
+      document.documentElement.setAttribute('data-sidebar-size', 'sm-hover');
+    }
   };
 
-  const renderMenuItem = (item: MenuItem, level = 0) => {
-    const isExpanded = expandedMenus.includes(item.id);
-    const hasChildren = item.children && item.children.length > 0;
-
-    return (
-      <PermissionGate
-        key={item.id}
-        permission={item.permission}
-        permissions={item.permissions}
-        role={item.role}
-        roles={item.roles}
-        requireAllPermissions={item.requireAllPermissions}
-        requireAllRoles={item.requireAllRoles}
-      >
-        <li className={`nav-item ${level > 0 ? "sub-menu-item" : ""}`}>
-          <a
-            className={`nav-link menu-link ${hasChildren ? "collapsed" : ""} ${level > 0 ? "sub-menu-link" : ""}`}
-            href={item.path || "#"}
-            onClick={(e) => {
-              if (hasChildren) {
-                e.preventDefault();
-                toggleMenu(item.id);
-              }
-            }}
-          >
-            <span className="nav-icon">
-              <i className={item.icon}></i>
-            </span>
-            <span className="nav-text">{item.label}</span>
-            {hasChildren && (
-              <span className="menu-arrow">
-                <i
-                  className={`ri-arrow-${isExpanded ? "down" : "right"}-s-line`}
-                ></i>
-              </span>
-            )}
-          </a>
-
-          {hasChildren && isExpanded && (
-            <div className="collapse show">
-              <ul className="nav nav-sm flex-column">
-                {item.children!.map((child) =>
-                  renderMenuItem(child, level + 1),
-                )}
-              </ul>
-            </div>
-          )}
-        </li>
-      </PermissionGate>
-    );
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
-    <div className={`app-menu navbar-menu ${isVisible ? "show" : ""}`}>
-      {/* Logo */}
-      <div className="navbar-brand-box">
-        <a href="/" className="logo logo-light">
-          <span className="logo-sm">
-            <img src={logoSm} alt="Logo" height="22" />
-          </span>
-          <span className="logo-lg">
-            <img src={logoLight} alt="Logo" height="17" />
-          </span>
-        </a>
-      </div>
+    <React.Fragment>
+      <div className={`app-menu navbar-menu ${isVisible ? 'show' : ''}`}>
+        <div className="navbar-brand-box">
+          <Link to="/" className="logo logo-dark">
+            <span className="logo-sm">
+              <img src={logoSm} alt="" height="22" />
+            </span>
+            <span className="logo-lg">
+              <img src={logoDark} alt="" height="17" />
+            </span>
+          </Link>
 
-      {/* Menu */}
-      <div id="scrollbar">
-        <div className="container-fluid">
-          <div id="two-column-menu"></div>
-          <ul className="navbar-nav" id="navbar-nav">
-            {/* Main Menu */}
-            <li className="menu-title">
-              <span>MENU PRINCIPAL</span>
-            </li>
-            {menuItems
-              .filter((item) => ["dashboard"].includes(item.id))
-              .map((item) => renderMenuItem(item))}
-
-            {/* Organization Management */}
-            <li className="menu-title">
-              <span>ORGANIZACIÓN</span>
-            </li>
-            {menuItems
-              .filter((item) => ["organizacion"].includes(item.id))
-              .map((item) => renderMenuItem(item))}
-
-            {/* Administration - Show only to admin users */}
-            {(capabilities.canManageUsers || capabilities.canManageSystem) && (
-              <>
-                <li className="menu-title">
-                  <span>ADMINISTRACIÓN</span>
-                </li>
-                {menuItems
-                  .filter((item) => ["configuracion"].includes(item.id))
-                  .map((item) => renderMenuItem(item))}
-              </>
-            )}
-          </ul>
+          <Link to="/" className="logo logo-light">
+            <span className="logo-sm">
+              <img src={logoSm} alt="" height="22" />
+            </span>
+            <span className="logo-lg">
+              <img src={logoLight} alt="" height="17" />
+            </span>
+          </Link>
+          <button
+            onClick={addEventListenerOnSmHoverMenu}
+            type="button"
+            className="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover"
+            id="vertical-hover"
+          >
+            <i className="ri-record-circle-line"></i>
+          </button>
         </div>
-      </div>
 
-      {/* Sidebar Background */}
-      <div className="sidebar-background"></div>
-    </div>
+        <div className="sidebar-user m-1 rounded" ref={dropdownRef}>
+          <button 
+            type="button" 
+            className="btn material-shadow-none" 
+            id="page-header-user-dropdown"
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+          >
+            <span className="d-flex align-items-center gap-2">
+              <img 
+                className="rounded header-profile-user" 
+                src={avatar1} 
+                alt="Header Avatar" 
+              />
+              <span className="text-start">
+                <span className="d-block fw-medium sidebar-user-name-text">
+                  {user?.first_name || user?.email || 'Usuario'}
+                </span>
+                <span className="d-block fs-14 sidebar-user-name-sub-text">
+                  <i className="ri ri-circle-fill fs-10 text-success align-baseline"></i> 
+                  <span className="align-middle">En línea</span>
+                </span>
+              </span>
+            </span>
+          </button>
+          {dropdownOpen && (
+            <div className="dropdown-menu dropdown-menu-end show">
+              <h6 className="dropdown-header">¡Bienvenido {user?.first_name || 'Usuario'}!</h6>
+              <Link className="dropdown-item" to="/perfil" onClick={() => setDropdownOpen(false)}>
+                <i className="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i> 
+                <span className="align-middle">Perfil</span>
+              </Link>
+              <Link className="dropdown-item" to="/organizacion/perfil" onClick={() => setDropdownOpen(false)}>
+                <i className="mdi mdi-building text-muted fs-16 align-middle me-1"></i> 
+                <span className="align-middle">Mi Organización</span>
+              </Link>
+              <Link className="dropdown-item" to="/configuracion" onClick={() => setDropdownOpen(false)}>
+                <i className="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i> 
+                <span className="align-middle">Configuración</span>
+              </Link>
+              <div className="dropdown-divider"></div>
+              <button 
+                className="dropdown-item" 
+                onClick={() => {
+                  setDropdownOpen(false);
+                  handleLogout();
+                }}
+              >
+                <i className="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> 
+                <span className="align-middle">Cerrar Sesión</span>
+              </button>
+            </div>
+          )}
+        </div>
+        
+        {layoutType === "horizontal" ? (
+          <div id="scrollbar">
+            <div className="container-fluid">
+              <div id="two-column-menu"></div>
+              <ul className="navbar-nav" id="navbar-nav">
+                {/* HorizontalLayout would go here */}
+              </ul>
+            </div>
+          </div>
+        ) : (
+          <React.Fragment>
+            <div id="scrollbar" className="h-100" style={{ overflow: 'auto' }}>
+              <div className="container-fluid">
+                <div id="two-column-menu"></div>
+                <ul className="navbar-nav" id="navbar-nav">
+                  <VerticalLayout layoutType={layoutType} />
+                </ul>
+              </div>
+            </div>
+            <div className="sidebar-background"></div>
+          </React.Fragment>
+        )}
+      </div>
+      <div className="vertical-overlay"></div>
+    </React.Fragment>
   );
 };
 
