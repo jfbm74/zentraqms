@@ -1,3 +1,6 @@
+/* Bootstrap CSS (for Velzon design system) */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
 /* Tailwind CSS Directives */
 @tailwind base;
 @tailwind components;

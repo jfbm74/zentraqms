@@ -3,6 +3,45 @@
  * Defines all data structures, API responses, and component props.
  */
 
+// Multi-Sector Types
+export type SectorType = 'HEALTHCARE' | 'MANUFACTURING' | 'SERVICES' | 'EDUCATION';
+
+export interface SectorConfig {
+  autoActivatedModules: string[];
+  requiredFields: string[];
+  optionalFields: string[];
+  integrations: string[];
+}
+
+export interface HealthcareDetails {
+  repsCode?: string;
+  ipsType?: 'IPS' | 'ESE' | 'EPS';
+  complexityLevel?: 'BAJA' | 'MEDIA' | 'ALTA';
+  accreditationStatus?: string;
+  services?: string[];
+}
+
+export interface ManufacturingDetails {
+  industryType?: string;
+  isoCertifications?: string[];
+  productionCapacity?: string;
+  mainProducts?: string[];
+}
+
+export interface ServicesDetails {
+  serviceType?: string;
+  clientTypes?: string[];
+  serviceAreas?: string[];
+}
+
+export interface EducationDetails {
+  educationType?: string;
+  studentCapacity?: number;
+  accreditationLevel?: string;
+}
+
+export type SectorDetails = HealthcareDetails | ManufacturingDetails | ServicesDetails | EducationDetails;
+
 // Core Organization Types
 export interface Organization {
   id: string;
@@ -15,13 +54,30 @@ export interface Organization {
   website?: string;
   descripcion?: string;
   logo?: string; // URL to logo
+  
+  // Multi-sector fields
+  sector: SectorType;
+  organization_type: string;
+  enabled_modules: string[];
+  sector_config: SectorConfig;
+  sector_details?: SectorDetails;
+  setup_completed: boolean;
+  
   created_at: string;
   updated_at: string;
 }
 
 // Form Data Structure
 export interface OrganizationFormData {
-  // Basic Info
+  // ✅ NUEVO: Sector Selection (compatible con backend)
+  selectedSector?: SectorType;
+  selectedOrgType?: string;
+  
+  // Legacy fields (mantenidos por compatibilidad)
+  sector?: SectorType;
+  organization_type?: string;
+  
+  // Basic Info (Step 2)
   razon_social: string;
   nit: string;
   digito_verificacion: string;
@@ -37,6 +93,11 @@ export interface OrganizationFormData {
   // Logo
   logo?: File | null;
   logoPreview?: string;
+  
+  // Multi-sector specific data
+  sector_details?: SectorDetails;
+  selected_modules?: string[];
+  auto_activated_modules?: string[];
 }
 
 // DIVIPOLA Types
@@ -245,6 +306,11 @@ export interface SelectOption {
 
 // Constants
 export const DEFAULT_FORM_DATA: OrganizationFormData = {
+  // Sector fields
+  sector: undefined,
+  organization_type: undefined,
+  
+  // Basic fields
   razon_social: '',
   nit: '',
   digito_verificacion: '',
@@ -254,6 +320,11 @@ export const DEFAULT_FORM_DATA: OrganizationFormData = {
   descripcion: '',
   logo: null,
   logoPreview: '',
+  
+  // Multi-sector fields
+  sector_details: undefined,
+  selected_modules: [],
+  auto_activated_modules: [],
 };
 
 export const VALIDATION_DELAYS = {
@@ -278,3 +349,193 @@ export const FORM_FIELD_LIMITS = {
   WEBSITE: { max: 200 },
   DESCRIPCION: { max: 1000 },
 } as const;
+
+// Multi-Sector Configuration
+export interface SectorInfo {
+  id: SectorType;
+  name: string;
+  icon: string;
+  description: string;
+  types: Array<{ value: string; label: string; }>;
+  modules: string[];
+  integrations: string[];
+}
+
+export const SECTORS: SectorInfo[] = [
+  {
+    id: 'HEALTHCARE',
+    name: 'Salud',
+    icon: 'ri-hospital-line',
+    description: 'Instituciones de salud, clínicas, hospitales',
+    types: [
+      { value: 'IPS', label: 'IPS - Institución Prestadora de Salud' },
+      { value: 'ESE', label: 'ESE - Empresa Social del Estado' },
+      { value: 'EPS', label: 'EPS - Entidad Promotora de Salud' }
+    ],
+    modules: ['SUH', 'PAMEC', 'Seguridad del Paciente', 'RIPS'],
+    integrations: ['REPS', 'SISPRO', 'ADRES']
+  },
+  {
+    id: 'MANUFACTURING',
+    name: 'Manufactura',
+    icon: 'ri-settings-3-line',
+    description: 'Empresas de producción y manufactura',
+    types: [
+      { value: 'FOOD', label: 'Alimentos y Bebidas' },
+      { value: 'PHARMA', label: 'Farmacéutica' },
+      { value: 'TEXTILE', label: 'Textil' },
+      { value: 'AUTOMOTIVE', label: 'Automotriz' },
+      { value: 'GENERAL', label: 'Manufactura General' }
+    ],
+    modules: ['Producción', 'Control Calidad', 'Inventarios'],
+    integrations: ['ISO 9001', 'ISO 14001', 'HACCP']
+  },
+  {
+    id: 'SERVICES',
+    name: 'Servicios',
+    icon: 'ri-service-line',
+    description: 'Empresas de servicios profesionales',
+    types: [
+      { value: 'IT', label: 'Tecnología de Información' },
+      { value: 'CONSULTING', label: 'Consultoría' },
+      { value: 'FINANCIAL', label: 'Servicios Financieros' },
+      { value: 'SERVICES_GENERAL', label: 'Servicios Generales' }
+    ],
+    modules: ['Proyectos', 'Satisfacción Cliente', 'SLA'],
+    integrations: ['ITIL', 'ISO 27001', 'COBIT']
+  },
+  {
+    id: 'EDUCATION',
+    name: 'Educación',
+    icon: 'ri-school-line',
+    description: 'Instituciones educativas',
+    types: [
+      { value: 'UNIVERSITY', label: 'Universidad' },
+      { value: 'SCHOOL', label: 'Colegio' },
+      { value: 'INSTITUTE', label: 'Instituto Técnico' },
+      { value: 'TRAINING', label: 'Centro de Capacitación' }
+    ],
+    modules: ['Gestión Académica', 'Evaluación', 'Investigación'],
+    integrations: ['SNIES', 'MEN', 'ICFES']
+  }
+];
+
+// Module categories - Define first to avoid temporal dead zone
+export const TRANSVERSAL_MODULES = {
+  // Operaciones Diarias - Aplicables a todos los sectores
+  DAILY_OPERATIONS: [
+    'DASHBOARD', 'NONCONFORMITIES', 'AUDITS', 'IMPROVEMENT_PLANS', 'CAPAS', 'ORGANIZATION'
+  ],
+  
+  // Gestión de Calidad - Aplicables a todos los sectores  
+  QUALITY_MANAGEMENT: [
+    'PROCESSES', 'ANALYSIS', 'DOCUMENTATION', 'COMMITTEES', 'STRATEGIC_PLANNING'
+  ],
+  
+  // Configuración - Aplicables a todos los sectores
+  CONFIGURATION: [
+    'ADMINISTRATION', 'USERS', 'ROLES', 'PERMISSIONS'
+  ]
+};
+
+// Helper function to get all transversal modules
+const getTransversalModules = () => [
+  ...TRANSVERSAL_MODULES.DAILY_OPERATIONS,
+  ...TRANSVERSAL_MODULES.QUALITY_MANAGEMENT,
+  ...TRANSVERSAL_MODULES.CONFIGURATION
+];
+
+// Auto-activation rules based on sector and organization type
+// All organizations get transversal modules + sector-specific modules
+export const AUTO_ACTIVATION_RULES: Record<SectorType, Record<string, string[]>> = {
+  'HEALTHCARE': {
+    'IPS': [
+      ...getTransversalModules(),
+      'SUH', 'PAMEC', 'CLINICAL_SAFETY'
+    ],
+    'EPS': [
+      ...getTransversalModules(),
+      'MEMBER_MANAGEMENT', 'AUTHORIZATION'
+    ],
+    'ESE': [
+      ...getTransversalModules(),
+      'SUH', 'PAMEC', 'PUBLIC_HEALTH'
+    ]
+  },
+  'MANUFACTURING': {
+    'FOOD': [
+      ...getTransversalModules(),
+      'PRODUCTION', 'QUALITY_CONTROL', 'FOOD_SAFETY'
+    ],
+    'PHARMA': [
+      ...getTransversalModules(),
+      'PRODUCTION', 'GMP', 'PHARMACOVIGILANCE'
+    ],
+    'TEXTILE': [
+      ...getTransversalModules(),
+      'PRODUCTION', 'QUALITY_CONTROL', 'INVENTORY'
+    ],
+    'AUTOMOTIVE': [
+      ...getTransversalModules(),
+      'PRODUCTION', 'QUALITY_CONTROL', 'ISO_TS'
+    ],
+    'GENERAL': [
+      ...getTransversalModules(),
+      'PRODUCTION', 'QUALITY_CONTROL'
+    ]
+  },
+  'SERVICES': {
+    'IT': [
+      ...getTransversalModules(),
+      'PROJECTS', 'SLA', 'IT_SERVICE_MANAGEMENT'
+    ],
+    'CONSULTING': [
+      ...getTransversalModules(),
+      'PROJECTS', 'CLIENT_SATISFACTION'
+    ],
+    'FINANCIAL': [
+      ...getTransversalModules(),
+      'RISK_MANAGEMENT', 'COMPLIANCE'
+    ],
+    'SERVICES_GENERAL': [
+      ...getTransversalModules(),
+      'PROJECTS'
+    ]
+  },
+  'EDUCATION': {
+    'UNIVERSITY': [
+      ...getTransversalModules(),
+      'ACADEMIC', 'RESEARCH', 'ACCREDITATION'
+    ],
+    'SCHOOL': [
+      ...getTransversalModules(),
+      'ACADEMIC', 'STUDENTS', 'EVALUATION'
+    ],
+    'INSTITUTE': [
+      ...getTransversalModules(),
+      'ACADEMIC', 'TRAINING', 'CERTIFICATION'
+    ],
+    'TRAINING': [
+      ...getTransversalModules(),
+      'TRAINING', 'CERTIFICATION'
+    ]
+  }
+};
+
+export const SECTOR_SPECIFIC_MODULES = {
+  HEALTHCARE: [
+    'SUH', 'PAMEC', 'CLINICAL_SAFETY', 'ACCREDITATION', 'RIPS', 'CLINICAL_RISK'
+  ],
+  
+  MANUFACTURING: [
+    'PRODUCTION', 'QUALITY_CONTROL', 'INVENTORY', 'MAINTENANCE', 'INDUSTRIAL_SAFETY'
+  ],
+  
+  SERVICES: [
+    'PROJECTS', 'SLA', 'CLIENT_SATISFACTION', 'IT_SERVICE_MANAGEMENT'
+  ],
+  
+  EDUCATION: [
+    'ACADEMIC', 'STUDENTS', 'EVALUATION', 'RESEARCH'
+  ]
+};

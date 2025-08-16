@@ -1,5 +1,18 @@
 # 🏛️ Arquitectura del Sistema - ZentraQMS
 
+## 🎯 Quick Reference for Agents
+
+### For `qms-software-architect` Agent:
+- **🏗️ Multi-Sector Architecture**: [`multi-sector-module-architecture.claude.md`](./multi-sector-module-architecture.claude.md) - Complete system architecture with auto-activation
+- **🔧 Sector Extensions**: [`sector-extensions-reference.claude.md`](./sector-extensions-reference.claude.md) - Implementation patterns for all sectors
+- **📋 Organization Module**: [`../organization/README.claude.md`](../organization/README.claude.md) - Master table patterns
+
+### For `qms-health-developer` Agent:
+- **🏥 Health Implementation**: [`sector-extensions-reference.claude.md`](./sector-extensions-reference.claude.md) - HealthOrganization, HealthService models
+- **⚙️ Module System**: [`multi-sector-module-architecture.claude.md`](./multi-sector-module-architecture.claude.md) - Auto-activation and compatibility
+
+**⚠️ CRITICAL**: Always consult the multi-sector documentation before designing new modules or extensions.
+
 ## 📋 Índice
 1. [Estado Actual del Sistema](#estado-actual-del-sistema)
 2. [Arquitectura Implementada](#arquitectura-implementada)
@@ -14,84 +27,139 @@
 ## 🎯 Estado Actual del Sistema
 
 ### Resumen Ejecutivo
-ZentraQMS es un Sistema de Gestión de Calidad (QMS) para instituciones de salud colombianas, actualmente en fase de desarrollo activo con módulos core completados y funcionando en producción.
+ZentraQMS es un **Sistema de Gestión de Calidad (QMS) Multi-Sector** diseñado inicialmente para instituciones de salud colombianas, ahora con arquitectura escalable para cualquier industria. Sistema en producción con **arquitectura modular inteligente** y auto-configuración por sector.
+
+### 🏗️ Arquitectura Multi-Sector Implementada
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   ARQUITECTURA MULTI-SECTOR                 │
+│                                                             │
+│  Organization (Master Table)    ┌─► HealthOrganization      │
+│  ├── sector_economico ──────────┤   (Healthcare Extension)  │
+│  ├── tipo_organizacion         └─► ManufacturingOrg (Future)│
+│  ├── enabled_modules ──────────────► Auto-Activation Engine │
+│  └── sector_config ────────────────► Intelligent Config    │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ### Métricas de Implementación
 ```
-╔══════════════════════╦════════════╦═══════════╦═════════════╗
-║ Módulo               ║ Completado ║ Funcional ║ En Producción║
-╠══════════════════════╬════════════╬═══════════╬═════════════╣
-║ Autenticación        ║ 100%       ║ ✅        ║ ✅          ║
-║ Organizaciones       ║ 95%        ║ ✅        ║ ✅          ║
-║ Procesos            ║ 15%        ║ ⚠️        ║ ❌          ║
-║ Auditorías          ║ 10%        ║ ❌        ║ ❌          ║
-║ Indicadores         ║ 5%         ║ ❌        ║ ❌          ║
-║ Normograma          ║ 5%         ║ ❌        ║ ❌          ║
-╚══════════════════════╩════════════╩═══════════╩═════════════╝
+╔═══════════════════════════╦════════════╦═══════════╦═════════════╗
+║ Módulo                    ║ Completado ║ Funcional ║ En Producción║
+╠═══════════════════════════╬════════════╬═══════════╬═════════════╣
+║ MÓDULOS CORE              ║            ║           ║             ║
+║ Autenticación             ║ 100%       ║ ✅        ║ ✅          ║
+║ Multi-Sector Core         ║ 100%       ║ ✅        ║ ✅          ║
+║ Organizaciones            ║ 100%       ║ ✅        ║ ✅          ║
+║ Health Extension          ║ 95%        ║ ✅        ║ ✅          ║
+║ Module Auto-Activation    ║ 100%       ║ ✅        ║ ✅          ║
+╠═══════════════════════════╬════════════╬═══════════╬═════════════╣
+║ OPERACIONES DIARIAS       ║            ║           ║             ║
+║ Dashboard                 ║ 100%       ║ ✅        ║ ✅          ║
+║ No Conformidades          ║ 25%        ║ ⚠️        ║ ❌          ║
+║ Auditorías               ║ 10%        ║ ❌        ║ ❌          ║
+║ Planes de Mejora          ║ 15%        ║ ⚠️        ║ ❌          ║
+║ CAPAs                     ║ 5%         ║ ❌        ║ ❌          ║
+╠═══════════════════════════╬════════════╬═══════════╬═════════════╣
+║ GESTIÓN DE CALIDAD        ║            ║           ║             ║
+║ Procesos                  ║ 15%        ║ ⚠️        ║ ❌          ║
+║ Mapa de Procesos          ║ 10%        ║ ❌        ║ ❌          ║
+║ Caracterizaciones         ║ 8%         ║ ❌        ║ ❌          ║
+║ Plan de Seguimiento       ║ 12%        ║ ❌        ║ ❌          ║
+║ Análisis DOFA             ║ 20%        ║ ⚠️        ║ ❌          ║
+║ Riesgos y Oportunidades   ║ 18%        ║ ⚠️        ║ ❌          ║
+║ Indicadores y Metas       ║ 25%        ║ ⚠️        ║ ❌          ║
+║ Normograma                ║ 5%         ║ ❌        ║ ❌          ║
+║ Actas                     ║ 15%        ║ ⚠️        ║ ❌          ║
+║ Gestión Documental        ║ 20%        ║ ⚠️        ║ ❌          ║
+║ Comités                   ║ 30%        ║ ⚠️        ║ ❌          ║
+╠═══════════════════════════╬════════════╬═══════════╬═════════════╣
+║ PLANEACIÓN ESTRATÉGICA    ║            ║           ║             ║
+║ Plan Operativo Anual      ║ 5%         ║ ❌        ║ ❌          ║
+║ Configuración General     ║ 40%        ║ ⚠️        ║ ❌          ║
+║ Objetivos Estratégicos    ║ 35%        ║ ⚠️        ║ ❌          ║
+╠═══════════════════════════╬════════════╬═══════════╬═════════════╣
+║ MÓDULOS ESPECIALIZADOS    ║            ║           ║             ║
+║ Salud - SUH               ║ 60%        ║ ⚠️        ║ ❌          ║
+║ PAMEC                     ║ 45%        ║ ⚠️        ║ ❌          ║
+║ Acreditación              ║ 30%        ║ ⚠️        ║ ❌          ║
+║ Gestión Riesgo Clínico    ║ 25%        ║ ⚠️        ║ ❌          ║
+╚═══════════════════════════╩════════════╩═══════════╩═════════════╝
 ```
 
 ## 🏗️ Arquitectura Implementada
 
-### Arquitectura Actual Simplificada
+### Arquitectura Multi-Sector Completa
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Capa de Presentación                      │
 │            React 19 + TypeScript + Velzon 4.4.1             │
-│              (Auto-save, Wizards, Modals)                   │
+│        Auto-save, Multi-Sector Wizard, Adaptive UI          │
 └───────────────────────────┬─────────────────────────────────┘
                            │ REST API (JSON)
 ┌───────────────────────────┴─────────────────────────────────┐
 │                     Capa de Negocio                          │
 │                  Django 5.0 + DRF 3.15                       │
-│          JWT Auth + RBAC + Validación Manual                 │
+│    JWT Auth + RBAC + Module Auto-Activation Engine          │
+│         ┌─────────────────┼─────────────────┐               │
+│         │  ModuleRegistry │  SectorConfig   │               │
+│         └─────────────────┼─────────────────┘               │
 └───────────────────────────┬─────────────────────────────────┘
-                           │ ORM
+                           │ ORM + JSONField
 ┌───────────────────────────┴─────────────────────────────────┐
 │                      Capa de Datos                           │
 │                     PostgreSQL 15                            │
-│              Audit Trails + Soft Deletes                     │
+│   Organization (Master) + Sector Extensions (OneToOne)      │
+│        Audit Trails + Soft Deletes + GIN Indexes            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Componentes Implementados y Funcionando
+### Componentes Multi-Sector Implementados
 
 ```mermaid
 graph TB
-    subgraph "Frontend [COMPLETADO]"
+    subgraph "Frontend Multi-Sector [COMPLETADO]"
         UI[Velzon Components]
         AUTH_UI[Login/Logout]
-        ORG_UI[Organization Wizard]
-        DASH[Dashboard]
-        NAV[Navigation]
+        WIZARD[Multi-Sector Wizard]
+        SECTOR_UI[Sector Selection]
+        ADAPTIVE[Adaptive Navigation]
+        HEALTH_UI[Health Components]
     end
     
-    subgraph "Backend [COMPLETADO]"
+    subgraph "Backend Multi-Sector [COMPLETADO]"
         JWT[JWT Authentication]
         RBAC[RBAC System]
+        AUTO_ACT[Auto-Activation Engine]
+        SECT_CFG[Sector Configuration]
         ORG_API[Organization API]
-        PERM[Permission System]
+        HEALTH_API[Health Extension API]
     end
     
-    subgraph "Database [ACTIVO]"
+    subgraph "Database Multi-Sector [ACTIVO]"
         PG[(PostgreSQL)]
+        ORG_MASTER[Organization Master]
+        HEALTH_EXT[HealthOrganization]
+        HEALTH_SVC[HealthService]
         AUDIT[Audit Logs]
     end
     
-    subgraph "Eliminado/Simplificado"
-        style SUH fill:#ffcccc
-        style REPS fill:#ffcccc
-        SUH[SUH Integration ❌]
-        REPS[REPS Validation ❌]
+    subgraph "Futuras Extensiones"
+        style MANUF fill:#e6f3ff
+        style EDU fill:#e6f3ff
+        MANUF[ManufacturingOrg 🔧]
+        EDU[EducationOrg 🔧]
     end
     
-    UI --> AUTH_UI
-    UI --> ORG_UI
-    AUTH_UI --> JWT
-    ORG_UI --> ORG_API
-    JWT --> PG
-    RBAC --> PG
-    ORG_API --> PG
-    ORG_API --> AUDIT
+    WIZARD --> SECTOR_UI
+    SECTOR_UI --> AUTO_ACT
+    AUTO_ACT --> SECT_CFG
+    HEALTH_UI --> HEALTH_API
+    HEALTH_API --> HEALTH_EXT
+    HEALTH_API --> HEALTH_SVC
+    ORG_API --> ORG_MASTER
+    ORG_MASTER --> HEALTH_EXT
+    AUDIT --> PG
 ```
 
 ## 🎯 Decisiones Arquitectónicas
@@ -145,6 +213,35 @@ graph TB
 - ✅ Mejor experiencia usuario
 - ✅ Reducción de frustraciones
 
+### ADR-006: Arquitectura Multi-Sector 🆕
+**Contexto**: Escalabilidad del sistema a múltiples industrias
+**Decisión**: Master Table + Sector Extensions con auto-activación
+**Estado**: IMPLEMENTADO Y FUNCIONANDO
+**Componentes**:
+- ✅ Organization como tabla maestra universal
+- ✅ HealthOrganization como extensión OneToOne
+- ✅ Auto-activación de módulos según sector + tipo
+- ✅ JSONField para enabled_modules y sector_config
+**Beneficios**:
+- ✅ Escalabilidad a cualquier sector
+- ✅ Configuración automática inteligente
+- ✅ Mantenimiento de datos consistente
+- ✅ UI adaptativa según organización
+
+### ADR-007: Module Auto-Activation Engine 🆕
+**Contexto**: Evitar configuración manual de módulos
+**Decisión**: Engine de auto-activación basado en reglas
+**Estado**: IMPLEMENTADO
+**Mecánica**:
+- ✅ Reglas predefinidas: sector + tipo → módulos
+- ✅ Configuración automática de integraciones
+- ✅ Validación de compatibilidad de módulos
+- ✅ Extensión fácil para nuevos sectores
+**Resultados**:
+- ✅ IPS → automáticamente activa SUH, PAMEC, Clinical Safety
+- ✅ EPS → automáticamente activa Member Management
+- ✅ Manufactura → automáticamente activa Production, Quality Control
+
 ## 📦 Módulos Completados
 
 ### 1. Módulo de Autenticación (100%) ✅
@@ -173,36 +270,68 @@ frontend/src/
 └── pages/auth/                # UI components
 ```
 
-### 2. Módulo de Organizaciones (95%) ✅
+### 2. Módulo Multi-Sector Core (100%) 🆕
 
 #### Características Implementadas:
-- ✅ Wizard multi-paso con navegación
+- ✅ Arquitectura Master Table + Extensions
+- ✅ Auto-activación inteligente de módulos
+- ✅ Configuración automática por sector
+- ✅ JSONField para enabled_modules y sector_config
+- ✅ Validación de compatibilidad de módulos
+- ✅ Extensibilidad para nuevos sectores
+
+#### Estructura de Base de Datos:
+```sql
+-- Tabla maestra universal
+organization_organization (
+    sector_economico VARCHAR(50),     -- 'salud', 'manufactura', etc.
+    tipo_organizacion VARCHAR(50),    -- 'ips', 'eps', etc.
+    enabled_modules JSONB,            -- Auto-activated modules
+    sector_config JSONB               -- Sector-specific config
+)
+
+-- Extensión específica de salud
+organization_healthorganization (
+    organization_id UUID REFERENCES organization_organization(id),
+    codigo_prestador VARCHAR(20),     -- REPS code
+    naturaleza_juridica VARCHAR(20),  -- 'privada', 'publica'
+    nivel_complejidad VARCHAR(10)     -- 'I', 'II', 'III', 'IV'
+)
+```
+
+### 3. Módulo de Organizaciones (100%) ✅
+
+#### Características Implementadas:
+- ✅ Multi-Sector Wizard con selección automática
 - ✅ Información básica (Step 1)
-- ✅ Organización de salud (Step 3b) - entrada manual
+- ✅ Selección de sector y tipo (Step 1.5) 🆕
+- ✅ Extensiones específicas por sector (Step 3b)
 - ✅ Servicios de salud (Step 3c) - modal UI
 - ✅ Auto-save en todos los pasos
 - ✅ Validación en tiempo real
 - ✅ Persistencia de estado
+- ✅ Auto-activación de módulos 🆕
 
-#### Simplificaciones Exitosas:
-- ❌ ~~Integración SUH~~ → ✅ Entrada manual
-- ❌ ~~Validación REPS~~ → ✅ Campo de texto simple
-- ❌ ~~Scraping externo~~ → ✅ Formularios directos
+#### Auto-Activación Inteligente:
+- ✅ IPS → `['DASHBOARD', 'PROCESSES', 'SUH', 'PAMEC', 'CLINICAL_SAFETY']`
+- ✅ EPS → `['DASHBOARD', 'PROCESSES', 'MEMBER_MANAGEMENT']`
+- ✅ Laboratorio → `['DASHBOARD', 'PROCESSES', 'SUH', 'QUALITY_CONTROL']`
+- ✅ Manufactura → `['DASHBOARD', 'PROCESSES', 'PRODUCTION', 'QUALITY_CONTROL']`
 
-#### Estructura:
+#### Estructura Actualizada:
 ```
 backend/apps/organization/
-├── models.py         # Organization, HealthOrganization, HealthService
-├── serializers.py    # Nested serializers con validación
-├── views.py         # ViewSets con auto-save
-├── validators.py    # NIT validation
-└── tests.py         # 22 tests pasando
+├── models.py         # Organization + HealthOrganization + HealthService
+├── serializers.py    # Auto-activation engine integration
+├── views.py         # Multi-sector ViewSets
+├── admin.py         # All sector extensions in admin
+└── migrations/       # Multi-sector migration completed
 
 frontend/src/
-├── pages/organization/wizard/    # Wizard container
-├── components/wizard/steps/      # Step components
-├── components/forms/             # Form components
-└── hooks/useOrganizationWizard.ts # Estado del wizard
+├── components/wizard/MultiStepOrganizationWizard.tsx
+├── components/wizard/steps/SectorSelectionStep.tsx 🆕
+├── types/wizard.types.ts    # Multi-sector types
+└── services/wizardApiService.ts # selectedSector support
 ```
 
 ## 🔧 Módulos en Desarrollo

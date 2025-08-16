@@ -47,6 +47,14 @@ export class OrganizationApiService {
       formData.append('descripcion', data.descripcion);
     }
     
+    // ✅ NUEVO: Incluir campos multi-sector
+    if (data.selectedSector) {
+      formData.append('selectedSector', data.selectedSector);
+    }
+    if (data.selectedOrgType) {
+      formData.append('selectedOrgType', data.selectedOrgType);
+    }
+    
     // Append logo if present
     if (data.logo) {
       formData.append('logo', data.logo);

@@ -9,9 +9,9 @@ import { FORM_FIELD_LIMITS, LOGO_CONSTRAINTS } from '../types/wizard.types';
 const REGEX_PATTERNS = {
   NIT: /^\d{9,10}$/,
   VERIFICATION_DIGIT: /^\d$/,
-  COLOMBIAN_PHONE: /^(\+57)?\s?([3][0-9]{9}|[1-8][0-9]{6,7})$/,
+  COLOMBIAN_PHONE: /^(\+?57)?\s?([3][0-9]{9}|[1-8][0-9]{6,7})$/,
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  URL: /^https?:\/\/(www\.)?[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\/?/,
+  URL: /^https?:\/\/.+/,
   ORGANIZATION_NAME: /^[a-zA-ZÀ-ÿ0-9\s\.\-\_\&\(\)]+$/,
 };
 
@@ -126,7 +126,16 @@ export class FormValidators {
       };
     }
 
-    if (!REGEX_PATTERNS.EMAIL.test(trimmed)) {
+    // More permissive email validation
+    if (!trimmed.includes('@') || !trimmed.includes('.')) {
+      return {
+        isValid: false,
+        error: 'Formato de email inválido',
+      };
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmed)) {
       return {
         isValid: false,
         error: 'Formato de email inválido',
@@ -148,11 +157,21 @@ export class FormValidators {
     }
 
     const cleanPhone = value.replace(/[\s\-\(\)]/g, '');
-
-    if (!REGEX_PATTERNS.COLOMBIAN_PHONE.test(cleanPhone)) {
+    
+    // More flexible phone validation - just check for reasonable length and digits
+    const phoneDigits = cleanPhone.replace(/\+/g, '');
+    
+    if (phoneDigits.length < 7 || phoneDigits.length > 15) {
       return {
         isValid: false,
-        error: 'Formato de teléfono colombiano inválido. Ej: +57 301 234 5678',
+        error: 'El teléfono debe tener entre 7 y 15 dígitos',
+      };
+    }
+
+    if (!/^\+?[\d\s\-\(\)]+$/.test(value)) {
+      return {
+        isValid: false,
+        error: 'El teléfono contiene caracteres inválidos',
       };
     }
 

@@ -8,8 +8,8 @@
 import React from "react";
 import { useNavigate } from "../../../utils/SimpleRouter";
 
-// Import simplified wizard
-import SimplifiedOrganizationWizard from "../../../components/wizard/SimplifiedOrganizationWizard";
+// Import multi-step wizard with sector selection
+import MultiStepOrganizationWizard from "../../../components/wizard/MultiStepOrganizationWizard";
 
 // Types
 import { Organization } from "../../../types/wizard.types";
@@ -35,7 +35,7 @@ const OrganizationWizard: React.FC = () => {
   };
 
   return (
-    <SimplifiedOrganizationWizard
+    <MultiStepOrganizationWizard
       onComplete={handleOrganizationComplete}
       onCancel={handleWizardCancel}
       className="organization-wizard-page"

@@ -1,544 +1,253 @@
-# ZentraQMS - Sistema de Gestión de Calidad
+# ZentraQMS - Multi-Sector Quality Management System
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-2.0.0--dev-blue.svg)
 ![Django](https://img.shields.io/badge/Django-5.0-green.svg)
 ![React](https://img.shields.io/badge/React-19.0-61DAFB.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)
+![Architecture](https://img.shields.io/badge/Multi--Sector-Ready-orange.svg)
 ![License](https://img.shields.io/badge/license-Proprietary-red.svg)
 
-## 📋 Descripción
+## 🎯 Overview
 
-ZentraQMS es un Sistema de Gestión de Calidad (QMS) completo y moderno diseñado para optimizar los procesos organizacionales. Construido con las últimas tecnologías, ofrece una solución integral para la gestión de procesos, auditorías, normogramas e indicadores de gestión.
+ZentraQMS is a **multi-sector Quality Management System** with intelligent auto-configuration. Built for scalability across healthcare, manufacturing, education and other industries with **sector-specific extensions** and **automatic module activation**.
 
-## 🚀 Características Principales
+## 🏗️ Core Architecture
 
-### Módulos del Sistema
+### Multi-Sector Pattern
+```
+Organization (Master Table)
+├── enabled_modules: JSONField     # Auto-activated modules
+├── sector_config: JSONField       # Sector-specific config
+└── Extensions (OneToOne):
+    ├── HealthOrganization          # Healthcare sector ✅
+    ├── ManufacturingOrganization   # Manufacturing 🔧  
+    └── EducationOrganization       # Education 🔧
+```
 
-- **📊 Dashboard**: Vista general con métricas y KPIs en tiempo real
-- **🏢 Gestión de Organizaciones**: Configuración inicial y gestión de sedes
-  - Wizard de configuración inicial paso a paso
-  - Gestión de información básica institucional
-  - Administración de sedes y sucursales
-  - Validación de NIT colombiano
-  - Plantillas por sector económico
-- **📋 Gestión de Procesos**: Documentación y control de procesos organizacionales
-- **📚 Normograma**: Gestión de documentos normativos y regulatorios
-- **🔍 Auditorías**: Planificación, ejecución y seguimiento de auditorías internas
-- **📈 Indicadores KPI**: Monitoreo y análisis de indicadores de gestión
-- **⚙️ Configuración**: Gestión de usuarios, roles y configuración del sistema
+### Auto-Activation Engine
+Organizations automatically get modules based on `sector + type`:
+- **Healthcare IPS** → `['DASHBOARD', 'SUH', 'PAMEC', 'CLINICAL_SAFETY']`
+- **Manufacturing** → `['DASHBOARD', 'PRODUCTION', 'QUALITY_CONTROL']`
+- **Education** → `['DASHBOARD', 'ACADEMIC', 'RESEARCH']`
 
-### 🔐 Sistema de Control de Acceso (RBAC)
+## ⚡ Tech Stack
 
-- **Roles Jerárquicos**: Sistema completo de roles con jerarquía definida
-  - `super_admin`: Acceso total al sistema
-  - `admin`: Administración general
-  - `coordinador`: Gestión de procesos y auditorías
-  - `auditor`: Ejecución de auditorías
-  - `consulta`: Solo lectura
-  - `guest`: Acceso limitado
+| Layer | Technology | Version |
+|-------|------------|---------|
+| **Backend** | Django + DRF | 5.0 |
+| **Database** | PostgreSQL | 15 |
+| **Frontend** | React + TypeScript | 19.0 + 5.6 |
+| **UI Template** | Velzon | 4.4.1 |
+| **Build** | Vite | 5.0 |
+| **Auth** | JWT + RBAC | Custom |
 
-- **Permisos Granulares**: Control detallado de acceso a recursos
-  - Permisos por recurso (ej: `documents.create`, `users.read`)
-  - Soporte para wildcards (ej: `documents.*`, `*.all`)
-  - Permisos heredados según jerarquía de roles
+## 🚀 Quick Start
 
-- **UI Adaptativa**: Interfaz que se adapta según permisos
-  - Componentes que se muestran/ocultan automáticamente
-  - Menús dinámicos según rol del usuario
-  - Dashboards personalizados por tipo de usuario
-  - Redirección automática post-login según rol principal
-
-## 🛠️ Stack Tecnológico
-
-### Backend
-- **Django 5.0** - Framework web de Python
-- **Django REST Framework** - API RESTful
-- **PostgreSQL** - Base de datos principal
-- **Redis** - Cache y broker de mensajes
-- **Celery** - Procesamiento de tareas asíncronas
-
-### Frontend
-- **React 19** - Biblioteca de UI
-- **TypeScript** - Tipado estático
-- **Vite** - Build tool y dev server
-- **Bootstrap 5.3** - Framework CSS
-- **Remix Icons** - Biblioteca de iconos
-
-### DevOps
-- **Docker & Docker Compose** - Containerización
-- **Nginx** - Servidor web (producción)
-- **GitHub Actions** - CI/CD (opcional)
-
-## 📦 Requisitos Previos
-
-- Docker Desktop instalado
-- Git
-- Node.js 20+ (para desarrollo local sin Docker)
-- Python 3.11+ (para desarrollo local sin Docker)
-
-## 🔧 Instalación y Configuración
-
-### Instalación con Docker (Recomendado)
-
-1. **Clonar el repositorio**
+### Development (Docker)
 ```bash
-git clone https://github.com/tu-usuario/zentraqms.git
+git clone <repo>
 cd zentraqms
-```
-
-2. **Configurar variables de entorno**
-```bash
-cp .env.example .env
-# Editar .env con tus configuraciones
-```
-
-3. **Construir y levantar los contenedores**
-```bash
 docker-compose up --build
 ```
 
-4. **Ejecutar migraciones**
+### Development (Local)
 ```bash
-docker-compose exec django python manage.py migrate
+# Backend (Port 8000)
+cd backend && python manage.py runserver
+
+# Frontend (Port 3000) 
+cd frontend && npm run dev
 ```
 
-5. **Crear superusuario**
-```bash
-docker-compose exec django python manage.py createsuperuser
-```
-
-6. **Acceder a la aplicación**
+**Access:**
 - Frontend: http://localhost:3000
-- Backend API: http://localhost:8000/api/
-- Django Admin: http://localhost:8000/admin/
+- API: http://localhost:8000/api/
+- Admin: http://localhost:8000/admin/
 
-### Instalación Local (Desarrollo)
+## 📊 Module Status
 
-#### Backend
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py runserver
-```
+| Category | Module | Complete | Production |
+|----------|--------|----------|------------|
+| **Core** | Authentication | 100% | ✅ |
+| **Core** | Multi-Sector | 100% | ✅ |
+| **Core** | Organizations | 100% | ✅ |
+| **Operations** | Non-Conformities | 25% | ❌ |
+| **Operations** | Audits | 10% | ❌ |
+| **Quality** | Processes | 15% | ❌ |
+| **Quality** | Indicators | 25% | ❌ |
+| **Health** | SUH Module | 60% | ❌ |
+| **Health** | PAMEC | 45% | ❌ |
 
-#### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
+## 🔐 RBAC System
 
-## 🐳 Comandos Docker Útiles
+### Roles
+- `super_admin` - Full system access
+- `admin` - Organization management
+- `coordinador` - Quality coordination
+- `auditor` - Audit execution
+- `consulta` - Read-only access
+- `guest` - Limited access
 
-```bash
-# Ver logs
-docker-compose logs -f
+### Permission Components
+```tsx
+// Conditional rendering
+<PermissionGate permission="audits.create">
+  <CreateButton />
+</PermissionGate>
 
-# Detener contenedores
-docker-compose down
-
-# Detener y eliminar volúmenes
-docker-compose down -v
-
-# Reconstruir contenedores
-docker-compose up --build
-
-# Ejecutar comandos Django
-docker-compose exec django python manage.py [comando]
-
-# Ejecutar shell de Django
-docker-compose exec django python manage.py shell
-
-# Acceder a PostgreSQL
-docker-compose exec db psql -U zentrauser -d zentradb
-```
-
-## 📁 Estructura del Proyecto
-
-```
-zentraqms/
-├── backend/
-│   ├── config/               # Configuración principal Django
-│   ├── apps/
-│   │   ├── authentication/  # App de autenticación JWT
-│   │   ├── authorization/   # App de RBAC y permisos
-│   │   ├── organization/    # App de gestión de organizaciones
-│   │   ├── common/          # Modelos y utilidades comunes
-│   ├── procesos/            # App de gestión de procesos
-│   ├── normograma/          # App de documentos normativos
-│   ├── auditorias/          # App de auditorías
-│   ├── indicadores/         # App de KPIs
-│   ├── requirements.txt     # Dependencias Python
-│   └── manage.py
-├── frontend/
-│   ├── src/
-│   │   ├── components/      # Componentes React
-│   │   │   ├── layout/      # Layout principal
-│   │   │   ├── wizard/      # Wizard de configuración
-│   │   │   └── forms/       # Componentes de formulario
-│   │   ├── hooks/           # Custom hooks
-│   │   ├── utils/           # Utilidades y helpers
-│   │   ├── pages/           # Páginas principales
-│   │   ├── assets/          # Imágenes y recursos (Velzon)
-│   │   ├── App.tsx          # Componente principal
-│   │   └── main.tsx         # Punto de entrada
-│   ├── package.json         # Dependencias Node
-│   └── vite.config.ts       # Configuración Vite
-├── docker-compose.yml       # Configuración Docker
-├── CHANGELOG.md            # Historial de cambios
-├── CLAUDE.md               # Instrucciones para Claude AI
-├── Makefile                # Comandos de automatización
-└── README.md               # Este archivo
-```
-
-## 🔑 Variables de Entorno
-
-### Backend (.env)
-```env
-# Django
-SECRET_KEY=tu-secret-key-aqui
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-
-# Database
-DB_NAME=zentradb
-DB_USER=zentrauser
-DB_PASSWORD=zentrapass
-DB_HOST=db
-DB_PORT=5432
-
-# Redis
-REDIS_URL=redis://redis:6379/0
-
-# Celery
-CELERY_BROKER_URL=redis://redis:6379/0
-CELERY_RESULT_BACKEND=redis://redis:6379/0
+// Programmatic checks
+const { hasPermission } = usePermissions();
+if (hasPermission('documents.delete')) {
+  // Show delete option
+}
 ```
 
 ## 🧪 Testing
 
-### Backend
+### Backend (Django)
 ```bash
-# Con Docker
-docker-compose exec django python manage.py test
+# All tests
+python manage.py test
 
-# Local con pytest
-cd backend
-source venv/bin/activate
-pytest apps/organization/test_models.py -v
-pytest apps/organization/test_apis.py -v
+# Specific module
+python manage.py test apps.organization
 ```
+**Status:** ✅ 57/57 tests passing
 
-Estado actual: ✅ **34/34 tests pasando (100%)**
-
-### Frontend
+### Frontend (React)
 ```bash
-cd frontend
-npm run test              # Ejecutar tests
-npm run test:coverage     # Ejecutar tests con cobertura
-npm run test:ui          # UI interactiva de tests
+npm run test
+npm run test:coverage
+```
+**Status:** ⚠️ Test suite pending setup
+
+## 📁 Project Structure
+
+```
+zentraqms/
+├── backend/
+│   ├── apps/
+│   │   ├── authentication/     # JWT auth
+│   │   ├── authorization/      # RBAC system
+│   │   ├── organization/       # Multi-sector orgs
+│   │   └── common/            # Shared models
+│   └── manage.py
+├── frontend/
+│   ├── src/
+│   │   ├── components/        # React components
+│   │   ├── hooks/            # Custom hooks
+│   │   └── pages/            # Route components
+│   └── package.json
+├── claude-modules/           # AI documentation
+└── docker-compose.yml
 ```
 
-Estado actual: ⚠️ **97/253 tests pasando** (necesita instalación de dependencias)
+## 🔧 For Developers
 
-### Cobertura de Tests
-- **Backend**: >80% cobertura
-- **Frontend**: En proceso de mejora
-- **E2E Tests**: Implementados para flujo completo de organización
+### Adding New Sector
+1. **Create extension model** (OneToOne with Organization)
+2. **Add auto-activation rules** in serializer
+3. **Define sector modules** with compatibility
+4. **Map UI components** for new sector
 
-## 🔒 Uso del Sistema RBAC (Para Desarrolladores)
-
-### Componentes de Autorización
-
-#### PermissionGate
-Componente para renderizado condicional basado en permisos:
-
-```tsx
-import { PermissionGate } from '@/components/common/PermissionGate';
-
-// Verificar un permiso específico
-<PermissionGate permission="documents.create">
-  <button>Crear Documento</button>
-</PermissionGate>
-
-// Verificar múltiples permisos (OR)
-<PermissionGate permissions={['documents.create', 'documents.update']}>
-  <button>Gestionar Documentos</button>
-</PermissionGate>
-
-// Verificar rol específico
-<PermissionGate role="admin">
-  <AdminPanel />
-</PermissionGate>
-
-// Con fallback personalizado
-<PermissionGate 
-  permission="reports.export" 
-  fallback={<p>No tienes permisos para exportar</p>}
->
-  <ExportButton />
-</PermissionGate>
-```
-
-#### usePermissions Hook
-Hook avanzado para verificación de permisos:
-
-```tsx
-import { usePermissions } from '@/hooks/usePermissions';
-
-function MyComponent() {
-  const { 
-    hasPermission, 
-    hasRole, 
-    canCreate, 
-    canUpdate,
-    getUserCapabilities 
-  } = usePermissions();
-
-  // Verificar permisos individuales
-  if (hasPermission('documents.delete')) {
-    // Mostrar botón de eliminar
-  }
-
-  // Verificar capacidades de recurso
-  const canManageDocs = canCreate('documents') && canUpdate('documents');
-
-  // Obtener todas las capacidades del usuario
-  const capabilities = getUserCapabilities();
-  if (capabilities.canManageUsers) {
-    // Mostrar gestión de usuarios
-  }
-}
-```
-
-#### Componentes de Utilidad
-```tsx
-import { AdminOnly, CanManageProcesses } from '@/utils/rbac.utils';
-
-// Solo para administradores
-<AdminOnly>
-  <AdminSettings />
-</AdminOnly>
-
-// Para usuarios que pueden gestionar procesos
-<CanManageProcesses>
-  <ProcessManager />
-</CanManageProcesses>
-```
-
-### Rutas Protegidas
-
-```tsx
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-
-// Ruta que requiere autenticación y rol específico
-<ProtectedRoute 
-  requiredRoles={['admin', 'coordinador']}
-  requiredPermissions={['processes.manage']}
->
-  <ProcessManagementPage />
-</ProtectedRoute>
-```
-
-### Cache de Permisos
-
-El sistema implementa cache automático de permisos en sessionStorage con TTL de 1 hora. Los permisos se actualizan automáticamente en:
-- Login inicial
-- Refresh de token
-- Cambios de permisos en el backend
-
-Para refrescar manualmente los permisos:
-```tsx
-const { refreshPermissions } = useAuth();
-await refreshPermissions();
-```
-
-## 📝 Makefile - Comandos Disponibles
-
+### Key APIs
 ```bash
-make help        # Mostrar ayuda
-make build       # Construir contenedores
-make up          # Levantar servicios
-make down        # Detener servicios
-make migrate     # Ejecutar migraciones
-make shell       # Shell de Django
-make logs        # Ver logs
-make clean       # Limpiar proyecto
+# Organization wizard
+POST /api/v1/organization/wizard/
+
+# Authentication
+POST /api/v1/auth/login/
+POST /api/v1/auth/refresh/
+
+# Permissions
+GET /api/v1/authorization/user-permissions/my_permissions/
 ```
 
-## 🚀 Despliegue en Producción
+## 📋 Environment Setup
 
-### Consideraciones
-1. Cambiar `DEBUG=False` en producción
-2. Configurar un servidor web (Nginx/Apache)
-3. Usar una base de datos robusta (PostgreSQL)
-4. Configurar HTTPS con certificados SSL
-5. Implementar backup automático
-6. Configurar monitoreo y logs
+### Backend (.env)
+```env
+SECRET_KEY=your-secret-key
+DEBUG=True
+DB_NAME=zentradb
+DB_USER=zentrauser
+DB_PASSWORD=zentrapass
+```
 
-### Ejemplo con Docker en Producción
+### Frontend (.env)
+```env
+VITE_API_URL=http://localhost:8000
+VITE_APP_NAME=ZentraQMS
+```
+
+## 🚦 Production Deployment
+
+### Docker Production
 ```bash
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-## 📊 API Documentation
+### Key Considerations
+- Set `DEBUG=False`
+- Configure HTTPS
+- Setup PostgreSQL backup
+- Configure log monitoring
+- Use environment secrets
 
-La documentación de la API está disponible en:
-- Swagger UI: http://localhost:8000/api/swagger/
+## 📈 Performance
+
+### Current Metrics
+- **Login:** < 500ms
+- **Wizard Load:** < 1s
+- **Auto-save:** < 300ms
+- **Navigation:** Instant
+
+### Optimizations
+- Auto-save with 1s debounce
+- JWT token auto-refresh
+- Selective module loading
+- Database query optimization
+
+## 📚 Documentation
+
+### For Development Team
+- **Architecture:** `claude-modules/architecture/README.claude.md`
+- **Multi-Sector:** `claude-modules/architecture/multi-sector-module-architecture.claude.md`
+- **Organization Module:** `claude-modules/organization/README.claude.md`
+- **Frontend Guide:** `claude-modules/frontend/README.claude.md`
+
+### API Documentation
+- Swagger: http://localhost:8000/api/swagger/
 - ReDoc: http://localhost:8000/api/redoc/
 
-### Endpoints Principales
-```
-GET    /api/procesos/          # Listar procesos
-POST   /api/procesos/          # Crear proceso
-GET    /api/auditorias/        # Listar auditorías
-POST   /api/auditorias/        # Crear auditoría
-GET    /api/indicadores/       # Listar KPIs
-POST   /api/indicadores/       # Crear KPI
-```
+## 🔄 Release Management
 
-## 🔐 Credenciales de Prueba RBAC
+### Versioning
+We use [Semantic Versioning](https://semver.org/):
+- **MAJOR.MINOR.PATCH** (e.g., 2.0.0)
+- Current: **v2.0.0-dev** (Multi-Sector Development)
 
-El sistema incluye usuarios de prueba con diferentes roles y permisos para testing y demostración:
-
-### Usuarios de Prueba
-
-| Usuario | Email | Contraseña | Rol | Permisos |
-|---------|-------|------------|-----|----------|
-| **Admin** | `admin@zentraqms.com` | `[password del admin]` | Super Admin | Acceso total al sistema |
-| **Coordinador** | `` | `test123456` | Coordinador de Calidad | 35 permisos - Gestión completa de calidad |
-| **Auditor** | `auditor@zentraqms.test` | `test123456` | Auditor Interno | 16 permisos - Ejecución y gestión de auditorías |
-| **Jefe de Área** | `jefe@zentraqms.test` | `test123456` | Jefe de Área | 17 permisos - Gestión de área y procesos |
-| **Responsable** | `responsable@zentraqms.test` | `test123456` | Responsable de Proceso | 11 permisos - Gestión de procesos específicos |
-| **Operativo** | `operativo@zentraqms.test` | `test123456` | Usuario Operativo | 8 permisos - Operaciones básicas |
-| **Consulta** | `consulta@zentraqms.test` | `test123456` | Usuario de Consulta | 11 permisos - Solo lectura y consulta |
-
-### Endpoints RBAC Disponibles
-
+### Create Release
 ```bash
-# Gestión de roles
-GET    /api/authorization/roles/                    # Listar roles
-GET    /api/authorization/permissions/              # Listar permisos
-
-# Gestión de permisos de usuario
-GET    /api/authorization/user-permissions/my_permissions/     # Mis permisos
-POST   /api/authorization/user-permissions/check_permission/   # Verificar permiso específico
-```
-
-### Ejemplo de Uso
-
-```bash
-# Login con usuario coordinador
-curl -X POST http://localhost:8000/api/auth/login/ \
-  -H "Content-Type: application/json" \
-  -d '{"email": "coordinador@zentraqms.test", "password": "test123456"}'
-
-# Verificar permisos del usuario
-curl -X GET http://localhost:8000/api/authorization/user-permissions/my_permissions/ \
-  -H "Authorization: Bearer [access_token]"
-
-# Verificar permiso específico
-curl -X POST http://localhost:8000/api/authorization/user-permissions/check_permission/ \
-  -H "Authorization: Bearer [access_token]" \
-  -H "Content-Type: application/json" \
-  -d '{"permission_code": "audits.create"}'
-```
-
-### Sistema de Permisos
-
-El sistema implementa un RBAC completo con:
-- **42 permisos base** distribuidos en 6 recursos (audits, documents, processes, reports, users, dashboard)
-- **7 roles predefinidos** con diferentes niveles de acceso
-- **Wildcards** para permisos (`*.all` para super admin, `resource.*` para acceso completo a un recurso)
-- **Cache de permisos** para optimizar rendimiento
-- **JWT tokens** que incluyen roles y permisos del usuario
-
-## 👥 Equipo de Desarrollo
-
-- **Desarrollador Principal**: [Tu Nombre]
-- **Contacto**: [tu-email@ejemplo.com]
-
-## 📄 Licencia
-
-Este proyecto es software propietario. Todos los derechos reservados.
-
-## 🤝 Contribución
-
-Para contribuir al proyecto:
-
-1. Fork el repositorio
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
-## 📞 Soporte
-
-Para soporte y consultas:
-- Email: soporte@zentraqms.com
-- Issues: [GitHub Issues](https://github.com/tu-usuario/zentraqms/issues)
-
-## 🔄 Versionado y Releases
-
-### Sistema de Versionado
-
-Este proyecto usa [Semantic Versioning](https://semver.org/lang/es/):
-
-- **MAJOR.MINOR.PATCH** (ej: 1.2.3)
-- **MAJOR**: Cambios incompatibles en la API
-- **MINOR**: Nuevas funcionalidades compatibles hacia atrás  
-- **PATCH**: Correcciones compatibles hacia atrás
-
-### Crear una Nueva Versión
-
-```bash
-# Versión patch (0.1.0 → 0.1.1)
-./scripts/create-release.sh patch
-
-# Versión minor (0.1.0 → 0.2.0)  
 ./scripts/create-release.sh minor
-
-# Versión major (0.1.0 → 1.0.0)
-./scripts/create-release.sh major
-
-# Con push automático
-./scripts/create-release.sh minor --push
-
-# Simulación sin cambios
-./scripts/create-release.sh patch --dry-run
+./scripts/create-release.sh patch --push
 ```
 
-### Convenciones de Commits
+## 🤝 Contributing
 
-Usamos [Conventional Commits](https://www.conventionalcommits.org/):
+1. Fork repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Follow commit conventions (`feat:`, `fix:`, `docs:`)
+4. Submit pull request
 
-```
-feat: nueva funcionalidad
-fix: corrección de bug  
-docs: solo cambios en documentación
-style: cambios que no afectan el código (espacios, formato, etc)
-refactor: código que no corrige bug ni agrega funcionalidad
-test: agregar o corregir tests
-chore: cambios en el build, dependencias, etc
-```
+## 📞 Support
 
-### Scripts de Versionado
-
-- `npm run version:patch` - Incrementa versión patch
-- `npm run version:minor` - Incrementa versión minor
-- `npm run version:major` - Incrementa versión major
-- `npm run version:sync` - Sincroniza versiones entre módulos
-- `./scripts/create-release.sh` - Script completo de release
-
-### Changelog
-
-Ver [CHANGELOG.md](./CHANGELOG.md) para el historial completo de cambios.
+- **Issues:** GitHub Issues
+- **Documentation:** `/claude-modules/`
+- **Architecture Questions:** Consult AI agents in `.claude/agents/`
 
 ---
 
-Desarrollado con ❤️ para la Excelencia Organizacional
+**Status:** Production-ready core with modular expansion capability
+**Team:** Multi-disciplinary development team
+**License:** Proprietary

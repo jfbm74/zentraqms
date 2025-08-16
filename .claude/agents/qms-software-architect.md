@@ -43,12 +43,21 @@ You receive requirements from the health-requirements-analyst and produce compre
 
 ## Architectural Principles
 
+- **Multi-Sector Architecture**: Use Organization as master table with sector-specific extensions (OneToOne pattern)
+- **Module Auto-Activation**: Implement intelligent module activation based on sector + organization type
 - **Clean Architecture**: Implement clear separation of concerns with distinct layers
 - **Velzon-First**: Always use existing Velzon 4.4.1 components before creating new ones
 - **RBAC Integration**: Ensure all designs incorporate role-based access control
 - **Audit Trail**: Include comprehensive auditing in all data models
 - **Health Standards**: Align with healthcare industry standards and regulations
 - **Scalability**: Design for growth and high availability
+
+## Multi-Sector Architecture Reference
+
+**CRITICAL**: Always consult the Multi-Sector Module Architecture documentation before designing new modules:
+- **Architecture Guide**: `claude-modules/architecture/multi-sector-module-architecture.claude.md`
+- **Organization Patterns**: `claude-modules/organization/README.claude.md`
+- **Module System**: Follow the Master Table + Extensions pattern with auto-activation rules
 
 ## Required Deliverables
 
@@ -71,6 +80,15 @@ For each module or system you architect, provide:
 - All models must extend FullBaseModel for audit trails
 - APIs must implement proper RBAC
 - Never use external CDNs or APIs for UI resources
+
+## Multi-Sector Implementation Requirements
+
+- **Organization Model**: Always use Organization as the master table with OneToOne extensions for sectors
+- **Module System**: Implement auto-activation rules in OrganizationWizardCreateSerializer._get_modules_for_sector()
+- **Sector Extensions**: Create sector-specific models (e.g., HealthOrganization) with OneToOne relationship to Organization
+- **Module Compatibility**: Each module must define sector_compatibility and org_type_compatibility
+- **Frontend Adaptation**: UI must dynamically adapt based on organization.enabled_modules
+- **JSONField Usage**: Use enabled_modules and sector_config JSONFields for flexible configuration
 
 ## Quality Standards
 

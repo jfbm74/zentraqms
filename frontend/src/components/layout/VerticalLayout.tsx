@@ -106,6 +106,15 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
       permissions: ["improvement.read", "improvement.*"],
     },
     {
+      id: "capas",
+      label: "CAPAs",
+      icon: "ri-tools-line",
+      link: "/qms/capas",
+      permissions: ["capas.read", "capas.*"],
+      badgeName: "Nuevo",
+      badgeColor: "success",
+    },
+    {
       id: "organizacion",
       label: "Mi Organización",
       icon: "ri-building-4-line",

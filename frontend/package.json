@@ -27,6 +27,7 @@
     "@types/react-router-dom": "^5.3.3",
     "@xyflow/react": "^12.8.2",
     "axios": "^1.11.0",
+    "bootstrap": "^5.3.7",
     "classnames": "^2.5.1",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.539.0",
