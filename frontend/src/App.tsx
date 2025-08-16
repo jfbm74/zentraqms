@@ -1,12 +1,9 @@
 /**
  * Main App Component for ZentraQMS Frontend
- *
- * This component sets up the main application structure with routing,
- * authentication protection, and global providers.
+ * React 19 Compatible Version
  */
 
 import React, { Suspense, useEffect } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -54,22 +51,6 @@ const NotFoundPage = React.lazy(() => import("./pages/NotFoundPage"));
 // Styles
 import "./pages/auth/auth.css";
 import "./components/layout/layout.css";
-
-/**
- * Create React Query client with default configuration
- */
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-    mutations: {
-      retry: 1,
-    },
-  },
-});
 
 /**
  * Loading fallback component
@@ -214,30 +195,28 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary showDetails={true}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <SimpleRouter>
-            <div className="App">
-              <AppRouter />
-            </div>
+      <AuthProvider>
+        <SimpleRouter>
+          <div className="App">
+            <AppRouter />
+          </div>
 
-            {/* Toast Container for error notifications */}
-            <ToastContainer
-              position="top-right"
-              autoClose={5000}
-              hideProgressBar={false}
-              newestOnTop={false}
-              closeOnClick
-              rtl={false}
-              pauseOnFocusLoss
-              draggable
-              pauseOnHover
-              theme="light"
-              className="toast-container"
-            />
-          </SimpleRouter>
-        </AuthProvider>
-      </QueryClientProvider>
+          {/* Toast Container for error notifications */}
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+            className="toast-container"
+          />
+        </SimpleRouter>
+      </AuthProvider>
     </ErrorBoundary>
   );
 };
