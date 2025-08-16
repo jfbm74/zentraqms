@@ -650,14 +650,56 @@ body {
 /* Sidebar Collapsed State */
 .sidebar-collapsed .app-menu {
   width: var(--vz-vertical-menu-width-sm);
+  transition: all 0.3s ease;
 }
 
 .sidebar-collapsed #page-topbar {
   left: var(--vz-vertical-menu-width-sm);
+  transition: all 0.3s ease;
 }
 
 .sidebar-collapsed .main-content {
   margin-left: var(--vz-vertical-menu-width-sm);
+  transition: all 0.3s ease;
+}
+
+/* Auto-collapse hover zone */
+.sidebar-collapsed .app-menu:hover {
+  width: var(--vz-vertical-menu-width);
+  box-shadow: 0 4px 8px rgba(15, 34, 58, 0.2);
+  z-index: 1005;
+}
+
+/* Collapsed state styling */
+.sidebar-collapsed .app-menu {
+  opacity: 0.8;
+}
+
+.sidebar-collapsed .app-menu:hover {
+  opacity: 1;
+}
+
+/* Content area expansion */
+.main-content {
+  margin-left: var(--vz-vertical-menu-width);
+  transition: margin-left 0.3s ease;
+}
+
+.sidebar-collapsed .main-content {
+  margin-left: var(--vz-vertical-menu-width-sm);
+}
+
+/* Smooth transitions for all sidebar states */
+.app-menu {
+  transition: all 0.3s ease;
+}
+
+#page-topbar {
+  transition: all 0.3s ease;
+}
+
+.main-content {
+  transition: all 0.3s ease;
 }
 
 .sidebar-collapsed .navbar-brand-box {

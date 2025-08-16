@@ -104,10 +104,6 @@ const Sidebar: React.FC<SidebarProps> = ({ layoutType = "vertical", isVisible = 
                 <span className="d-block fw-medium sidebar-user-name-text">
                   {user?.first_name || user?.email || 'Usuario'}
                 </span>
-                <span className="d-block fs-14 sidebar-user-name-sub-text">
-                  <i className="ri ri-circle-fill fs-10 text-success align-baseline"></i> 
-                  <span className="align-middle">En línea</span>
-                </span>
               </span>
             </span>
           </button>
