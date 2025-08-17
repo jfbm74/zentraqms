@@ -1,0 +1,2152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZentraQMS - Dashboard SOGCS</title>
+    
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- RemixIcon -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            /* Velzon Colors */
+            --vz-primary: #405189;
+            --vz-secondary: #3577f1;
+            --vz-success: #0ab39c;
+            --vz-info: #299cdb;
+            --vz-warning: #f7b84b;
+            --vz-danger: #f06548;
+            --vz-light: #f3f6f9;
+            --vz-dark: #212529;
+            
+            /* Healthcare Context Colors */
+            --health-primary: #405189;
+            --health-secondary: #0ab39c;
+            --health-accent: #f7b84b;
+            --health-neutral: #878a99;
+            
+            /* Grays */
+            --vz-gray-100: #f3f6f9;
+            --vz-gray-200: #eff2f7;
+            --vz-gray-300: #e9ebec;
+            --vz-gray-400: #ced4da;
+            --vz-gray-500: #adb5bd;
+            --vz-gray-600: #878a99;
+            --vz-gray-700: #495057;
+            --vz-gray-800: #343a40;
+            --vz-gray-900: #212529;
+            
+            /* Typography */
+            --vz-font-sans-serif: "hkgrotesk", sans-serif;
+            --vz-font-secondary: "Poppins", sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--vz-font-sans-serif);
+            background-color: var(--vz-light);
+            color: var(--vz-dark);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* Layout Structure */
+        .app-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .navbar-menu {
+            width: 280px;
+            background-color: white;
+            border-right: 1px solid var(--vz-gray-300);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .navbar-brand-box {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--vz-gray-300);
+            text-align: center;
+        }
+
+        .logo-lg {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--vz-primary);
+            text-decoration: none;
+        }
+
+        .menu-content {
+            padding: 1rem 0;
+        }
+
+        .menu-title {
+            font-size: 0.75rem;
+            color: var(--vz-gray-600);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0.5rem 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link.menu-link {
+            padding: 0.75rem 1.5rem;
+            color: var(--vz-gray-700);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease;
+            border: none;
+            background: none;
+        }
+
+        .nav-link.menu-link:hover {
+            background-color: var(--vz-gray-100);
+            color: var(--vz-primary);
+        }
+
+        .nav-link.menu-link.active {
+            background-color: rgba(64, 81, 137, 0.1);
+            color: var(--vz-primary);
+            border-right: 3px solid var(--vz-primary);
+        }
+
+        .nav-link.menu-link i {
+            font-size: 1.125rem;
+            margin-right: 0.75rem;
+            width: 1.5rem;
+            text-align: center;
+        }
+
+        .nav-sm {
+            margin-left: 3rem;
+        }
+
+        .nav-sm .nav-link {
+            padding: 0.5rem 1.5rem;
+            font-size: 0.875rem;
+        }
+
+        .badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            margin-left: auto;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            background-color: var(--vz-light);
+        }
+
+        /* Header */
+        .page-header {
+            background-color: white;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--vz-gray-300);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .page-title-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--vz-dark);
+            margin: 0;
+        }
+
+        .breadcrumb {
+            margin: 0;
+            padding: 0;
+            background: none;
+        }
+
+        .breadcrumb-item {
+            font-size: 0.875rem;
+        }
+
+        .breadcrumb-item + .breadcrumb-item::before {
+            content: ">";
+            color: var(--vz-gray-500);
+        }
+
+        .page-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        /* Dashboard Content */
+        .dashboard-content {
+            padding: 1.5rem;
+        }
+
+        /* Alert Banner */
+        .alert-banner {
+            background: linear-gradient(135deg, var(--vz-danger), #ff7a6b);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(240, 101, 72, 0.3);
+        }
+
+        .alert-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .alert-icon {
+            font-size: 1.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Overview Cards */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .overview-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid var(--vz-gray-200);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .overview-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+
+        .overview-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--color, var(--vz-primary));
+        }
+
+        .card-header-flex {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--vz-gray-700);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0;
+        }
+
+        .card-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+            color: var(--color, var(--vz-primary));
+        }
+
+        .metric-label {
+            color: var(--vz-gray-600);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-container {
+            margin: 1rem 0;
+        }
+
+        .progress {
+            height: 8px;
+            border-radius: 4px;
+            background-color: var(--vz-gray-200);
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-badge.active {
+            background-color: rgba(10, 179, 156, 0.1);
+            color: var(--vz-success);
+        }
+
+        .status-badge.in-progress {
+            background-color: rgba(247, 184, 75, 0.1);
+            color: var(--vz-warning);
+        }
+
+        .status-badge.attention {
+            background-color: rgba(240, 101, 72, 0.1);
+            color: var(--vz-danger);
+        }
+
+        .status-badge.not-started {
+            background-color: rgba(135, 138, 153, 0.1);
+            color: var(--vz-gray-600);
+        }
+
+        /* Charts Section */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid var(--vz-gray-200);
+        }
+
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: between;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--vz-dark);
+            margin: 0;
+        }
+
+        /* Activity Feed */
+        .activity-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .activity-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid var(--vz-gray-200);
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--vz-gray-200);
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-title {
+            font-weight: 500;
+            color: var(--vz-dark);
+            margin-bottom: 0.25rem;
+        }
+
+        .activity-description {
+            color: var(--vz-gray-600);
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .activity-time {
+            color: var(--vz-gray-500);
+            font-size: 0.75rem;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid var(--vz-gray-200);
+            margin-bottom: 2rem;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .action-button {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            border: 1px solid var(--vz-gray-300);
+            border-radius: 0.5rem;
+            background: white;
+            color: var(--vz-gray-700);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .action-button:hover {
+            border-color: var(--vz-primary);
+            color: var(--vz-primary);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(64, 81, 137, 0.15);
+        }
+
+        .action-icon {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.375rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--vz-gray-100);
+            color: var(--vz-gray-600);
+            font-size: 1rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background-color: var(--vz-primary);
+            border-color: var(--vz-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #364574;
+            border-color: #364574;
+            color: white;
+        }
+
+        .btn-outline-primary {
+            color: var(--vz-primary);
+            border-color: var(--vz-primary);
+            background: transparent;
+        }
+
+        .btn-outline-primary:hover {
+            background-color: var(--vz-primary);
+            color: white;
+        }
+
+        .btn-success {
+            background-color: var(--vz-success);
+            border-color: var(--vz-success);
+            color: white;
+        }
+
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .navbar-menu {
+                margin-left: -280px;
+            }
+
+            .navbar-menu.show {
+                margin-left: 0;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .activity-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .overview-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .page-title-box {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .dashboard-content {
+                padding: 1rem;
+            }
+
+            .actions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Sub-header SOGCS */
+        .sogcs-subheader {
+            background: white;
+            border-bottom: 1px solid var(--vz-gray-300);
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .sogcs-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1.5rem;
+        }
+
+        .sogcs-tabs {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .sogcs-tab {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--vz-gray-300);
+            border-radius: 0.5rem;
+            background: white;
+            color: var(--vz-gray-700);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .sogcs-tab:hover {
+            border-color: var(--vz-primary);
+            color: var(--vz-primary);
+            background: rgba(64, 81, 137, 0.05);
+        }
+
+        .sogcs-tab.active {
+            border-color: var(--vz-primary);
+            color: var(--vz-primary);
+            background: rgba(64, 81, 137, 0.1);
+        }
+
+        .sogcs-tab-icon {
+            font-size: 1rem;
+        }
+
+        .sogcs-tab-badge {
+            font-size: 0.65rem;
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.25rem;
+            font-weight: 600;
+            line-height: 1;
+        }
+
+        .quick-actions-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .quick-actions-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--vz-primary);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .quick-actions-btn:hover {
+            background: #364574;
+        }
+
+        .quick-actions-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid var(--vz-gray-300);
+            border-radius: 0.5rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            min-width: 280px;
+            z-index: 1000;
+            display: none;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .quick-actions-menu.show {
+            display: block;
+        }
+
+        .quick-action-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 0.375rem;
+            color: var(--vz-gray-700);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .quick-action-item:hover {
+            background: var(--vz-gray-100);
+            color: var(--vz-primary);
+        }
+
+        .quick-action-icon {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.375rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--vz-gray-100);
+            color: var(--vz-gray-600);
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .quick-action-content {
+            flex: 1;
+        }
+
+        .quick-action-title {
+            font-weight: 500;
+            margin-bottom: 0.125rem;
+        }
+
+        .quick-action-description {
+            font-size: 0.75rem;
+            color: var(--vz-gray-600);
+            margin: 0;
+        }
+
+        /* Calendar Styles */
+        .calendar-container {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid var(--vz-gray-200);
+            margin-bottom: 2rem;
+        }
+
+        .calendar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .calendar-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--vz-dark);
+            margin: 0;
+        }
+
+        .calendar-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .calendar-nav-btn {
+            width: 2rem;
+            height: 2rem;
+            border: 1px solid var(--vz-gray-300);
+            border-radius: 0.375rem;
+            background: white;
+            color: var(--vz-gray-600);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-nav-btn:hover {
+            border-color: var(--vz-primary);
+            color: var(--vz-primary);
+        }
+
+        .calendar-month {
+            font-weight: 600;
+            color: var(--vz-dark);
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .calendar-filters {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.25rem 0.75rem;
+            border: 1px solid var(--vz-gray-300);
+            border-radius: 1rem;
+            background: white;
+            color: var(--vz-gray-600);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn.active {
+            border-color: var(--vz-primary);
+            background: var(--vz-primary);
+            color: white;
+        }
+
+        .filter-btn:hover:not(.active) {
+            border-color: var(--vz-primary);
+            color: var(--vz-primary);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: var(--vz-gray-300);
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .calendar-day-header {
+            background: var(--vz-gray-100);
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--vz-gray-700);
+            text-transform: uppercase;
+        }
+
+        .calendar-day {
+            background: white;
+            min-height: 120px;
+            padding: 0.5rem;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-day:hover {
+            background: var(--vz-gray-50);
+        }
+
+        .calendar-day.other-month {
+            background: var(--vz-gray-50);
+            color: var(--vz-gray-400);
+        }
+
+        .calendar-day-number {
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .calendar-day.today .calendar-day-number {
+            color: var(--vz-primary);
+            font-weight: 700;
+        }
+
+        .calendar-events {
+            display: flex;
+            flex-direction: column;
+            gap: 0.125rem;
+        }
+
+        .calendar-event {
+            padding: 0.125rem 0.25rem;
+            border-radius: 0.25rem;
+            font-size: 0.625rem;
+            font-weight: 500;
+            line-height: 1.2;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .calendar-event:hover {
+            transform: scale(1.02);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Event Types */
+        .event-suh {
+            background: rgba(53, 119, 241, 0.1);
+            color: var(--vz-secondary);
+            border-left: 3px solid var(--vz-secondary);
+        }
+
+        .event-pamec {
+            background: rgba(10, 179, 156, 0.1);
+            color: var(--vz-success);
+            border-left: 3px solid var(--vz-success);
+        }
+
+        .event-sic {
+            background: rgba(147, 51, 234, 0.1);
+            color: #9333ea;
+            border-left: 3px solid #9333ea;
+        }
+
+        .event-sua {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+            border-left: 3px solid #f59e0b;
+        }
+
+        .event-training {
+            background: rgba(247, 184, 75, 0.1);
+            color: var(--vz-warning);
+            border-left: 3px solid var(--vz-warning);
+        }
+
+        .event-deadline {
+            background: rgba(240, 101, 72, 0.1);
+            color: var(--vz-danger);
+            border-left: 3px solid var(--vz-danger);
+        }
+
+        /* Event Modal */
+        .event-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 1rem;
+        }
+
+        .event-modal.show {
+            display: flex;
+        }
+
+        .event-modal-content {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .event-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--vz-gray-200);
+        }
+
+        .event-modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .event-modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--vz-gray-500);
+            cursor: pointer;
+            padding: 0;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.375rem;
+        }
+
+        .event-modal-close:hover {
+            background: var(--vz-gray-100);
+            color: var(--vz-gray-700);
+        }
+
+        .event-detail {
+            margin-bottom: 1rem;
+        }
+
+        .event-detail-label {
+            font-weight: 500;
+            color: var(--vz-gray-700);
+            margin-bottom: 0.25rem;
+        }
+
+        .event-detail-value {
+            color: var(--vz-gray-600);
+        }
+
+        /* Hidden calendar view */
+        .dashboard-view {
+            display: block;
+        }
+
+        .calendar-view {
+            display: none;
+        }
+
+        .calendar-view.active {
+            display: block;
+        }
+
+        .dashboard-view.hidden {
+            display: none;
+        }
+
+        /* Utilities */
+        .d-flex { display: flex; }
+        .align-items-center { align-items: center; }
+        .justify-content-between { justify-content: space-between; }
+        .gap-1 { gap: 0.25rem; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-3 { gap: 1rem; }
+        .text-muted { color: var(--vz-gray-600); }
+        .text-success { color: var(--vz-success); }
+        .text-warning { color: var(--vz-warning); }
+        .text-danger { color: var(--vz-danger); }
+        .fw-semibold { font-weight: 600; }
+        .fw-bold { font-weight: 700; }
+        .mb-0 { margin-bottom: 0; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-3 { margin-bottom: 1rem; }
+        .ms-auto { margin-left: auto; }
+
+        /* Donut Chart Container */
+        .donut-chart-container {
+            position: relative;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .donut-center-text {
+            position: absolute;
+            text-align: center;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .donut-center-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--vz-primary);
+            margin: 0;
+        }
+
+        .donut-center-label {
+            font-size: 0.875rem;
+            color: var(--vz-gray-600);
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <nav class="navbar-menu" id="sidebar">
+            <!-- Logo -->
+            <div class="navbar-brand-box">
+                <a href="#" class="logo-lg">
+                    <i class="ri-hospital-line me-2"></i>
+                    ZentraQMS
+                </a>
+            </div>
+
+            <!-- Menu Content -->
+            <div class="menu-content">
+                <!-- Dashboard -->
+                <div class="menu-title">Dashboard</div>
+                <a href="#" class="nav-link menu-link">
+                    <i class="ri-dashboard-3-line"></i>
+                    Panel Principal
+                </a>
+
+                <!-- SOGCS -->
+                <div class="menu-title">SOGCS</div>
+                <a href="#" class="nav-link menu-link active">
+                    <i class="ri-shield-check-line"></i>
+                    Dashboard SOGCS
+                </a>
+
+                <!-- Submódulos SOGCS -->
+                <div class="nav nav-sm flex-column">
+                    <a href="#" class="nav-link menu-link">
+                        <i class="ri-hospital-line"></i>
+                        SUH - Habilitación
+                        <span class="badge bg-warning ms-auto">3</span>
+                    </a>
+                    <a href="#" class="nav-link menu-link">
+                        <i class="ri-audit-line"></i>
+                        PAMEC - Auditorías
+                        <span class="badge bg-success ms-auto">Activo</span>
+                    </a>
+                    <a href="#" class="nav-link menu-link">
+                        <i class="ri-bar-chart-line"></i>
+                        SIC - Indicadores
+                        <span class="badge bg-danger ms-auto">2</span>
+                    </a>
+                    <a href="#" class="nav-link menu-link">
+                        <i class="ri-award-line"></i>
+                        SUA - Acreditación
+                        <span class="badge bg-secondary ms-auto">Pendiente</span>
+                    </a>
+                </div>
+
+                <!-- Otros Módulos -->
+                <div class="menu-title">Gestión</div>
+                <a href="#" class="nav-link menu-link">
+                    <i class="ri-organization-chart"></i>
+                    Procesos
+                </a>
+                <a href="#" class="nav-link menu-link">
+                    <i class="ri-search-eye-line"></i>
+                    Auditorías
+                </a>
+                <a href="#" class="nav-link menu-link">
+                    <i class="ri-line-chart-line"></i>
+                    Indicadores
+                </a>
+                <a href="#" class="nav-link menu-link">
+                    <i class="ri-book-line"></i>
+                    Normograma
+                </a>
+
+                <!-- Configuración -->
+                <div class="menu-title">Sistema</div>
+                <a href="#" class="nav-link menu-link">
+                    <i class="ri-settings-3-line"></i>
+                    Configuración
+                </a>
+                <a href="#" class="nav-link menu-link">
+                    <i class="ri-notification-3-line"></i>
+                    Notificaciones
+                    <span class="badge bg-danger ms-auto">5</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="page-header">
+                <div class="page-title-box">
+                    <div>
+                        <h4 class="page-title">Dashboard SOGCS</h4>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="#">Dashboard</a></li>
+                                <li class="breadcrumb-item active">SOGCS</li>
+                            </ol>
+                        </nav>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-outline-primary btn-sm">
+                            <i class="ri-download-line"></i>
+                            Exportar Reporte
+                        </button>
+                        <button class="btn btn-primary btn-sm">
+                            <i class="ri-settings-3-line"></i>
+                            Configurar
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- SOGCS Sub-header -->
+            <div class="sogcs-subheader">
+                <div class="sogcs-nav">
+                    <div class="sogcs-tabs">
+                        <a href="#" class="sogcs-tab active" data-view="dashboard">
+                            <i class="sogcs-tab-icon ri-dashboard-3-line"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="#" class="sogcs-tab" data-component="suh">
+                            <i class="sogcs-tab-icon ri-hospital-line"></i>
+                            <span>SUH - Habilitación</span>
+                            <span class="sogcs-tab-badge" style="background: var(--vz-warning); color: white;">3</span>
+                        </a>
+                        <a href="#" class="sogcs-tab" data-component="pamec">
+                            <i class="sogcs-tab-icon ri-audit-line"></i>
+                            <span>PAMEC - Auditorías</span>
+                            <span class="sogcs-tab-badge" style="background: var(--vz-success); color: white;">Activo</span>
+                        </a>
+                        <a href="#" class="sogcs-tab" data-component="sic">
+                            <i class="sogcs-tab-icon ri-bar-chart-line"></i>
+                            <span>SIC - Indicadores</span>
+                            <span class="sogcs-tab-badge" style="background: var(--vz-danger); color: white;">2</span>
+                        </a>
+                        <a href="#" class="sogcs-tab" data-component="sua">
+                            <i class="sogcs-tab-icon ri-award-line"></i>
+                            <span>SUA - Acreditación</span>
+                            <span class="sogcs-tab-badge" style="background: var(--vz-gray-500); color: white;">Pendiente</span>
+                        </a>
+                        <a href="#" class="sogcs-tab" data-view="calendar">
+                            <i class="sogcs-tab-icon ri-calendar-line"></i>
+                            <span>Calendario</span>
+                        </a>
+                    </div>
+                    <div class="quick-actions-dropdown">
+                        <button class="quick-actions-btn" onclick="toggleQuickActions()">
+                            <i class="ri-add-line"></i>
+                            <span>Acciones Rápidas</span>
+                            <i class="ri-arrow-down-s-line"></i>
+                        </button>
+                        <div class="quick-actions-menu" id="quickActionsMenu">
+                            <a href="#" class="quick-action-item">
+                                <div class="quick-action-icon" style="background: rgba(53, 119, 241, 0.1); color: var(--vz-secondary);">
+                                    <i class="ri-add-line"></i>
+                                </div>
+                                <div class="quick-action-content">
+                                    <div class="quick-action-title">Nueva Autoevaluación</div>
+                                    <div class="quick-action-description">Iniciar proceso SUH</div>
+                                </div>
+                            </a>
+                            <a href="#" class="quick-action-item">
+                                <div class="quick-action-icon" style="background: rgba(10, 179, 156, 0.1); color: var(--vz-success);">
+                                    <i class="ri-calendar-schedule-line"></i>
+                                </div>
+                                <div class="quick-action-content">
+                                    <div class="quick-action-title">Programar Auditoría</div>
+                                    <div class="quick-action-description">PAMEC - Nueva auditoría</div>
+                                </div>
+                            </a>
+                            <a href="#" class="quick-action-item">
+                                <div class="quick-action-icon" style="background: rgba(147, 51, 234, 0.1); color: #9333ea;">
+                                    <i class="ri-upload-cloud-line"></i>
+                                </div>
+                                <div class="quick-action-content">
+                                    <div class="quick-action-title">Cargar Indicadores</div>
+                                    <div class="quick-action-description">SIC - Datos del mes</div>
+                                </div>
+                            </a>
+                            <a href="#" class="quick-action-item">
+                                <div class="quick-action-icon" style="background: rgba(247, 184, 75, 0.1); color: var(--vz-warning);">
+                                    <i class="ri-file-text-line"></i>
+                                </div>
+                                <div class="quick-action-content">
+                                    <div class="quick-action-title">Generar Reporte</div>
+                                    <div class="quick-action-description">Cumplimiento general</div>
+                                </div>
+                            </a>
+                            <a href="#" class="quick-action-item">
+                                <div class="quick-action-icon" style="background: rgba(240, 101, 72, 0.1); color: var(--vz-danger);">
+                                    <i class="ri-settings-line"></i>
+                                </div>
+                                <div class="quick-action-content">
+                                    <div class="quick-action-title">Configurar Alertas</div>
+                                    <div class="quick-action-description">Notificaciones automáticas</div>
+                                </div>
+                            </a>
+                            <a href="#" class="quick-action-item">
+                                <div class="quick-action-icon" style="background: rgba(135, 138, 153, 0.1); color: var(--vz-gray-600);">
+                                    <i class="ri-team-line"></i>
+                                </div>
+                                <div class="quick-action-content">
+                                    <div class="quick-action-title">Gestionar Equipo</div>
+                                    <div class="quick-action-description">Responsables SOGCS</div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+                <!-- Dashboard View -->
+                <div class="dashboard-view" id="dashboardView">
+                <!-- Alert Banner -->
+                <div class="alert-banner">
+                    <div class="alert-content">
+                        <i class="ri-alert-line alert-icon"></i>
+                        <div>
+                            <strong>Atención Requerida:</strong>
+                            El componente SIC tiene 2 indicadores críticos que requieren atención inmediata.
+                            <span class="text-white-50">Vencimiento: 15 de Septiembre 2025</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-light btn-sm">Ver Detalles</button>
+                </div>
+
+                <!-- Overview Cards -->
+                <div class="overview-grid">
+                    <!-- SUH Card -->
+                    <div class="overview-card" style="--color: var(--vz-warning)">
+                        <div class="card-header-flex">
+                            <h6 class="card-title">SUH - Sistema Único de Habilitación</h6>
+                            <div class="card-icon" style="background-color: var(--vz-warning)">
+                                <i class="ri-hospital-line"></i>
+                            </div>
+                        </div>
+                        <div class="metric-value" style="color: var(--vz-warning)">85%</div>
+                        <div class="metric-label">Cumplimiento General</div>
+                        <div class="progress-container">
+                            <div class="progress">
+                                <div class="progress-bar bg-warning" style="width: 85%"></div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="status-badge in-progress">
+                                <i class="ri-time-line"></i>
+                                En Proceso
+                            </span>
+                            <span class="text-muted">12 servicios habilitados</span>
+                        </div>
+                    </div>
+
+                    <!-- PAMEC Card -->
+                    <div class="overview-card" style="--color: var(--vz-success)">
+                        <div class="card-header-flex">
+                            <h6 class="card-title">PAMEC - Programa de Auditoría</h6>
+                            <div class="card-icon" style="background-color: var(--vz-success)">
+                                <i class="ri-audit-line"></i>
+                            </div>
+                        </div>
+                        <div class="metric-value" style="color: var(--vz-success)">92%</div>
+                        <div class="metric-label">Avance del Ciclo</div>
+                        <div class="progress-container">
+                            <div class="progress">
+                                <div class="progress-bar bg-success" style="width: 92%"></div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="status-badge active">
+                                <i class="ri-check-line"></i>
+                                Activo
+                            </span>
+                            <span class="text-muted">3 auditorías completadas</span>
+                        </div>
+                    </div>
+
+                    <!-- SIC Card -->
+                    <div class="overview-card" style="--color: var(--vz-danger)">
+                        <div class="card-header-flex">
+                            <h6 class="card-title">SIC - Sistema de Información</h6>
+                            <div class="card-icon" style="background-color: var(--vz-danger)">
+                                <i class="ri-bar-chart-line"></i>
+                            </div>
+                        </div>
+                        <div class="metric-value" style="color: var(--vz-danger)">78%</div>
+                        <div class="metric-label">Indicadores Reportados</div>
+                        <div class="progress-container">
+                            <div class="progress">
+                                <div class="progress-bar bg-danger" style="width: 78%"></div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="status-badge attention">
+                                <i class="ri-alert-line"></i>
+                                Atención Requerida
+                            </span>
+                            <span class="text-muted">2 indicadores críticos</span>
+                        </div>
+                    </div>
+
+                    <!-- SUA Card -->
+                    <div class="overview-card" style="--color: var(--vz-gray-500)">
+                        <div class="card-header-flex">
+                            <h6 class="card-title">SUA - Sistema de Acreditación</h6>
+                            <div class="card-icon" style="background-color: var(--vz-gray-500)">
+                                <i class="ri-award-line"></i>
+                            </div>
+                        </div>
+                        <div class="metric-value" style="color: var(--vz-gray-500)">0%</div>
+                        <div class="metric-label">Proceso No Iniciado</div>
+                        <div class="progress-container">
+                            <div class="progress">
+                                <div class="progress-bar bg-secondary" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="status-badge not-started">
+                                <i class="ri-pause-line"></i>
+                                No Iniciado
+                            </span>
+                            <span class="text-muted">Opcional para IPS Nivel II</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="charts-grid">
+                    <!-- Compliance Trend Chart -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h5 class="chart-title">Tendencia de Cumplimiento SOGCS</h5>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-primary btn-sm active">6M</button>
+                                <button class="btn btn-outline-primary btn-sm">1A</button>
+                            </div>
+                        </div>
+                        <canvas id="complianceChart" height="100"></canvas>
+                    </div>
+
+                    <!-- Component Distribution -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h5 class="chart-title">Distribución de Cumplimiento</h5>
+                        </div>
+                        <div class="donut-chart-container">
+                            <canvas id="distributionChart" width="250" height="250"></canvas>
+                            <div class="donut-center-text">
+                                <div class="donut-center-value">84%</div>
+                                <div class="donut-center-label">Promedio General</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Section -->
+                <div class="activity-grid">
+                    <!-- Recent Activities -->
+                    <div class="activity-card">
+                        <h5 class="chart-title mb-3">Actividades Recientes</h5>
+                        
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background-color: var(--vz-success)">
+                                <i class="ri-check-line"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Autoevaluación SUH Completada</div>
+                                <div class="activity-description">Servicio de Urgencias - 95% cumplimiento</div>
+                                <div class="activity-time">Hace 2 horas</div>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background-color: var(--vz-warning)">
+                                <i class="ri-alert-line"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Alerta de Vencimiento</div>
+                                <div class="activity-description">Renovación habilitación Laboratorio Clínico</div>
+                                <div class="activity-time">Hace 4 horas</div>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background-color: var(--vz-info)">
+                                <i class="ri-upload-line"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Reporte SIC Enviado</div>
+                                <div class="activity-description">Indicadores de calidad Q3 2025</div>
+                                <div class="activity-time">Ayer</div>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background-color: var(--vz-primary)">
+                                <i class="ri-user-add-line"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Nuevo Auditor Asignado</div>
+                                <div class="activity-description">Dr. María González - Auditoría PAMEC</div>
+                                <div class="activity-time">Hace 2 días</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Tasks -->
+                    <div class="activity-card">
+                        <h5 class="chart-title mb-3">Próximas Tareas</h5>
+                        
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background-color: var(--vz-danger)">
+                                <i class="ri-calendar-event-line"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Auditoría Externa PAMEC</div>
+                                <div class="activity-description">Proceso de Urgencias - Preparación requerida</div>
+                                <div class="activity-time">En 5 días</div>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background-color: var(--vz-warning)">
+                                <i class="ri-file-upload-line"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Reporte Mensual SIC</div>
+                                <div class="activity-description">Envío a Secretaría de Salud</div>
+                                <div class="activity-time">En 7 días</div>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background-color: var(--vz-info)">
+                                <i class="ri-refresh-line"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Actualización REPS</div>
+                                <div class="activity-description">Servicios habilitados - Verificación pendiente</div>
+                                <div class="activity-time">En 10 días</div>
+                            </div>
+                        </div>
+
+                        <div class="activity-item">
+                            <div class="activity-icon" style="background-color: var(--vz-success)">
+                                <i class="ri-clipboard-line"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Plan de Mejoramiento</div>
+                                <div class="activity-description">Revisión trimestral de acciones</div>
+                                <div class="activity-time">En 15 días</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <h5 class="chart-title mb-3">Acciones Rápidas</h5>
+                    <div class="actions-grid">
+                        <a href="#" class="action-button">
+                            <div class="action-icon">
+                                <i class="ri-add-line"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold">Nueva Autoevaluación</div>
+                                <small class="text-muted">Iniciar proceso SUH</small>
+                            </div>
+                        </a>
+
+                        <a href="#" class="action-button">
+                            <div class="action-icon">
+                                <i class="ri-calendar-schedule-line"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold">Programar Auditoría</div>
+                                <small class="text-muted">PAMEC - Nueva auditoría</small>
+                            </div>
+                        </a>
+
+                        <a href="#" class="action-button">
+                            <div class="action-icon">
+                                <i class="ri-upload-cloud-line"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold">Cargar Indicadores</div>
+                                <small class="text-muted">SIC - Datos del mes</small>
+                            </div>
+                        </a>
+
+                        <a href="#" class="action-button">
+                            <div class="action-icon">
+                                <i class="ri-file-text-line"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold">Generar Reporte</div>
+                                <small class="text-muted">Cumplimiento general</small>
+                            </div>
+                        </a>
+
+                        <a href="#" class="action-button">
+                            <div class="action-icon">
+                                <i class="ri-settings-line"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold">Configurar Alertas</div>
+                                <small class="text-muted">Notificaciones automáticas</small>
+                            </div>
+                        </a>
+
+                        <a href="#" class="action-button">
+                            <div class="action-icon">
+                                <i class="ri-team-line"></i>
+                            </div>
+                            <div>
+                                <div class="fw-semibold">Gestionar Equipo</div>
+                                <small class="text-muted">Responsables SOGCS</small>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+                </div>
+                <!-- End Dashboard View -->
+
+                <!-- Calendar View -->
+                <div class="calendar-view" id="calendarView">
+                    <div class="calendar-container">
+                        <div class="calendar-header">
+                            <h3 class="calendar-title">Calendario de Actividades SOGCS</h3>
+                            <div class="calendar-controls">
+                                <div class="calendar-filters">
+                                    <button class="filter-btn active" data-filter="all">Todos</button>
+                                    <button class="filter-btn" data-filter="suh">SUH</button>
+                                    <button class="filter-btn" data-filter="pamec">PAMEC</button>
+                                    <button class="filter-btn" data-filter="sic">SIC</button>
+                                    <button class="filter-btn" data-filter="sua">SUA</button>
+                                    <button class="filter-btn" data-filter="training">Capacitaciones</button>
+                                    <button class="filter-btn" data-filter="deadline">Vencimientos</button>
+                                </div>
+                                <div class="calendar-nav">
+                                    <button class="calendar-nav-btn" onclick="previousMonth()">
+                                        <i class="ri-arrow-left-s-line"></i>
+                                    </button>
+                                    <div class="calendar-month" id="currentMonth">Noviembre 2024</div>
+                                    <button class="calendar-nav-btn" onclick="nextMonth()">
+                                        <i class="ri-arrow-right-s-line"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="calendar-grid" id="calendarGrid">
+                            <!-- Calendar will be generated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+                <!-- End Calendar View -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Event Details Modal -->
+    <div class="event-modal" id="eventModal">
+        <div class="event-modal-content">
+            <div class="event-modal-header">
+                <h4 class="event-modal-title" id="eventModalTitle">Detalle del Evento</h4>
+                <button class="event-modal-close" onclick="closeEventModal()">
+                    <i class="ri-close-line"></i>
+                </button>
+            </div>
+            <div id="eventModalBody">
+                <!-- Event details will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Sample data for charts
+        const complianceData = {
+            labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago'],
+            datasets: [
+                {
+                    label: 'SUH',
+                    data: [75, 78, 80, 82, 83, 85, 85, 85],
+                    borderColor: '#f7b84b',
+                    backgroundColor: 'rgba(247, 184, 75, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'PAMEC',
+                    data: [85, 87, 89, 90, 91, 92, 92, 92],
+                    borderColor: '#0ab39c',
+                    backgroundColor: 'rgba(10, 179, 156, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'SIC',
+                    data: [70, 72, 74, 75, 76, 77, 78, 78],
+                    borderColor: '#f06548',
+                    backgroundColor: 'rgba(240, 101, 72, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'SUA',
+                    data: [0, 0, 0, 0, 0, 0, 0, 0],
+                    borderColor: '#878a99',
+                    backgroundColor: 'rgba(135, 138, 153, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        };
+
+        // Compliance Trend Chart
+        const complianceCtx = document.getElementById('complianceChart').getContext('2d');
+        new Chart(complianceCtx, {
+            type: 'line',
+            data: complianceData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                },
+                elements: {
+                    point: {
+                        radius: 4,
+                        hoverRadius: 6
+                    }
+                }
+            }
+        });
+
+        // Distribution Donut Chart
+        const distributionCtx = document.getElementById('distributionChart').getContext('2d');
+        new Chart(distributionCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['SUH', 'PAMEC', 'SIC', 'SUA'],
+                datasets: [{
+                    data: [85, 92, 78, 0],
+                    backgroundColor: [
+                        '#f7b84b',
+                        '#0ab39c',
+                        '#f06548',
+                        '#e9ebec'
+                    ],
+                    borderWidth: 0,
+                    cutout: '70%'
+                }]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15,
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                return data.labels.map((label, index) => {
+                                    const value = data.datasets[0].data[index];
+                                    return {
+                                        text: `${label}: ${value}%`,
+                                        fillStyle: data.datasets[0].backgroundColor[index],
+                                        pointStyle: 'circle'
+                                    };
+                                });
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Sidebar toggle for mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+        }
+
+        // Add mobile menu button (optional - would be in header)
+        if (window.innerWidth <= 992) {
+            // Add hamburger menu functionality here if needed
+        }
+
+        // Simulate real-time updates
+        function updateMetrics() {
+            // This would be connected to real WebSocket or periodic API calls
+            console.log('Updating metrics...');
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(updateMetrics, 30000);
+
+        // Quick Actions Dropdown
+        function toggleQuickActions() {
+            const menu = document.getElementById('quickActionsMenu');
+            menu.classList.toggle('show');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.querySelector('.quick-actions-dropdown');
+            const menu = document.getElementById('quickActionsMenu');
+            if (!dropdown.contains(event.target)) {
+                menu.classList.remove('show');
+            }
+        });
+
+        // View switching
+        function switchView(viewName) {
+            const dashboardView = document.getElementById('dashboardView');
+            const calendarView = document.getElementById('calendarView');
+            const tabs = document.querySelectorAll('.sogcs-tab');
+            
+            // Remove active class from all tabs
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            if (viewName === 'dashboard') {
+                dashboardView.classList.remove('hidden');
+                calendarView.classList.remove('active');
+                document.querySelector('[data-view="dashboard"]').classList.add('active');
+            } else if (viewName === 'calendar') {
+                dashboardView.classList.add('hidden');
+                calendarView.classList.add('active');
+                document.querySelector('[data-view="calendar"]').classList.add('active');
+                generateCalendar();
+            }
+        }
+
+        // Tab navigation
+        document.querySelectorAll('.sogcs-tab').forEach(tab => {
+            tab.addEventListener('click', function(e) {
+                e.preventDefault();
+                const view = this.getAttribute('data-view');
+                const component = this.getAttribute('data-component');
+                
+                if (view) {
+                    switchView(view);
+                } else if (component) {
+                    // Handle component navigation
+                    console.log('Navigate to component:', component);
+                    // In a real app, this would navigate to the specific component
+                }
+            });
+        });
+
+        // Calendar functionality
+        let currentDate = new Date(2024, 10, 1); // November 2024
+        let filteredEventTypes = ['all'];
+
+        const eventData = {
+            '2024-11-05': [{
+                type: 'sic',
+                title: 'Carga Indicadores Oct',
+                description: 'Reporte mensual de indicadores de calidad',
+                time: '14:00',
+                responsible: 'Coordinación de Calidad',
+                priority: 'alta'
+            }],
+            '2024-11-08': [{
+                type: 'pamec',
+                title: 'Auditoría Farmacia',
+                description: 'Auditoría interna del servicio de farmacia',
+                time: '08:00',
+                responsible: 'Equipo Auditor PAMEC',
+                priority: 'alta'
+            }],
+            '2024-11-10': [{
+                type: 'training',
+                title: 'Taller PAMEC',
+                description: 'Capacitación en metodología PAMEC para nuevo personal',
+                time: '09:00',
+                responsible: 'Coordinación de Calidad',
+                priority: 'media'
+            }],
+            '2024-11-12': [{
+                type: 'sic',
+                title: 'Reporte Trimestral',
+                description: 'Elaboración del reporte trimestral de indicadores',
+                time: '10:00',
+                responsible: 'Área de Estadística',
+                priority: 'alta'
+            }],
+            '2024-11-15': [{
+                type: 'suh',
+                title: 'Autoevaluación Consulta Externa',
+                description: 'Proceso de autoevaluación para renovación de habilitación',
+                time: '08:00',
+                responsible: 'Coordinación SUH',
+                priority: 'alta'
+            }],
+            '2024-11-18': [{
+                type: 'pamec',
+                title: 'Seguimiento Laboratorio',
+                description: 'Seguimiento a plan de mejoramiento del laboratorio',
+                time: '15:00',
+                responsible: 'Equipo Auditor PAMEC',
+                priority: 'media'
+            }],
+            '2024-11-20': [{
+                type: 'sua',
+                title: 'Reunión preparatoria',
+                description: 'Reunión para evaluar viabilidad de proceso de acreditación',
+                time: '16:00',
+                responsible: 'Dirección Médica',
+                priority: 'baja'
+            }],
+            '2024-11-22': [{
+                type: 'suh',
+                title: 'Plan Mejora Urgencias',
+                description: 'Implementación de acciones de mejora en urgencias',
+                time: '11:00',
+                responsible: 'Coordinación SUH',
+                priority: 'alta'
+            }],
+            '2024-11-24': [{
+                type: 'training',
+                title: 'Seminario SUH',
+                description: 'Seminario sobre nuevas normativas de habilitación',
+                time: '14:00',
+                responsible: 'Coordinación de Calidad',
+                priority: 'media'
+            }],
+            '2024-11-25': [{
+                type: 'pamec',
+                title: 'Auditoría Imagenología',
+                description: 'Auditoría interna del servicio de imagenología',
+                time: '09:00',
+                responsible: 'Equipo Auditor PAMEC',
+                priority: 'alta'
+            }],
+            '2024-11-28': [{
+                type: 'sic',
+                title: 'Análisis Tendencias',
+                description: 'Análisis de tendencias de indicadores del año',
+                time: '13:00',
+                responsible: 'Área de Estadística',
+                priority: 'media'
+            }],
+            '2024-11-30': [{
+                type: 'deadline',
+                title: 'Plan Mejora Radiología',
+                description: 'VENCIMIENTO: Entrega de plan de mejoramiento',
+                time: '17:00',
+                responsible: 'Coordinación SUH',
+                priority: 'crítica'
+            }]
+        };
+
+        function generateCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+            
+            // Add day headers
+            const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            days.forEach(day => {
+                const header = document.createElement('div');
+                header.className = 'calendar-day-header';
+                header.textContent = day;
+                grid.appendChild(header);
+            });
+            
+            // Get first day of month and number of days
+            const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+            const startDate = new Date(firstDay);
+            startDate.setDate(startDate.getDate() - firstDay.getDay());
+            
+            // Generate 42 days (6 weeks)
+            for (let i = 0; i < 42; i++) {
+                const cellDate = new Date(startDate);
+                cellDate.setDate(startDate.getDate() + i);
+                
+                const cell = document.createElement('div');
+                cell.className = 'calendar-day';
+                
+                if (cellDate.getMonth() !== currentDate.getMonth()) {
+                    cell.classList.add('other-month');
+                }
+                
+                const today = new Date();
+                if (cellDate.toDateString() === today.toDateString()) {
+                    cell.classList.add('today');
+                }
+                
+                const dayNumber = document.createElement('div');
+                dayNumber.className = 'calendar-day-number';
+                dayNumber.textContent = cellDate.getDate();
+                cell.appendChild(dayNumber);
+                
+                // Add events
+                const dateKey = cellDate.toISOString().split('T')[0];
+                if (eventData[dateKey]) {
+                    const eventsContainer = document.createElement('div');
+                    eventsContainer.className = 'calendar-events';
+                    
+                    eventData[dateKey].forEach(event => {
+                        if (filteredEventTypes.includes('all') || filteredEventTypes.includes(event.type)) {
+                            const eventEl = document.createElement('div');
+                            eventEl.className = `calendar-event event-${event.type}`;
+                            eventEl.textContent = event.title;
+                            eventEl.addEventListener('click', () => showEventModal(event, dateKey));
+                            eventsContainer.appendChild(eventEl);
+                        }
+                    });
+                    
+                    cell.appendChild(eventsContainer);
+                }
+                
+                grid.appendChild(cell);
+            }
+            
+            // Update month display
+            const monthNames = [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+            ];
+            document.getElementById('currentMonth').textContent = 
+                `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+        }
+
+        function previousMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            generateCalendar();
+        }
+
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            generateCalendar();
+        }
+
+        function showEventModal(event, date) {
+            const modal = document.getElementById('eventModal');
+            const title = document.getElementById('eventModalTitle');
+            const body = document.getElementById('eventModalBody');
+            
+            title.textContent = event.title;
+            
+            const formatDate = new Date(date).toLocaleDateString('es-ES', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            const priorityColors = {
+                'crítica': 'var(--vz-danger)',
+                'alta': 'var(--vz-warning)',
+                'media': 'var(--vz-info)',
+                'baja': 'var(--vz-success)'
+            };
+            
+            body.innerHTML = `
+                <div class="event-detail">
+                    <div class="event-detail-label">Fecha</div>
+                    <div class="event-detail-value">${formatDate}</div>
+                </div>
+                <div class="event-detail">
+                    <div class="event-detail-label">Hora</div>
+                    <div class="event-detail-value">${event.time}</div>
+                </div>
+                <div class="event-detail">
+                    <div class="event-detail-label">Descripción</div>
+                    <div class="event-detail-value">${event.description}</div>
+                </div>
+                <div class="event-detail">
+                    <div class="event-detail-label">Responsable</div>
+                    <div class="event-detail-value">${event.responsible}</div>
+                </div>
+                <div class="event-detail">
+                    <div class="event-detail-label">Prioridad</div>
+                    <div class="event-detail-value">
+                        <span style="color: ${priorityColors[event.priority]}; font-weight: 600; text-transform: capitalize;">
+                            ${event.priority}
+                        </span>
+                    </div>
+                </div>
+                <div class="event-detail">
+                    <div class="event-detail-label">Componente</div>
+                    <div class="event-detail-value" style="text-transform: uppercase; font-weight: 600;">
+                        ${event.type === 'training' ? 'Capacitación' : 
+                          event.type === 'deadline' ? 'Vencimiento' : event.type.toUpperCase()}
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.add('show');
+        }
+
+        function closeEventModal() {
+            document.getElementById('eventModal').classList.remove('show');
+        }
+
+        // Filter functionality
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const filter = this.getAttribute('data-filter');
+                
+                // Update active state
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Update filter
+                if (filter === 'all') {
+                    filteredEventTypes = ['all'];
+                } else {
+                    filteredEventTypes = [filter];
+                }
+                
+                generateCalendar();
+            });
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('eventModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEventModal();
+            }
+        });
+
+        // Tooltip initialization (if using Bootstrap tooltips)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize any tooltips or popovers
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Initialize calendar if in calendar view
+            if (document.getElementById('calendarView').classList.contains('active')) {
+                generateCalendar();
+            }
+        });
+    </script>
+</body>
+</html>
