@@ -1310,6 +1310,180 @@ class HealthOrganization(FullBaseModel):
         help_text=_('Observaciones específicas del perfil de salud.')
     )
     
+    # === CAMPOS SOGCS ===
+    # Activación y configuración del módulo SOGCS
+    sogcs_enabled = models.BooleanField(
+        _('SOGCS habilitado'),
+        default=False,
+        help_text=_('Indica si el módulo SOGCS está habilitado para esta institución.')
+    )
+    
+    sogcs_configuration = models.JSONField(
+        _('configuración SOGCS'),
+        null=True,
+        blank=True,
+        help_text=_('Configuración JSON del Sistema Obligatorio de Garantía de Calidad en Salud.')
+    )
+    
+    fecha_activacion_sogcs = models.DateTimeField(
+        _('fecha activación SOGCS'),
+        null=True,
+        blank=True,
+        help_text=_('Fecha y hora de activación del módulo SOGCS.')
+    )
+    
+    # Responsables SOGCS
+    coordinador_calidad = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='health_orgs_as_quality_coordinator',
+        verbose_name=_('coordinador de calidad'),
+        help_text=_('Usuario designado como coordinador de calidad SOGCS.')
+    )
+    
+    responsable_habilitacion = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='health_orgs_as_habilitation_responsible',
+        verbose_name=_('responsable de habilitación'),
+        help_text=_('Usuario responsable del proceso de habilitación SUH.')
+    )
+    
+    # Estados y seguimiento SOGCS
+    estado_suh = models.CharField(
+        _('estado SUH'),
+        max_length=20,
+        choices=[
+            ('no_iniciado', _('No Iniciado')),
+            ('en_configuracion', _('En Configuración')),
+            ('autoevaluacion', _('En Autoevaluación')),
+            ('mejoramiento', _('Plan de Mejoramiento')),
+            ('habilitado', _('Habilitado')),
+            ('suspendido', _('Suspendido')),
+        ],
+        default='no_iniciado',
+        help_text=_('Estado actual del Sistema Único de Habilitación.')
+    )
+    
+    estado_pamec = models.CharField(
+        _('estado PAMEC'),
+        max_length=20,
+        choices=[
+            ('no_iniciado', _('No Iniciado')),
+            ('en_configuracion', _('En Configuración')),
+            ('activo', _('Activo')),
+            ('suspendido', _('Suspendido')),
+        ],
+        default='no_iniciado',
+        help_text=_('Estado del Programa de Auditoría para el Mejoramiento de la Calidad.')
+    )
+    
+    estado_sic = models.CharField(
+        _('estado SIC'),
+        max_length=20,
+        choices=[
+            ('no_iniciado', _('No Iniciado')),
+            ('en_configuracion', _('En Configuración')),
+            ('activo', _('Activo')),
+            ('atrasado', _('Atrasado')),
+        ],
+        default='no_iniciado',
+        help_text=_('Estado del Sistema de Información para la Calidad.')
+    )
+    
+    estado_sua = models.CharField(
+        _('estado SUA'),
+        max_length=20,
+        choices=[
+            ('no_aplica', _('No Aplica')),
+            ('interesado', _('Interesado')),
+            ('en_proceso', _('En Proceso')),
+            ('acreditado', _('Acreditado')),
+            ('vencido', _('Vencido')),
+        ],
+        default='no_aplica',
+        help_text=_('Estado del Sistema Único de Acreditación.')
+    )
+    
+    # Fechas importantes SOGCS
+    fecha_ultima_autoevaluacion = models.DateField(
+        _('fecha última autoevaluación'),
+        null=True,
+        blank=True,
+        help_text=_('Fecha de la última autoevaluación SUH realizada.')
+    )
+    
+    fecha_proxima_auditoria = models.DateField(
+        _('fecha próxima auditoría'),
+        null=True,
+        blank=True,
+        help_text=_('Fecha programada para la próxima auditoría PAMEC.')
+    )
+    
+    # Métricas y cumplimiento
+    porcentaje_cumplimiento_suh = models.DecimalField(
+        _('porcentaje cumplimiento SUH'),
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text=_('Porcentaje de cumplimiento actual del SUH (0.00-100.00).')
+    )
+    
+    porcentaje_cumplimiento_pamec = models.DecimalField(
+        _('porcentaje cumplimiento PAMEC'),
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text=_('Porcentaje de cumplimiento actual del PAMEC (0.00-100.00).')
+    )
+    
+    porcentaje_cumplimiento_sic = models.DecimalField(
+        _('porcentaje cumplimiento SIC'),
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text=_('Porcentaje de cumplimiento actual del SIC (0.00-100.00).')
+    )
+    
+    # Configuración específica de componentes
+    suh_servicios_habilitados = models.PositiveIntegerField(
+        _('servicios habilitados SUH'),
+        default=0,
+        help_text=_('Número total de servicios habilitados bajo SUH.')
+    )
+    
+    pamec_procesos_auditoria = models.PositiveIntegerField(
+        _('procesos en auditoría PAMEC'),
+        default=0,
+        help_text=_('Número de procesos incluidos en el programa PAMEC.')
+    )
+    
+    sic_indicadores_activos = models.PositiveIntegerField(
+        _('indicadores activos SIC'),
+        default=0,
+        help_text=_('Número de indicadores de calidad activos en SIC.')
+    )
+    
+    # Alertas y notificaciones
+    alertas_activas = models.PositiveIntegerField(
+        _('alertas SOGCS activas'),
+        default=0,
+        help_text=_('Número de alertas SOGCS activas pendientes de atención.')
+    )
+    
+    notificaciones_habilitadas = models.BooleanField(
+        _('notificaciones habilitadas'),
+        default=True,
+        help_text=_('Indica si las notificaciones SOGCS están habilitadas.')
+    )
+    
     class Meta:
         verbose_name = _('organización de salud')
         verbose_name_plural = _('organizaciones de salud')
@@ -1320,6 +1494,21 @@ class HealthOrganization(FullBaseModel):
             models.Index(fields=['tipo_prestador']),
             models.Index(fields=['naturaleza_juridica']),
             models.Index(fields=['verificado_reps']),
+            # Índices SOGCS para optimizar consultas
+            models.Index(fields=['sogcs_enabled']),
+            models.Index(fields=['estado_suh']),
+            models.Index(fields=['estado_pamec']),
+            models.Index(fields=['estado_sic']),
+            models.Index(fields=['estado_sua']),
+            models.Index(fields=['coordinador_calidad']),
+            models.Index(fields=['responsable_habilitacion']),
+            models.Index(fields=['fecha_activacion_sogcs']),
+            models.Index(fields=['fecha_ultima_autoevaluacion']),
+            models.Index(fields=['fecha_proxima_auditoria']),
+            # Índices compuestos para consultas frecuentes SOGCS
+            models.Index(fields=['sogcs_enabled', 'estado_suh']),
+            models.Index(fields=['sogcs_enabled', 'estado_pamec']),
+            models.Index(fields=['sogcs_enabled', 'alertas_activas']),
         ]
         constraints = [
             # Asegurar que el código prestador sea único entre registros activos
@@ -1386,6 +1575,318 @@ class HealthOrganization(FullBaseModel):
             return cls.objects.get(codigo_prestador=codigo, deleted_at__isnull=True)
         except cls.DoesNotExist:
             return None
+    
+    # === MÉTODOS SOGCS ===
+    
+    def activate_sogcs(self, user=None):
+        """
+        Activate SOGCS module for this health organization.
+        
+        Args:
+            user: User activating SOGCS (for audit trail)
+            
+        Returns:
+            bool: True if activation was successful
+        """
+        if not self.sogcs_enabled:
+            from django.utils import timezone
+            
+            self.sogcs_enabled = True
+            self.fecha_activacion_sogcs = timezone.now()
+            
+            # Initialize default SOGCS configuration
+            if not self.sogcs_configuration:
+                self.sogcs_configuration = {
+                    'suh': {'enabled': True, 'auto_evaluation_frequency': 'yearly'},
+                    'pamec': {'enabled': True, 'audit_frequency': 'quarterly'},
+                    'sic': {'enabled': True, 'indicators_enabled': True},
+                    'sua': {'enabled': False, 'interested': False},
+                    'notifications': {'email': True, 'sms': False, 'in_app': True},
+                    'activated_by': user.id if user else None,
+                    'activation_date': timezone.now().isoformat()
+                }
+            
+            self.save(update_fields=['sogcs_enabled', 'fecha_activacion_sogcs', 'sogcs_configuration'])
+            return True
+        return False
+    
+    def deactivate_sogcs(self, reason="", user=None):
+        """
+        Deactivate SOGCS module for this health organization.
+        
+        Args:
+            reason: Reason for deactivation
+            user: User deactivating SOGCS
+            
+        Returns:
+            bool: True if deactivation was successful
+        """
+        if self.sogcs_enabled:
+            from django.utils import timezone
+            
+            self.sogcs_enabled = False
+            
+            # Add deactivation info to configuration
+            if self.sogcs_configuration:
+                self.sogcs_configuration['deactivation'] = {
+                    'date': timezone.now().isoformat(),
+                    'reason': reason,
+                    'deactivated_by': user.id if user else None
+                }
+            
+            self.save(update_fields=['sogcs_enabled', 'sogcs_configuration'])
+            return True
+        return False
+    
+    def get_sogcs_status(self):
+        """
+        Get comprehensive SOGCS status for this organization.
+        
+        Returns:
+            dict: Complete SOGCS status information
+        """
+        if not self.sogcs_enabled:
+            return {
+                'enabled': False,
+                'activation_date': None,
+                'components': {},
+                'overall_compliance': 0,
+                'alerts': 0
+            }
+        
+        return {
+            'enabled': True,
+            'activation_date': self.fecha_activacion_sogcs,
+            'components': {
+                'suh': {
+                    'status': self.estado_suh,
+                    'compliance': float(self.porcentaje_cumplimiento_suh or 0),
+                    'services_count': self.suh_servicios_habilitados,
+                    'last_evaluation': self.fecha_ultima_autoevaluacion
+                },
+                'pamec': {
+                    'status': self.estado_pamec,
+                    'compliance': float(self.porcentaje_cumplimiento_pamec or 0),
+                    'processes_count': self.pamec_procesos_auditoria,
+                    'next_audit': self.fecha_proxima_auditoria
+                },
+                'sic': {
+                    'status': self.estado_sic,
+                    'compliance': float(self.porcentaje_cumplimiento_sic or 0),
+                    'indicators_count': self.sic_indicadores_activos
+                },
+                'sua': {
+                    'status': self.estado_sua,
+                    'compliance': 100 if self.estado_sua == 'acreditado' else 0
+                }
+            },
+            'overall_compliance': self.calculate_overall_compliance(),
+            'alerts': self.alertas_activas,
+            'coordinators': {
+                'quality': self.coordinador_calidad.get_full_name() if self.coordinador_calidad else None,
+                'habilitation': self.responsable_habilitacion.get_full_name() if self.responsable_habilitacion else None
+            }
+        }
+    
+    def calculate_overall_compliance(self):
+        """
+        Calculate overall SOGCS compliance percentage.
+        
+        Returns:
+            float: Overall compliance percentage (0-100)
+        """
+        if not self.sogcs_enabled:
+            return 0.0
+        
+        # Weight by component importance
+        weights = {
+            'suh': 0.4,    # 40% - Most critical for health institutions
+            'pamec': 0.3,  # 30% - Important for continuous improvement
+            'sic': 0.3,    # 30% - Important for information and metrics
+            'sua': 0.0     # 0% - Optional for most institutions
+        }
+        
+        # Adjust weights if SUA is active
+        if self.estado_sua != 'no_aplica':
+            weights = {'suh': 0.3, 'pamec': 0.25, 'sic': 0.25, 'sua': 0.2}
+        
+        total_compliance = 0.0
+        
+        # Calculate weighted compliance
+        if self.porcentaje_cumplimiento_suh:
+            total_compliance += float(self.porcentaje_cumplimiento_suh) * weights['suh']
+        
+        if self.porcentaje_cumplimiento_pamec:
+            total_compliance += float(self.porcentaje_cumplimiento_pamec) * weights['pamec']
+        
+        if self.porcentaje_cumplimiento_sic:
+            total_compliance += float(self.porcentaje_cumplimiento_sic) * weights['sic']
+        
+        if self.estado_sua == 'acreditado':
+            total_compliance += 100 * weights['sua']
+        
+        return round(total_compliance, 2)
+    
+    def get_responsables_sogcs(self):
+        """
+        Get all SOGCS responsible users for this organization.
+        
+        Returns:
+            dict: Dictionary with all responsible users
+        """
+        return {
+            'coordinador_calidad': {
+                'user': self.coordinador_calidad,
+                'name': self.coordinador_calidad.get_full_name() if self.coordinador_calidad else None,
+                'email': self.coordinador_calidad.email if self.coordinador_calidad else None
+            },
+            'responsable_habilitacion': {
+                'user': self.responsable_habilitacion,
+                'name': self.responsable_habilitacion.get_full_name() if self.responsable_habilitacion else None,
+                'email': self.responsable_habilitacion.email if self.responsable_habilitacion else None
+            }
+        }
+    
+    def update_sogcs_metrics(self):
+        """
+        Update SOGCS metrics counters from related models.
+        This method will be called periodically to sync metrics.
+        """
+        # These will be implemented when the related models are created
+        # For now, we keep the current values
+        fields_to_update = []
+        
+        # Update services count (using existing relationship)
+        new_services_count = self.services.filter(estado='activo').count()
+        if new_services_count != self.suh_servicios_habilitados:
+            self.suh_servicios_habilitados = new_services_count
+            fields_to_update.append('suh_servicios_habilitados')
+        
+        # Update other counters when models are implemented
+        # self.pamec_procesos_auditoria = count from PAMEC models
+        # self.sic_indicadores_activos = count from SIC models
+        # self.alertas_activas = count from alerts models
+        
+        if fields_to_update:
+            self.save(update_fields=fields_to_update)
+    
+    def check_sogcs_alerts(self):
+        """
+        Check for SOGCS alerts and update alert counter.
+        
+        Returns:
+            list: List of active alerts
+        """
+        alerts = []
+        
+        # Check SUH alerts
+        if self.sogcs_enabled and self.estado_suh == 'mejoramiento':
+            alerts.append({
+                'type': 'suh_improvement_required',
+                'message': 'Plan de mejoramiento SUH pendiente',
+                'severity': 'high',
+                'component': 'SUH'
+            })
+        
+        # Check PAMEC alerts
+        if self.fecha_proxima_auditoria:
+            from django.utils import timezone
+            from datetime import timedelta
+            
+            days_until_audit = (self.fecha_proxima_auditoria - timezone.now().date()).days
+            if days_until_audit <= 30:
+                alerts.append({
+                    'type': 'pamec_audit_approaching',
+                    'message': f'Auditoría PAMEC en {days_until_audit} días',
+                    'severity': 'medium',
+                    'component': 'PAMEC'
+                })
+        
+        # Check SIC alerts
+        if self.estado_sic == 'atrasado':
+            alerts.append({
+                'type': 'sic_data_delayed',
+                'message': 'Carga de datos SIC atrasada',
+                'severity': 'high',
+                'component': 'SIC'
+            })
+        
+        # Update alert counter
+        if len(alerts) != self.alertas_activas:
+            self.alertas_activas = len(alerts)
+            self.save(update_fields=['alertas_activas'])
+        
+        return alerts
+    
+    def requires_sogcs_setup(self):
+        """
+        Check if organization requires SOGCS setup wizard.
+        
+        Returns:
+            bool: True if setup wizard is required
+        """
+        if not self.sogcs_enabled:
+            return False
+        
+        # Check if basic configuration is missing
+        if not self.sogcs_configuration:
+            return True
+        
+        # Check if any required responsibles are missing
+        if not self.coordinador_calidad or not self.responsable_habilitacion:
+            return True
+        
+        # Check if all components are still in initial state
+        all_not_started = (
+            self.estado_suh == 'no_iniciado' and
+            self.estado_pamec == 'no_iniciado' and
+            self.estado_sic == 'no_iniciado'
+        )
+        
+        return all_not_started
+    
+    def get_sogcs_dashboard_data(self):
+        """
+        Get data formatted for SOGCS dashboard display.
+        
+        Returns:
+            dict: Dashboard-ready data
+        """
+        if not self.sogcs_enabled:
+            return None
+        
+        return {
+            'organization_name': self.organization.razon_social,
+            'codigo_prestador': self.codigo_prestador,
+            'nivel_complejidad': self.nivel_complejidad,
+            'components_status': {
+                'suh': {
+                    'status': self.estado_suh,
+                    'percentage': float(self.porcentaje_cumplimiento_suh or 0),
+                    'services': self.suh_servicios_habilitados,
+                    'last_activity': self.fecha_ultima_autoevaluacion
+                },
+                'pamec': {
+                    'status': self.estado_pamec,
+                    'percentage': float(self.porcentaje_cumplimiento_pamec or 0),
+                    'processes': self.pamec_procesos_auditoria,
+                    'next_audit': self.fecha_proxima_auditoria
+                },
+                'sic': {
+                    'status': self.estado_sic,
+                    'percentage': float(self.porcentaje_cumplimiento_sic or 0),
+                    'indicators': self.sic_indicadores_activos
+                },
+                'sua': {
+                    'status': self.estado_sua,
+                    'applicable': self.estado_sua != 'no_aplica'
+                }
+            },
+            'overall_compliance': self.calculate_overall_compliance(),
+            'alerts_count': self.alertas_activas,
+            'activation_date': self.fecha_activacion_sogcs,
+            'coordinators': self.get_responsables_sogcs()
+        }
 
 
 class HealthService(FullBaseModel):
