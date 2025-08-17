@@ -25,9 +25,19 @@ const DashboardSOGCS = () => {
             
             {/* Gráficos de tendencias y componentes */}
             <div className="row">
-                <TendenciasCumplimiento />
+                {/* Columna izquierda: Tendencias y Resumen */}
+                <div className="col-xxl-6 col-md-6">
+                    <div className="row">
+                        <div className="col-12">
+                            <TendenciasCumplimiento />
+                        </div>
+                        <div className="col-12 mt-3">
+                            <CumplimientoOverview />
+                        </div>
+                    </div>
+                </div>
+                {/* Columna derecha: Componentes SOGCS */}
                 <ComponentesSOGCS />
-                <CumplimientoOverview />
             </div>
             
             {/* Estados y tareas */}
@@ -37,7 +47,7 @@ const DashboardSOGCS = () => {
             </div>
             
             {/* Actividades y auditorías */}
-            <div className="row">
+            <div className="row mt-4">
                 <ProximasActividades />
                 <ProximasAuditorias />
             </div>

@@ -56,7 +56,7 @@ const TareasCalidad = () => {
     return (
         <React.Fragment>
             <div className="col-xxl-8 col-md-6">
-                <div className="card card-height-100">
+                <div className="card" style={{ minHeight: "500px", height: "100%" }}>
                     <div className="card-header align-items-center d-flex">
                         <h4 className="card-title mb-0 flex-grow-1">Tareas de Calidad</h4>
                         <div className="flex-shrink-0">

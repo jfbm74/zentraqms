@@ -12,7 +12,7 @@ const EstadosHabilitacion = () => {
     return (
         <React.Fragment>
             <div className="col-xxl-4 col-md-6">
-                <div className="card">
+                <div className="card" style={{ minHeight: "500px", height: "100%" }}>
                     <div className="card-header align-items-center d-flex">
                         <h4 className="card-title mb-0 flex-grow-1">Estados de Habilitación</h4>
                         <div className="flex-shrink-0">
@@ -41,8 +41,8 @@ const EstadosHabilitacion = () => {
                         </div>
                     </div>
 
-                    <div className="card-body">
-                        <div className="row g-3">
+                    <div className="card-body d-flex flex-column" style={{ flex: "1" }}>
+                        <div className="row g-3 flex-grow-1">
                             {estadosHabilitacion.map((estado, index) => (
                                 <div className="col-12" key={index}>
                                     <div className="border rounded p-3">
