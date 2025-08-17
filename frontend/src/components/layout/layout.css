@@ -1270,3 +1270,43 @@ body {
   top: 100%;
   margin-top: 0.25rem;
 }
+
+/* Fix para texto del menú - asegurar visibilidad */
+.navbar-nav .nav-link span {
+  color: var(--vz-vertical-menu-item-color) !important;
+}
+
+.navbar-nav .nav-link:hover span {
+  color: var(--vz-vertical-menu-item-hover-color) !important;
+}
+
+.navbar-nav .nav-link.active span {
+  color: var(--vz-vertical-menu-item-active-color) !important;
+}
+
+/* Asegurar que los elementos del menú tengan el color correcto */
+.navbar-nav .nav-item .nav-link {
+  color: var(--vz-vertical-menu-item-color) !important;
+}
+
+.navbar-nav .nav-item .nav-link:hover {
+  color: var(--vz-vertical-menu-item-hover-color) !important;
+}
+
+.navbar-nav .nav-item .nav-link.active {
+  color: var(--vz-vertical-menu-item-active-color) !important;
+}
+
+/* Submenús */
+.navbar-nav .nav-sm .nav-link {
+  color: var(--vz-vertical-menu-sub-item-color) !important;
+}
+
+.navbar-nav .nav-sm .nav-link:hover {
+  color: var(--vz-vertical-menu-sub-item-hover-color) !important;
+}
+
+/* Headers de sección */
+.menu-title {
+  color: var(--vz-vertical-menu-title-color) !important;
+}

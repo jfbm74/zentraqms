@@ -35,348 +35,37 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
   const path = location.pathname;
   const { getUserCapabilities } = usePermissions();
 
-  // Estado para controlar los menús expandidos - Estructura optimizada
-  const [isDashboard, setIsDashboard] = React.useState<boolean>(false);
-  const [isOrganizacion, setIsOrganizacion] = React.useState<boolean>(false);
-  const [isProcesos, setIsProcesos] = React.useState<boolean>(false);
-  const [isAnalisis, setIsAnalisis] = React.useState<boolean>(false);
-  const [isDocumentacion, setIsDocumentacion] = React.useState<boolean>(false);
-  const [isComites, setIsComites] = React.useState<boolean>(false);
-  const [isSOGCS, setIsSOGCS] = React.useState<boolean>(false);
+  // Estado para controlar los menús expandidos - Nueva estructura ISO 9001
   const [isPlaneacionEstrategica, setIsPlaneacionEstrategica] = React.useState<boolean>(false);
-  const [isModulosEspecializados, setIsModulosEspecializados] = React.useState<boolean>(false);
-  const [isConfiguracion, setIsConfiguracion] = React.useState<boolean>(false);
+  const [isISO9001, setIsISO9001] = React.useState<boolean>(false);
+  const [isContexto, setIsContexto] = React.useState<boolean>(false);
+  const [isPlanificacion, setIsPlanificacion] = React.useState<boolean>(false);
+  const [isApoyo, setIsApoyo] = React.useState<boolean>(false);
+  const [isOperacion, setIsOperacion] = React.useState<boolean>(false);
+  const [isEvaluacion, setIsEvaluacion] = React.useState<boolean>(false);
+  const [isMejora, setIsMejora] = React.useState<boolean>(false);
+  const [isComites, setIsComites] = React.useState<boolean>(false);
 
   // Get user capabilities for dynamic menu generation
   const capabilities = getUserCapabilities();
 
   /**
-   * Define optimized menu structure with UX improvements for healthcare professionals
+   * Nueva estructura del menú organizada según ISO 9001:2015
    */
   const menuItems: MenuItem[] = useMemo(() => [
-    {
-      label: "🎯 OPERACIONES DIARIAS",
-      isHeader: true,
-      id: "daily-operations-header"
-    },
+    // Dashboard principal
     {
       id: "dashboard",
       label: "Dashboard",
-      icon: "ri-dashboard-2-line",
+      icon: "ri-dashboard-3-line",
       link: "/",
-      stateVariables: isDashboard,
-      click: function (e: any) {
-        e.preventDefault();
-        setIsDashboard(!isDashboard);
-      },
-      subItems: [
-        {
-          id: "analytics",
-          label: "Analíticas",
-          link: "/dashboard-analytics",
-          parentId: "dashboard",
-        },
-        {
-          id: "quality",
-          label: "Calidad",
-          link: "/dashboard-quality",
-          parentId: "dashboard",
-        },
-      ],
     },
-    {
-      id: "no-conformidades",
-      label: "No Conformidades",
-      icon: "ri-error-warning-line",
-      link: "/qms/no-conformidades",
-      permissions: ["nonconformities.read", "nonconformities.*"],
-      badgeName: "100",
-      badgeColor: "danger",
-    },
-    {
-      id: "auditorias",
-      label: "Auditorías",
-      icon: "ri-search-eye-line",
-      link: "/qms/auditorias",
-      permissions: ["audits.read", "audits.*"],
-    },
-    {
-      id: "planes-mejora",
-      label: "Planes de Mejora",
-      icon: "ri-arrow-up-circle-line",
-      link: "/qms/planes-mejora",
-      permissions: ["improvement.read", "improvement.*"],
-    },
-    {
-      id: "capas",
-      label: "CAPAs",
-      icon: "ri-tools-line",
-      link: "/qms/capas",
-      permissions: ["capas.read", "capas.*"],
-      badgeName: "Nuevo",
-      badgeColor: "success",
-    },
-    {
-      id: "organizacion",
-      label: "Mi Organización",
-      icon: "ri-building-4-line",
-      link: "/#",
-      permissions: ["organization.read", "organization.*"],
-      stateVariables: isOrganizacion,
-      click: function (e: any) {
-        e.preventDefault();
-        setIsOrganizacion(!isOrganizacion);
-      },
-      subItems: [
-        {
-          id: "organizacion-perfil",
-          label: "Perfil Institucional",
-          link: "/organizacion/perfil",
-          permissions: ["organization.read", "organization.*"],
-        },
-        {
-          id: "organizacion-sedes",
-          label: "Sedes y Servicios", 
-          link: "/organizacion/sedes",
-          permissions: ["organization.read", "organization.*"],
-        },
-        {
-          id: "organizacion-configuracion",
-          label: "Configuración",
-          link: "/organizacion/configuracion",
-          permissions: ["organization.update", "organization.*"],
-          roles: ["admin", "super_admin", "coordinador"],
-        },
-      ],
-    },
-    {
-      label: "🏥 SOGCS - SISTEMA OBLIGATORIO",
-      isHeader: true,
-      id: "sogcs-header"
-    },
-    {
-      id: "sogcs",
-      label: "Dashboard SOGCS",
-      icon: "ri-shield-check-line",
-      link: "/sogcs/dashboard",
-      permissions: ["sogcs.read", "sogcs.*"],
-      badgeName: "Principal",
-      badgeColor: "primary",
-    },
-    {
-      id: "sogcs-modulos",
-      label: "Componentes SOGCS",
-      icon: "ri-hospital-line",
-      link: "/#",
-      permissions: ["sogcs.read", "sogcs.*"],
-      stateVariables: isSOGCS,
-      click: function (e: any) {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsSOGCS(!isSOGCS);
-        return false;
-      },
-      subItems: [
-        {
-          id: "suh",
-          label: "SUH - Sistema Único de Habilitación",
-          link: "/sogcs/suh",
-          permissions: ["sogcs.suh.read", "sogcs.*"],
-          badgeName: "92.5%",
-          badgeColor: "success",
-        },
-        {
-          id: "pamec",
-          label: "PAMEC - Programa de Auditoría",
-          link: "/sogcs/pamec",
-          permissions: ["sogcs.pamec.read", "sogcs.*"],
-          badgeName: "78.3%",
-          badgeColor: "warning",
-        },
-        {
-          id: "sic",
-          label: "SIC - Sistema de Información",
-          link: "/sogcs/sic",
-          permissions: ["sogcs.sic.read", "sogcs.*"],
-          badgeName: "95.1%",
-          badgeColor: "success",
-        },
-        {
-          id: "sua",
-          label: "SUA - Sistema de Acreditación",
-          link: "/sogcs/sua",
-          permissions: ["sogcs.sua.read", "sogcs.*"],
-          badgeName: "45.7%",
-          badgeColor: "danger",
-        },
-      ],
-    },
-    {
-      id: "sogcs-configuracion",
-      label: "Configuración SOGCS",
-      icon: "ri-settings-3-line",
-      link: "/sogcs/configuracion",
-      permissions: ["sogcs.config.read", "sogcs.*"],
-      roles: ["admin", "super_admin", "coordinador_sogcs"],
-    },
-    {
-      label: "📋 GESTIÓN DE CALIDAD",
-      isHeader: true,
-      id: "quality-management-header"
-    },
-    {
-      id: "procesos",
-      label: "Procesos",
-      icon: "ri-flow-chart",
-      link: "/#",
-      permissions: ["processes.read", "processes.*"],
-      stateVariables: isProcesos,
-      click: function (e: any) {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsProcesos(!isProcesos);
-        return false;
-      },
-      subItems: [
-        {
-          id: "mapa-procesos",
-          label: "Mapa de Procesos",
-          link: "/qms/mapa-procesos",
-          permissions: ["processes.read", "processes.*"],
-        },
-        {
-          id: "caracterizaciones",
-          label: "Caracterizaciones",
-          link: "/qms/caracterizaciones",
-          permissions: ["processes.read", "processes.*"],
-          badgeName: "Vista Proceso",
-          badgeColor: "success",
-        },
-        {
-          id: "plan-seguimiento",
-          label: "Plan de Seguimiento",
-          link: "/qms/plan-seguimiento",
-          permissions: ["monitoring.read", "monitoring.*"],
-        },
-      ],
-    },
-    {
-      id: "analisis",
-      label: "Análisis",
-      icon: "ri-pie-chart-line",
-      link: "/#",
-      permissions: ["strategic.read", "strategic.*"],
-      stateVariables: isAnalisis,
-      click: function (e: any) {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsAnalisis(!isAnalisis);
-        return false;
-      },
-      subItems: [
-        {
-          id: "analisis-dofa",
-          label: "Análisis DOFA",
-          link: "/planeacion/analisis-dofa",
-          permissions: ["strategic.read", "strategic.*"],
-        },
-        {
-          id: "riesgos-oportunidades",
-          label: "Riesgos y Oportunidades",
-          link: "/qms/riesgos-oportunidades",
-          permissions: ["risks.read", "risks.*"],
-        },
-        {
-          id: "indicadores-metas",
-          label: "Indicadores y Metas",
-          link: "/planeacion/indicadores-metas",
-          permissions: ["strategic.read", "strategic.*"],
-        },
-      ],
-    },
-    {
-      id: "documentacion",
-      label: "Documentación",
-      icon: "ri-book-open-line",
-      link: "/#",
-      permissions: ["documents.read", "documents.*"],
-      stateVariables: isDocumentacion,
-      click: function (e: any) {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsDocumentacion(!isDocumentacion);
-        return false;
-      },
-      subItems: [
-        {
-          id: "normograma",
-          label: "Normograma",
-          link: "/qms/normograma",
-          permissions: ["normogram.read", "normogram.*"],
-        },
-        {
-          id: "actas",
-          label: "Actas",
-          link: "/qms/actas",
-          permissions: ["minutes.read", "minutes.*"],
-        },
-        {
-          id: "gestion-documental",
-          label: "Gestión Documental",
-          link: "/qms/gestion-documental",
-          permissions: ["documents.read", "documents.*"],
-        },
-      ],
-    },
-    {
-      id: "comites",
-      label: "Comités",
-      icon: "ri-group-line",
-      link: "/#",
-      permissions: ["committees.read", "committees.*"],
-      stateVariables: isComites,
-      click: function (e: any) {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsComites(!isComites);
-        return false;
-      },
-      subItems: [
-        {
-          id: "comite-calidad",
-          label: "Comité de Calidad",
-          link: "/qms/comites/calidad",
-          permissions: ["committees.read", "committees.*"],
-        },
-        {
-          id: "comite-seguridad",
-          label: "Comité de Seguridad del Paciente",
-          link: "/qms/comites/seguridad-paciente",
-          permissions: ["committees.read", "committees.*"],
-        },
-        {
-          id: "comite-etica",
-          label: "Comité de Ética",
-          link: "/qms/comites/etica",
-          permissions: ["committees.read", "committees.*"],
-        },
-        {
-          id: "comite-farmacia",
-          label: "Comité de Farmacia",
-          link: "/qms/comites/farmacia",
-          permissions: ["committees.read", "committees.*"],
-        },
-      ],
-    },
-    {
-      label: "⚙️ CONFIGURACIÓN & MÓDULOS",
-      isHeader: true,
-      id: "config-modules-header"
-    },
+    
+    // Planeación Estratégica
     {
       id: "planeacion-estrategica",
       label: "Planeación Estratégica",
-      icon: "ri-compass-3-line",
+      icon: "ri-roadmap-line",
       link: "/#",
       permissions: ["strategic.read", "strategic.*"],
       stateVariables: isPlaneacionEstrategica,
@@ -394,83 +83,276 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
           permissions: ["strategic.read", "strategic.*"],
         },
         {
-          id: "objetivos-estrategicos",
-          label: "Objetivos Estratégicos",
-          link: "/planeacion/objetivos-estrategicos",
+          id: "plataforma",
+          label: "Plataforma",
+          link: "/planeacion/plataforma",
           permissions: ["strategic.read", "strategic.*"],
+        },
+        {
+          id: "objetivos-metas",
+          label: "Objetivos y Metas",
+          link: "/planeacion/objetivos-metas",
+          permissions: ["strategic.read", "strategic.*"],
+        },
+        {
+          id: "periodo",
+          label: "Periodo",
+          link: "/planeacion/periodo",
+          permissions: ["strategic.read", "strategic.*"],
+        },
+        {
+          id: "plan-operativo-anual",
+          label: "Plan Operativo Anual",
+          link: "/planeacion/plan-operativo-anual",
+          permissions: ["strategic.read", "strategic.*"],
+        },
+        {
+          id: "informacion-institucional",
+          label: "Información Institucional",
+          link: "/organizacion/informacion",
+          permissions: ["organization.read", "organization.*"],
         },
       ],
     },
+
+    // ISO 9001:2015 - SGC
     {
-      id: "modulos-especializados",
-      label: "Otros Módulos",
-      icon: "ri-puzzle-line",
+      label: "🏅 ISO 9001:2015 - SGC",
+      isHeader: true,
+      id: "iso9001-header"
+    },
+    
+    // Contexto de la Organización
+    {
+      id: "contexto-organizacion",
+      label: "Contexto de la Organización",
+      icon: "ri-compass-3-line",
       link: "/#",
-      permissions: ["modules.read", "modules.*"],
-      stateVariables: isModulosEspecializados,
+      permissions: ["strategic.read", "strategic.*"],
+      stateVariables: isContexto,
       click: function (e: any) {
         e.preventDefault();
         e.stopPropagation();
-        setIsModulosEspecializados(!isModulosEspecializados);
+        setIsContexto(!isContexto);
         return false;
       },
       subItems: [
         {
-          id: "acreditacion",
-          label: "Acreditación",
-          link: "/modulos/acreditacion",
-          permissions: ["accreditation.read", "accreditation.*"],
+          id: "analisis-dofa",
+          label: "Análisis DOFA",
+          link: "/qms/analisis-dofa",
+          permissions: ["strategic.read", "strategic.*"],
         },
         {
-          id: "gestion-riesgo-clinico",
-          label: "Gestión del Riesgo Clínico",
-          link: "/modulos/gestion-riesgo-clinico",
-          permissions: ["clinical_risk.read", "clinical_risk.*"],
-        },
-        {
-          id: "investigacion-desarrollo",
-          label: "Investigación y Desarrollo",
-          link: "/modulos/investigacion",
-          permissions: ["research.read", "research.*"],
+          id: "riesgos-oportunidades",
+          label: "Riesgos y Oportunidades",
+          link: "/qms/riesgos-oportunidades",
+          permissions: ["risks.read", "risks.*"],
         },
       ],
     },
+
+    // Planificación
     {
-      id: "configuracion",
-      label: "Administración",
-      icon: "ri-settings-2-line",
+      id: "planificacion",
+      label: "Planificación",
+      icon: "ri-calendar-check-line",
       link: "/#",
-      roles: ["admin", "super_admin"],
-      stateVariables: isConfiguracion,
+      permissions: ["processes.read", "processes.*"],
+      stateVariables: isPlanificacion,
       click: function (e: any) {
         e.preventDefault();
-        setIsConfiguracion(!isConfiguracion);
+        e.stopPropagation();
+        setIsPlanificacion(!isPlanificacion);
+        return false;
       },
       subItems: [
         {
-          id: "configuracion-usuarios",
-          label: "Gestión de Usuarios",
-          link: "/configuracion/usuarios",
-          permissions: ["users.read", "users.*"],
-          roles: ["admin", "super_admin"],
+          id: "mapa-procesos",
+          label: "Mapa de Procesos",
+          link: "/qms/mapa-procesos",
+          permissions: ["processes.read", "processes.*"],
         },
         {
-          id: "configuracion-roles",
-          label: "Roles y Permisos",
-          link: "/configuracion/roles",
-          permissions: ["roles.read", "roles.*", "permissions.*"],
-          roles: ["super_admin"],
+          id: "caracterizaciones",
+          label: "Caracterizaciones",
+          link: "/qms/caracterizaciones",
+          permissions: ["processes.read", "processes.*"],
         },
         {
-          id: "configuracion-organizacion",
-          label: "Asistente de Configuración",
-          link: "/organization/wizard",
-          permissions: ["organization.create", "organization.*"],
-          roles: ["admin", "super_admin"],
+          id: "plan-seguimiento",
+          label: "Plan de Seguimiento",
+          link: "/qms/plan-seguimiento",
+          permissions: ["monitoring.read", "monitoring.*"],
         },
       ],
     },
-  ], [isDashboard, isOrganizacion, isProcesos, isAnalisis, isDocumentacion, isComites, isSOGCS, isPlaneacionEstrategica, isModulosEspecializados, isConfiguracion]);
+
+    // Apoyo
+    {
+      id: "apoyo",
+      label: "Apoyo",
+      icon: "ri-tools-line",
+      link: "/#",
+      permissions: ["documents.read", "documents.*"],
+      stateVariables: isApoyo,
+      click: function (e: any) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsApoyo(!isApoyo);
+        return false;
+      },
+      subItems: [
+        {
+          id: "gestion-documental",
+          label: "Gestión Documental",
+          link: "/qms/gestion-documental",
+          permissions: ["documents.read", "documents.*"],
+        },
+        {
+          id: "normograma",
+          label: "Normograma",
+          link: "/qms/normograma",
+          permissions: ["normogram.read", "normogram.*"],
+        },
+      ],
+    },
+
+    // Operación
+    {
+      id: "operacion",
+      label: "Operación",
+      icon: "ri-settings-3-line",
+      link: "/#",
+      permissions: ["operations.read", "operations.*"],
+      stateVariables: isOperacion,
+      click: function (e: any) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsOperacion(!isOperacion);
+        return false;
+      },
+      subItems: [
+        {
+          id: "indicadores-metas",
+          label: "Indicadores y Metas",
+          link: "/qms/indicadores-metas",
+          permissions: ["indicators.read", "indicators.*"],
+        },
+        {
+          id: "no-conformidades",
+          label: "No Conformidades",
+          link: "/qms/no-conformidades",
+          permissions: ["nonconformities.read", "nonconformities.*"],
+        },
+      ],
+    },
+
+    // Evaluación
+    {
+      id: "evaluacion",
+      label: "Evaluación",
+      icon: "ri-line-chart-line",
+      link: "/#",
+      permissions: ["audits.read", "audits.*"],
+      stateVariables: isEvaluacion,
+      click: function (e: any) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsEvaluacion(!isEvaluacion);
+        return false;
+      },
+      subItems: [
+        {
+          id: "auditorias",
+          label: "Auditorías",
+          link: "/qms/auditorias",
+          permissions: ["audits.read", "audits.*"],
+        },
+      ],
+    },
+
+    // Mejora
+    {
+      id: "mejora",
+      label: "Mejora",
+      icon: "ri-arrow-up-circle-line",
+      link: "/#",
+      permissions: ["improvement.read", "improvement.*"],
+      stateVariables: isMejora,
+      click: function (e: any) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsMejora(!isMejora);
+        return false;
+      },
+      subItems: [
+        {
+          id: "planes-mejora",
+          label: "Planes de Mejora",
+          link: "/qms/planes-mejora",
+          permissions: ["improvement.read", "improvement.*"],
+        },
+        {
+          id: "capas",
+          label: "CAPAs",
+          link: "/qms/capas",
+          permissions: ["capas.read", "capas.*"],
+        },
+      ],
+    },
+
+    // SOGCS
+    {
+      id: "sogcs",
+      label: "SOGCS",
+      icon: "ri-shield-check-line",
+      link: "/sogcs/dashboard",
+      permissions: ["sogcs.read", "sogcs.*"],
+    },
+
+    // Comités Institucionales
+    {
+      id: "comites",
+      label: "Comités Institucionales",
+      icon: "ri-group-line",
+      link: "/#",
+      permissions: ["committees.read", "committees.*"],
+      stateVariables: isComites,
+      click: function (e: any) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsComites(!isComites);
+        return false;
+      },
+      subItems: [
+        {
+          id: "comite-gerencia",
+          label: "Gerencia",
+          link: "/qms/comites/gerencia",
+          permissions: ["committees.read", "committees.*"],
+        },
+        {
+          id: "comite-calidad",
+          label: "Calidad",
+          link: "/qms/comites/calidad",
+          permissions: ["committees.read", "committees.*"],
+        },
+        {
+          id: "comite-seguridad",
+          label: "Seguridad Paciente",
+          link: "/qms/comites/seguridad-paciente",
+          permissions: ["committees.read", "committees.*"],
+        },
+        {
+          id: "actas",
+          label: "Actas",
+          link: "/qms/actas",
+          permissions: ["minutes.read", "minutes.*"],
+        },
+      ],
+    },
+  ], [isPlaneacionEstrategica, isISO9001, isContexto, isPlanificacion, isApoyo, isOperacion, isEvaluacion, isMejora, isComites]);
 
   const resizeSidebarMenu = useCallback(() => {
     var windowSize = document.documentElement.clientWidth;

@@ -3,10 +3,16 @@ import React from 'react';
 const CumplimientoOverview = () => {
     return (
         <React.Fragment>
-            <div className="col-xxl-12 col-md-12">
-                <div className="card">
+            <div className="card">
                     <div className="card-header align-items-center d-flex">
                         <h4 className="card-title mb-0 flex-grow-1">Resumen de Cumplimiento</h4>
+                        <div className="flex-shrink-0">
+                            <select className="form-select form-select-sm" style={{ minWidth: '120px' }}>
+                                <option value="mensual">Mensual</option>
+                                <option value="trimestral">Trimestral</option>
+                                <option value="anual" selected>Anual</option>
+                            </select>
+                        </div>
                     </div>
                     <div className="card-body">
                         <div className="text-center py-4">
@@ -16,7 +22,6 @@ const CumplimientoOverview = () => {
                         </div>
                     </div>
                 </div>
-            </div>
         </React.Fragment>
     );
 };

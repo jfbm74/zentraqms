@@ -83,7 +83,8 @@
   display: none;
 }
 
-.navbar-menu .navbar-nav {
+/* Solo aplicar estilos horizontales al subheader, no al sidebar vertical */
+.navbar-menu .navbar-nav:not(.app-menu .navbar-nav) {
   flex-direction: row;
   gap: 0;
   margin: 0;
@@ -94,7 +95,15 @@
   min-height: 60px;
 }
 
-.navbar-menu .nav-item {
+/* Asegurar que el sidebar vertical mantenga su orientación */
+.app-menu .navbar-nav {
+  flex-direction: column !important;
+  height: auto !important;
+  min-height: auto !important;
+}
+
+/* Solo aplicar estilos horizontales a los nav-item del subheader */
+.navbar-menu .nav-item:not(.app-menu .nav-item) {
   margin: 0;
   flex-shrink: 0;
   display: flex;
@@ -102,7 +111,14 @@
   position: relative;
 }
 
-.navbar-menu .nav-link {
+/* Estilos específicos para nav-item del sidebar vertical */
+.app-menu .nav-item {
+  display: list-item !important;
+  width: 100% !important;
+}
+
+/* Solo aplicar estilos horizontales a los nav-link del subheader */
+.navbar-menu .nav-link:not(.app-menu .nav-link) {
   color: #495057 !important;
   font-weight: 500;
   font-size: 14px;
@@ -121,19 +137,19 @@
   position: relative;
 }
 
-.navbar-menu .nav-link:hover {
+.navbar-menu .nav-link:not(.app-menu .nav-link):hover {
   color: #405189 !important;
   background-color: rgba(64, 81, 137, 0.08);
 }
 
-.navbar-menu .nav-link.active {
+.navbar-menu .nav-link:not(.app-menu .nav-link).active {
   color: #405189 !important;
   background-color: rgba(64, 81, 137, 0.1);
   font-weight: 600;
   border-bottom-color: #405189;
 }
 
-.navbar-menu .nav-link i {
+.navbar-menu .nav-link:not(.app-menu .nav-link) i {
   font-size: 16px;
   color: inherit !important;
   width: 16px;
@@ -142,7 +158,7 @@
   line-height: 1 !important;
 }
 
-.navbar-menu .nav-link span {
+.navbar-menu .nav-link:not(.app-menu .nav-link) span {
   color: inherit !important;
   display: inline-block !important;
   visibility: visible !important;
@@ -152,27 +168,27 @@
   line-height: 1 !important;
 }
 
-/* Specific styles for buttons in navbar-menu */
-.navbar-menu button.nav-link {
+/* Specific styles for buttons in navbar-menu (not sidebar) */
+.navbar-menu button.nav-link:not(.app-menu button.nav-link) {
   color: #495057 !important;
 }
 
-.navbar-menu button.nav-link:hover {
+.navbar-menu button.nav-link:not(.app-menu button.nav-link):hover {
   color: #405189 !important;
 }
 
-.navbar-menu button.nav-link.active {
+.navbar-menu button.nav-link:not(.app-menu button.nav-link).active {
   color: #405189 !important;
 }
 
-.navbar-menu button.nav-link i {
+.navbar-menu button.nav-link:not(.app-menu button.nav-link) i {
   color: inherit !important;
   display: inline-block !important;
   transform: translateY(3px) !important;
   line-height: 1 !important;
 }
 
-.navbar-menu button.nav-link span {
+.navbar-menu button.nav-link:not(.app-menu button.nav-link) span {
   color: inherit !important;
   display: inline-block !important;
   visibility: visible !important;
