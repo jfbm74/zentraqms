@@ -326,6 +326,146 @@ const OrganizationFormSection: React.FC<OrganizationFormSectionProps> = ({
         </div>
       </div>
 
+      {/* Clasificación Organizacional */}
+      <div className="row">
+        <div className="col-12">
+          <h6 className="mb-3 text-muted">
+            <i className="ri-organization-chart me-2"></i>
+            Clasificación Organizacional
+          </h6>
+        </div>
+      </div>
+
+      {/* Tipo de Organización */}
+      <div className="row mb-3">
+        <div className="col-md-6">
+          <label htmlFor="tipo_organizacion" className="form-label">
+            Tipo de Organización
+          </label>
+          <select
+            id="tipo_organizacion"
+            className={`form-select ${getFieldClass('tipo_organizacion')}`}
+            value={formData.tipo_organizacion || ''}
+            onChange={(e) => handleFieldChange('tipo_organizacion', e.target.value)}
+          >
+            <option value="">Seleccione el tipo de organización</option>
+            <option value="empresa_privada">Empresa Privada</option>
+            <option value="empresa_publica">Empresa Pública</option>
+            <option value="mixta">Mixta</option>
+            <option value="fundacion">Fundación</option>
+            <option value="ong">ONG</option>
+            <option value="cooperativa">Cooperativa</option>
+            <option value="ips">IPS</option>
+            <option value="eps">EPS</option>
+            <option value="hospital">Hospital</option>
+            <option value="clinica">Clínica</option>
+            <option value="centro_medico">Centro Médico</option>
+            <option value="laboratorio">Laboratorio</option>
+            <option value="institucion_educativa">Institución Educativa</option>
+            <option value="universidad">Universidad</option>
+            <option value="otra">Otra</option>
+          </select>
+          {validation.errors.tipo_organizacion && (
+            <div className="invalid-feedback">
+              {validation.errors.tipo_organizacion}
+            </div>
+          )}
+          <div className="form-text">
+            Tipo de organización según su naturaleza jurídica.
+          </div>
+        </div>
+
+        {/* Sector Económico */}
+        <div className="col-md-6">
+          <label htmlFor="sector_economico" className="form-label">
+            Sector Económico
+          </label>
+          <select
+            id="sector_economico"
+            className={`form-select ${getFieldClass('sector_economico')}`}
+            value={formData.sector_economico || ''}
+            onChange={(e) => handleFieldChange('sector_economico', e.target.value)}
+          >
+            <option value="">Seleccione el sector económico</option>
+            <option value="salud">Salud</option>
+            <option value="educacion">Educación</option>
+            <option value="manufactura">Manufactura</option>
+            <option value="servicios">Servicios</option>
+            <option value="tecnologia">Tecnología</option>
+            <option value="financiero">Financiero</option>
+            <option value="comercio">Comercio</option>
+            <option value="construccion">Construcción</option>
+            <option value="transporte">Transporte</option>
+            <option value="agropecuario">Agropecuario</option>
+            <option value="mineria">Minería</option>
+            <option value="energia">Energía</option>
+            <option value="telecomunicaciones">Telecomunicaciones</option>
+            <option value="turismo">Turismo</option>
+            <option value="otro">Otro</option>
+          </select>
+          {validation.errors.sector_economico && (
+            <div className="invalid-feedback">
+              {validation.errors.sector_economico}
+            </div>
+          )}
+          <div className="form-text">
+            Sector económico principal al que pertenece la organización.
+          </div>
+        </div>
+      </div>
+
+      {/* Tamaño de Empresa */}
+      <div className="row mb-3">
+        <div className="col-md-6">
+          <label htmlFor="tamaño_empresa" className="form-label">
+            Tamaño de Empresa
+          </label>
+          <select
+            id="tamaño_empresa"
+            className={`form-select ${getFieldClass('tamaño_empresa')}`}
+            value={formData.tamaño_empresa || ''}
+            onChange={(e) => handleFieldChange('tamaño_empresa', e.target.value)}
+          >
+            <option value="">Seleccione el tamaño de empresa</option>
+            <option value="microempresa">Microempresa (1-10 empleados)</option>
+            <option value="pequeña">Pequeña Empresa (11-50 empleados)</option>
+            <option value="mediana">Mediana Empresa (51-200 empleados)</option>
+            <option value="grande">Gran Empresa (200+ empleados)</option>
+          </select>
+          {validation.errors.tamaño_empresa && (
+            <div className="invalid-feedback">
+              {validation.errors.tamaño_empresa}
+            </div>
+          )}
+          <div className="form-text">
+            Clasificación por tamaño según número de empleados.
+          </div>
+        </div>
+
+        {/* Fecha de Fundación */}
+        <div className="col-md-6">
+          <label htmlFor="fecha_fundacion" className="form-label">
+            Fecha de Fundación
+          </label>
+          <input
+            type="date"
+            id="fecha_fundacion"
+            className={`form-control ${getFieldClass('fecha_fundacion')}`}
+            value={formData.fecha_fundacion || ''}
+            onChange={(e) => handleFieldChange('fecha_fundacion', e.target.value)}
+            max={new Date().toISOString().split('T')[0]}
+          />
+          {validation.errors.fecha_fundacion && (
+            <div className="invalid-feedback">
+              {validation.errors.fecha_fundacion}
+            </div>
+          )}
+          <div className="form-text">
+            Fecha de fundación o constitución de la organización.
+          </div>
+        </div>
+      </div>
+
       {/* NIT Display Preview */}
       {formData.nit && formData.digito_verificacion && (
         <div className="row mb-3">

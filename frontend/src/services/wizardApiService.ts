@@ -11,7 +11,9 @@ import {
   Municipality, 
   NitValidationResponse,
   OrganizationSummary,
-  ApiResponse
+  ApiResponse,
+  mapSectorToBackend,
+  mapOrgTypeToBackend
 } from '../types/wizard.types';
 import { createAxiosInstance } from '../utils/httpInterceptors';
 
@@ -33,26 +35,44 @@ export class OrganizationApiService {
   static async create(data: OrganizationFormData): Promise<Organization> {
     const formData = new FormData();
     
-    // Append text fields
+    // Append required text fields
     formData.append('razon_social', data.razon_social);
     formData.append('nit', data.nit);
     formData.append('digito_verificacion', data.digito_verificacion);
     formData.append('email_contacto', data.email_contacto);
     formData.append('telefono_principal', data.telefono_principal);
     
+    // ✅ FIX: Mapear y enviar campos de clasificación
+    // Mapear desde los campos del wizard al formato del backend
+    if (data.selectedSector) {
+      const mappedSector = mapSectorToBackend(data.selectedSector);
+      formData.append('sector_economico', mappedSector);
+      formData.append('selectedSector', data.selectedSector); // Mantener para compatibilidad
+    } else if (data.sector_economico) {
+      formData.append('sector_economico', data.sector_economico);
+    }
+    
+    if (data.selectedOrgType) {
+      const mappedOrgType = mapOrgTypeToBackend(data.selectedOrgType);
+      formData.append('tipo_organizacion', mappedOrgType);
+      formData.append('selectedOrgType', data.selectedOrgType); // Mantener para compatibilidad
+    } else if (data.tipo_organizacion) {
+      formData.append('tipo_organizacion', data.tipo_organizacion);
+    }
+    
+    if (data.tamaño_empresa) {
+      formData.append('tamaño_empresa', data.tamaño_empresa);
+    }
+    if (data.fecha_fundacion) {
+      formData.append('fecha_fundacion', data.fecha_fundacion);
+    }
+    
+    // Append optional fields
     if (data.website) {
       formData.append('website', data.website);
     }
     if (data.descripcion) {
       formData.append('descripcion', data.descripcion);
-    }
-    
-    // ✅ NUEVO: Incluir campos multi-sector
-    if (data.selectedSector) {
-      formData.append('selectedSector', data.selectedSector);
-    }
-    if (data.selectedOrgType) {
-      formData.append('selectedOrgType', data.selectedOrgType);
     }
     
     // Append logo if present

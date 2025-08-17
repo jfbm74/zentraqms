@@ -50,12 +50,8 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
   onCancel,
   className = ''
 }) => {
-  // Store selectors
-  const formData = useFormData();
-  const validation = useValidation();
-  const uiState = useUIState();
-  
-  // Access store directly
+  // ✅ UNIFIED FIX: Use store directly for ALL data access to prevent selector sync issues
+  // This ensures consistent state access for both auto-save and validation scenarios
   const store = useOrganizationWizardStore();
   
   // Local state
@@ -97,7 +93,7 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
     }, 2000);
     
     return () => clearTimeout(timeoutId);
-  }, [formData, hasInteracted]);
+  }, [store.formData, hasInteracted, store]);
   
   /**
    * Clean up debounced validator on unmount
@@ -125,7 +121,18 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
     if (organizationType) {
       updateData.organization_type = organizationType;
       updateData.selectedOrgType = organizationType;
+      updateData.tipo_organizacion = organizationType; // Add to classification
     }
+    
+    // Auto-fill sector económico based on sector selection
+    const sectorMapping = {
+      'HEALTHCARE': 'salud',
+      'MANUFACTURING': 'manufactura', 
+      'SERVICES': 'servicios',
+      'EDUCATION': 'educacion',
+    };
+    
+    updateData.sector_economico = sectorMapping[sector] || '';
     
     store.updateMultipleFields(updateData);
     
@@ -145,9 +152,10 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
    * Navigation handlers
    */
   const handleNext = useCallback(() => {
+    const currentFormData = store.formData;
     switch (currentStep) {
       case 'SECTOR_SELECTION':
-        if (formData.sector && (formData.organization_type || !formData.sector)) {
+        if (currentFormData.sector && (currentFormData.organization_type || !currentFormData.sector)) {
           setCurrentStep('ORGANIZATION_INFO');
         } else {
           showToast('error', 'Debe completar la selección de sector y tipo de organización');
@@ -157,7 +165,7 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
         handleSubmit();
         break;
     }
-  }, [currentStep, formData.sector, formData.organization_type, showToast]);
+  }, [currentStep, store, showToast]);
 
   const handlePrevious = useCallback(() => {
     switch (currentStep) {
@@ -176,6 +184,8 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
    * Handle field changes with validation
    */
   const handleFieldChange = useCallback((field: string, value: string) => {
+    console.log('🔄 Field change:', { field, value, previousValue: store.formData[field as keyof OrganizationFormData] });
+    
     setHasInteracted(true);
     store.updateField(field as any, value);
     
@@ -183,7 +193,7 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
     store.clearFieldError(field);
     
     // Skip validation for empty values (unless it's a required field and user has attempted submit)
-    if (!value && !uiState.submitAttempted) {
+    if (!value && !store.ui.submitAttempted) {
       return;
     }
     
@@ -217,7 +227,7 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
         store.setFieldError(field, result.error);
       }
     });
-  }, [store, uiState.submitAttempted, debouncedValidator]);
+  }, [store, debouncedValidator]);
   
   /**
    * Handle NIT validation with backend check
@@ -267,15 +277,52 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
    * Validate entire form
    */
   const validateForm = useCallback((): boolean => {
-    const errors = FormValidator.validateForm({
-      razon_social: formData.razon_social,
-      nit: formData.nit,
-      digito_verificacion: formData.digito_verificacion,
-      email_contacto: formData.email_contacto,
-      telefono_principal: formData.telefono_principal,
-      website: formData.website,
-      descripcion: formData.descripcion,
+    // ✅ UNIFIED FIX: Always use store direct access for consistency
+    const currentFormData = store.formData;
+    const currentValidation = store.validation;
+    
+    // DEBUG: Log validation state
+    console.log('🔍 Form validation with unified store access:', {
+      formData: currentFormData,
+      validation: currentValidation,
+      ui: store.ui
     });
+    
+    const errors = FormValidator.validateForm({
+      razon_social: currentFormData.razon_social,
+      nit: currentFormData.nit,
+      digito_verificacion: currentFormData.digito_verificacion,
+      email_contacto: currentFormData.email_contacto,
+      telefono_principal: currentFormData.telefono_principal,
+      website: currentFormData.website,
+      descripcion: currentFormData.descripcion,
+    });
+    
+    // DEBUG: Log validation results
+    console.log('🔍 Form validation results:', {
+      formData: {
+        razon_social: currentFormData.razon_social,
+        nit: currentFormData.nit,
+        digito_verificacion: currentFormData.digito_verificacion,
+        email_contacto: currentFormData.email_contacto,
+        telefono_principal: currentFormData.telefono_principal,
+        website: currentFormData.website,
+        descripcion: currentFormData.descripcion,
+      },
+      errors,
+      hasErrors: FormValidator.hasErrors(errors),
+      nitAvailable: currentValidation.nitAvailable
+    });
+    
+    // DEBUG: Log specific errors
+    if (FormValidator.hasErrors(errors)) {
+      console.log('❌ Specific validation errors:');
+      Object.entries(errors).forEach(([field, error]) => {
+        if (error && error.trim().length > 0) {
+          console.log(`  - ${field}: ${error}`);
+        }
+      });
+    }
     
     // Set all errors
     Object.entries(errors).forEach(([field, error]) => {
@@ -283,25 +330,33 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
     });
     
     return !FormValidator.hasErrors(errors);
-  }, [formData, store]);
+  }, [store]);
   
   /**
    * Handle form submission
    */
   const handleSubmit = useCallback(async () => {
+    console.log('🚀 Starting form submission...');
     store.setSubmitAttempted(true);
     
     // Validate form
-    if (!validateForm()) {
+    const isFormValid = validateForm();
+    console.log('✅ Form validation result:', isFormValid);
+    
+    if (!isFormValid) {
+      console.log('❌ Form validation failed');
       showToast('error', 'Por favor corrige los errores en el formulario');
       return;
     }
     
-    // Check if NIT is available
-    if (validation.nitAvailable === false) {
+    // Check if NIT is available (only if validation was performed and failed)
+    if (store.validation.nitAvailable === false) {
+      console.log('❌ NIT not available');
       showToast('error', 'El NIT ingresado ya está en uso');
       return;
     }
+    
+    console.log('✅ All validations passed, proceeding with creation...');
     
     try {
       store.setLoading(true);
@@ -331,13 +386,13 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
     } finally {
       store.setLoading(false);
     }
-  }, [store, validateForm, validation.nitAvailable, onComplete, navigate, showToast]);
+  }, [store, validateForm, onComplete, navigate, showToast]);
   
   /**
    * Handle cancel
    */
   const handleCancel = useCallback(() => {
-    if (uiState.hasUnsavedChanges) {
+    if (store.ui.hasUnsavedChanges) {
       const confirmDiscard = window.confirm(
         'Tienes cambios sin guardar. ¿Estás seguro que quieres salir?'
       );
@@ -352,7 +407,7 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
     } else {
       navigate('/dashboard');
     }
-  }, [uiState.hasUnsavedChanges, onCancel, navigate, store]);
+  }, [store, onCancel, navigate]);
   
   /**
    * Handle success modal close
@@ -389,7 +444,32 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
   // Set page title
   useEffect(() => {
     document.title = 'Configuración de Organización | ZentraQMS';
-  }, []);
+    
+    // DEBUG: Add global debug function
+    (window as any).debugWizard = {
+      getStoreState: () => store,
+      logFullState: () => {
+        console.log('🎯 WIZARD DEBUG - Unified Store Access:', {
+          store: store,
+          formData: store.formData,
+          validation: store.validation,
+          ui: store.ui,
+          hasInteracted,
+          currentStep,
+        });
+      },
+      testValidation: () => {
+        console.log('🧪 Testing validation with current data:');
+        const currentData = store.formData;
+        console.log('Current form data:', currentData);
+        const requiredFields = ['razon_social', 'nit', 'digito_verificacion', 'email_contacto', 'telefono_principal'];
+        requiredFields.forEach(field => {
+          const value = currentData[field as keyof typeof currentData];
+          console.log(`${field}: "${value}" (length: ${String(value).length})`);
+        });
+      }
+    };
+  }, [store, hasInteracted, currentStep]);
   
   return (
     <ErrorBoundary>
@@ -423,12 +503,12 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
                     {currentStep === 'SECTOR_SELECTION' && (
                       <SectorSelectionStep
                         onSectorSelect={handleSectorSelect}
-                        selectedSector={formData.sector}
-                        selectedOrgType={formData.organization_type}
+                        selectedSector={store.formData.sector}
+                        selectedOrgType={store.formData.organization_type}
                         onNext={handleNext}
                         onPrevious={handlePrevious}
                         canProceed={true}
-                        isLoading={uiState.isLoading}
+                        isLoading={store.ui.isLoading}
                       />
                     )}
 
@@ -443,12 +523,12 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
                                 Configuración Seleccionada
                               </h6>
                               <p className="mb-0 text-primary">
-                                Sector: <strong>{formData.sector}</strong>
-                                {formData.organization_type && (
-                                  <span> • Tipo: <strong>{formData.organization_type}</strong></span>
+                                Sector: <strong>{store.formData.sector}</strong>
+                                {store.formData.organization_type && (
+                                  <span> • Tipo: <strong>{store.formData.organization_type}</strong></span>
                                 )}
-                                {formData.auto_activated_modules && formData.auto_activated_modules.length > 0 && (
-                                  <span> • {formData.auto_activated_modules.length} módulos activados</span>
+                                {store.formData.auto_activated_modules && store.formData.auto_activated_modules.length > 0 && (
+                                  <span> • {store.formData.auto_activated_modules.length} módulos activados</span>
                                 )}
                               </p>
                             </div>
@@ -472,15 +552,15 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
                                 Logo de la Organización
                               </h5>
                               <LogoUploader
-                                value={formData.logo}
-                                preview={formData.logoPreview}
+                                value={store.formData.logo}
+                                preview={store.formData.logoPreview}
                                 onChange={handleLogoUpload}
                                 onError={(error) => store.setFieldError('logo', error)}
                                 className="mx-auto"
                               />
-                              {validation.errors.logo && (
+                              {store.validation.errors.logo && (
                                 <div className="text-danger small mt-2">
-                                  {validation.errors.logo}
+                                  {store.validation.errors.logo}
                                 </div>
                               )}
                             </div>
@@ -489,11 +569,11 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
 
                         {/* Organization Form Section */}
                         <OrganizationFormSection
-                          formData={formData}
-                          validation={validation}
+                          formData={store.formData}
+                          validation={store.validation}
                           onChange={handleFieldChange}
                           onNitValidation={handleNitValidation}
-                          submitAttempted={uiState.submitAttempted}
+                          submitAttempted={store.ui.submitAttempted}
                         />
 
                         {/* Navigation Buttons */}
@@ -504,7 +584,7 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
                                 type="button"
                                 className="btn btn-light btn-label"
                                 onClick={handlePrevious}
-                                disabled={uiState.isLoading}
+                                disabled={store.ui.isLoading}
                               >
                                 <i className="ri-arrow-left-line label-icon align-middle fs-16 me-2"></i>
                                 Anterior
@@ -514,9 +594,9 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
                                 type="button"
                                 className="btn btn-primary btn-label"
                                 onClick={handleNext}
-                                disabled={uiState.isLoading || validation.isValidating}
+                                disabled={store.ui.isLoading}
                               >
-                                {uiState.isLoading ? (
+                                {store.ui.isLoading ? (
                                   <>
                                     <div 
                                       className="spinner-border spinner-border-sm me-2" 
@@ -546,7 +626,7 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
         </div>
 
         {/* Success Modal */}
-        {uiState.showSuccessModal && (
+        {store.ui.showSuccessModal && (
           <div className="modal fade show d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content">
@@ -560,8 +640,8 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
                     ¡Organización Creada Exitosamente!
                   </h5>
                   <p className="text-muted mb-4">
-                    Su organización ha sido configurada correctamente en ZentraQMS con {formData.auto_activated_modules?.length || 0} módulos activados 
-                    ({formData.sector ? `${formData.sector}${formData.organization_type ? ' - ' + formData.organization_type : ''}` : 'Multi-sector'}).
+                    Su organización ha sido configurada correctamente en ZentraQMS con {store.formData.auto_activated_modules?.length || 0} módulos activados 
+                    ({store.formData.sector ? `${store.formData.sector}${store.formData.organization_type ? ' - ' + store.formData.organization_type : ''}` : 'Multi-sector'}).
                     Ahora puede comenzar a usar el sistema.
                   </p>
                   <button
@@ -579,7 +659,7 @@ const MultiStepOrganizationWizard: React.FC<MultiStepOrganizationWizardProps> = 
         )}
 
         {/* Loading Overlay */}
-        {uiState.isLoading && (
+        {store.ui.isLoading && (
           <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-25" style={{ zIndex: 9999 }}>
             <LoadingSpinner size="lg" message="Configurando organización..." />
           </div>

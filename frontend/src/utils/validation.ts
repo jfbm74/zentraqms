@@ -126,15 +126,32 @@ export class FormValidators {
       };
     }
 
-    // More permissive email validation
-    if (!trimmed.includes('@') || !trimmed.includes('.')) {
+    // More permissive email validation - just check basic structure
+    if (!trimmed.includes('@')) {
+      return {
+        isValid: false,
+        error: 'El email debe contener @',
+      };
+    }
+
+    const parts = trimmed.split('@');
+    if (parts.length !== 2 || !parts[0] || !parts[1]) {
       return {
         isValid: false,
         error: 'Formato de email inválido',
       };
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Check domain has at least one dot
+    if (!parts[1].includes('.')) {
+      return {
+        isValid: false,
+        error: 'El dominio del email debe contener un punto',
+      };
+    }
+
+    // More permissive regex that allows common email formats
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(trimmed)) {
       return {
         isValid: false,
@@ -392,15 +409,15 @@ export class FormValidator {
       errors.telefono_principal = phoneResult.error!;
     }
 
-    // Validate optional fields if provided
-    if (data.website) {
+    // Validate optional fields if provided and not empty
+    if (data.website && data.website.trim()) {
       const websiteResult = FormValidators.validateWebsite(data.website);
       if (!websiteResult.isValid) {
         errors.website = websiteResult.error!;
       }
     }
 
-    if (data.descripcion) {
+    if (data.descripcion && data.descripcion.trim()) {
       const descResult = FormValidators.validateDescription(data.descripcion);
       if (!descResult.isValid) {
         errors.descripcion = descResult.error!;

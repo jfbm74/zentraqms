@@ -8,7 +8,7 @@ from typing import Dict, Any, Optional
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from ..models import Organization
+from ..models import Organization, HealthOrganization
 
 
 class OrganizationService:
@@ -37,7 +37,7 @@ class OrganizationService:
             ValidationError: If validation fails
         """
         with transaction.atomic():
-            # Create organization instance
+            # Create organization instance with all required fields
             org_data = {
                 'razon_social': form_data.get('razon_social'),
                 'nit': form_data.get('nit'),
@@ -49,11 +49,71 @@ class OrganizationService:
                 'created_by': user,
             }
             
+            # Handle classification fields - support both direct and multi-sector formats
+            selected_sector = form_data.get('selectedSector')
+            selected_org_type = form_data.get('selectedOrgType')
+            
+            # ✅ FIX: Mapeo correcto de sectores del frontend al backend
+            SECTOR_MAPPING = {
+                'HEALTHCARE': 'salud',
+                'MANUFACTURING': 'manufactura', 
+                'SERVICES': 'servicios',
+                'EDUCATION': 'educacion',
+            }
+            
+            # Map multi-sector fields to classification fields
+            if selected_sector:
+                # Usar mapeo correcto en lugar de .lower()
+                org_data['sector_economico'] = SECTOR_MAPPING.get(selected_sector, selected_sector.lower())
+            elif form_data.get('sector_economico'):
+                org_data['sector_economico'] = form_data.get('sector_economico')
+                
+            if selected_org_type:
+                # Los tipos de organización ya vienen en formato correcto desde el frontend arreglado
+                org_data['tipo_organizacion'] = selected_org_type.lower()
+            elif form_data.get('tipo_organizacion'):
+                org_data['tipo_organizacion'] = form_data.get('tipo_organizacion')
+            
+            # ✅ FIX: Always include classification fields with defaults
+            org_data['tamaño_empresa'] = form_data.get('tamaño_empresa', 'pequeña')
+            org_data['fecha_fundacion'] = form_data.get('fecha_fundacion', None)
+            
+            # Set defaults for fields not provided
+            if not org_data.get('sector_economico'):
+                org_data['sector_economico'] = 'servicios'
+            if not org_data.get('tipo_organizacion'):
+                org_data['tipo_organizacion'] = 'empresa_privada'
+            
             # Add logo if provided
             if logo_file:
                 org_data['logo'] = logo_file
             
+            # Create organization
             organization = Organization.objects.create(**org_data)
+            
+            # ✅ FIX: Only create HealthOrganization if EXPLICITLY selected
+            # Check if user explicitly selected health sector AND health-related organization type
+            sector = org_data.get('sector_economico', '').lower()
+            org_type = org_data.get('tipo_organizacion', '').lower()
+            
+            health_sector_selected = sector == 'salud'
+            health_org_type_selected = org_type in ['ips', 'eps', 'clinica', 'hospital', 'centro_medico', 'laboratorio']
+            
+            # Only create HealthOrganization if BOTH conditions are met explicitly
+            if health_sector_selected and health_org_type_selected:
+                # Generate temporary unique code until user provides real REPS code
+                import uuid
+                temp_code = str(uuid.uuid4().int)[:12].zfill(12)  # 12-digit temporary code
+                
+                HealthOrganization.objects.create(
+                    organization=organization,
+                    codigo_prestador=temp_code,  # Temporary code - user must provide actual REPS code
+                    tipo_prestador=org_type.upper() if org_type in ['ips', 'eps'] else 'IPS',
+                    nivel_complejidad='I',  # Default to low complexity
+                    naturaleza_juridica='privada',  # Default value
+                    verificado_reps=False,  # Not verified until user provides real code
+                    created_by=user
+                )
             
             return organization
     
@@ -77,9 +137,19 @@ class OrganizationService:
             Organization: Updated organization instance
         """
         with transaction.atomic():
-            # Update fields
+            # Handle multi-sector fields mapping first
+            selected_sector = form_data.get('selectedSector')
+            selected_org_type = form_data.get('selectedOrgType')
+            
+            if selected_sector:
+                form_data['sector_economico'] = selected_sector
+            if selected_org_type:
+                form_data['tipo_organizacion'] = selected_org_type
+            
+            # Update fields (exclude frontend-specific fields)
+            excluded_fields = ['logo', 'logoPreview', 'selectedSector', 'selectedOrgType']
             for field, value in form_data.items():
-                if field not in ['logo', 'logoPreview'] and hasattr(organization, field):
+                if field not in excluded_fields and hasattr(organization, field):
                     setattr(organization, field, value)
             
             # Update logo if provided

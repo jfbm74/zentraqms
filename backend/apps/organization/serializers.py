@@ -1837,8 +1837,17 @@ class OrganizationWizardSerializer(serializers.ModelSerializer):
 class OrganizationWizardCreateSerializer(OrganizationWizardSerializer):
     """Serializer for creating organizations through the wizard."""
     
+    # Add fields for multi-sector support
+    selectedSector = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    selectedOrgType = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    
+    # Additional classification fields
+    fecha_fundacion = serializers.DateField(required=False, allow_null=True)
+    tamaño_empresa = serializers.CharField(required=False, allow_blank=True)
+    
     class Meta(OrganizationWizardSerializer.Meta):
         fields = [
+            # Basic information
             'razon_social',
             'nit',
             'digito_verificacion',
@@ -1847,7 +1856,92 @@ class OrganizationWizardCreateSerializer(OrganizationWizardSerializer):
             'website',
             'descripcion',
             'logo',
+            
+            # Multi-sector fields (frontend compatibility)
+            'selectedSector',
+            'selectedOrgType',
+            
+            # Classification fields  
+            'tipo_organizacion',
+            'sector_economico',
+            'tamaño_empresa',
+            'fecha_fundacion',
+            
+            # Configuration fields
+            'enabled_modules',
+            'sector_config',
         ]
+    
+    def create(self, validated_data):
+        """Create organization with proper field mapping."""
+        # Map frontend fields to model fields
+        selected_sector = validated_data.pop('selectedSector', '')
+        selected_org_type = validated_data.pop('selectedOrgType', '')
+        
+        if selected_sector:
+            validated_data['sector_economico'] = selected_sector
+        if selected_org_type:
+            validated_data['tipo_organizacion'] = selected_org_type
+        
+        # Set default values for new fields
+        if 'enabled_modules' not in validated_data:
+            validated_data['enabled_modules'] = '[]'
+        if 'sector_config' not in validated_data:
+            validated_data['sector_config'] = '{}'
+        
+        # Create the organization
+        organization = super().create(validated_data)
+        
+        # Create HealthOrganization if sector is health-related
+        if (validated_data.get('sector_economico') == 'salud' or 
+            selected_sector in ['HEALTHCARE', 'salud'] or
+            validated_data.get('tipo_organizacion') in ['ips', 'eps', 'hospital', 'clinica', 'centro_medico', 'laboratorio']):
+            
+            self._create_health_organization(organization, validated_data, selected_org_type)
+        
+        return organization
+    
+    def _create_health_organization(self, organization, validated_data, selected_org_type):
+        """Create HealthOrganization record for health sector organizations."""
+        from .models import HealthOrganization
+        
+        # Map organization type to health-specific fields
+        tipo_prestador_mapping = {
+            'ips': 'IPS',
+            'hospital': 'HOSPITAL', 
+            'clinica': 'CLINICA',
+            'centro_medico': 'CENTRO_MEDICO',
+            'laboratorio': 'LABORATORIO',
+            'eps': 'IPS',  # EPS también se maneja como IPS
+        }
+        
+        tipo_prestador = tipo_prestador_mapping.get(
+            validated_data.get('tipo_organizacion', '').lower(),
+            'IPS'  # Default
+        )
+        
+        # Create HealthOrganization record
+        health_org = HealthOrganization.objects.create(
+            organization=organization,
+            codigo_prestador='',  # To be filled later
+            naturaleza_juridica='privada',  # Default, can be updated later
+            tipo_prestador=tipo_prestador,
+            nivel_complejidad='I',  # Default to Level I
+            verificado_reps=False,
+            datos_reps={},
+            representante_nombre_completo='',
+            representante_numero_documento='',
+            representante_tipo_documento='CC',
+            representante_telefono='',
+            representante_email='',
+            fecha_habilitacion=None,
+            resolucion_habilitacion='',
+            registro_especial='',
+            servicios_habilitados_count=0,
+            observaciones_salud=f'Organización de salud creada automáticamente para {organization.razon_social}',
+        )
+        
+        return health_org
 
 
 class DivipolaSerializer(serializers.Serializer):

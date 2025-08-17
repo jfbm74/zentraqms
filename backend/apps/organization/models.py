@@ -195,6 +195,19 @@ class Organization(FullBaseModel):
         help_text=_("Teléfono principal de contacto."),
     )
 
+    # Configuration fields
+    enabled_modules = models.TextField(
+        _("módulos habilitados"),
+        default="{}",
+        help_text=_("Módulos habilitados para la organización en formato JSON."),
+    )
+
+    sector_config = models.TextField(
+        _("configuración del sector"),
+        default="{}",
+        help_text=_("Configuración específica del sector en formato JSON."),
+    )
+
     class Meta:
         verbose_name = _("organización")
         verbose_name_plural = _("organizaciones")

@@ -90,6 +90,12 @@ export interface OrganizationFormData {
   // Additional Info
   descripcion: string;
   
+  // Classification fields
+  tipo_organizacion?: string;
+  sector_economico?: string;
+  tamaño_empresa?: string;
+  fecha_fundacion?: string;
+  
   // Logo
   logo?: File | null;
   logoPreview?: string;
@@ -321,6 +327,12 @@ export const DEFAULT_FORM_DATA: OrganizationFormData = {
   logo: null,
   logoPreview: '',
   
+  // Classification fields
+  tipo_organizacion: '',
+  sector_economico: '',
+  tamaño_empresa: '',
+  fecha_fundacion: '',
+  
   // Multi-sector fields
   sector_details: undefined,
   selected_modules: [],
@@ -368,9 +380,12 @@ export const SECTORS: SectorInfo[] = [
     icon: 'ri-hospital-line',
     description: 'Instituciones de salud, clínicas, hospitales',
     types: [
-      { value: 'IPS', label: 'IPS - Institución Prestadora de Salud' },
-      { value: 'ESE', label: 'ESE - Empresa Social del Estado' },
-      { value: 'EPS', label: 'EPS - Entidad Promotora de Salud' }
+      { value: 'ips', label: 'IPS - Institución Prestadora de Salud' },
+      { value: 'eps', label: 'EPS - Entidad Promotora de Salud' },
+      { value: 'hospital', label: 'Hospital' },
+      { value: 'clinica', label: 'Clínica' },
+      { value: 'centro_medico', label: 'Centro Médico' },
+      { value: 'laboratorio', label: 'Laboratorio' }
     ],
     modules: ['SUH', 'PAMEC', 'Seguridad del Paciente', 'RIPS'],
     integrations: ['REPS', 'SISPRO', 'ADRES']
@@ -381,11 +396,10 @@ export const SECTORS: SectorInfo[] = [
     icon: 'ri-settings-3-line',
     description: 'Empresas de producción y manufactura',
     types: [
-      { value: 'FOOD', label: 'Alimentos y Bebidas' },
-      { value: 'PHARMA', label: 'Farmacéutica' },
-      { value: 'TEXTILE', label: 'Textil' },
-      { value: 'AUTOMOTIVE', label: 'Automotriz' },
-      { value: 'GENERAL', label: 'Manufactura General' }
+      { value: 'empresa_privada', label: 'Empresa Privada' },
+      { value: 'empresa_publica', label: 'Empresa Pública' },
+      { value: 'mixta', label: 'Mixta' },
+      { value: 'cooperativa', label: 'Cooperativa' }
     ],
     modules: ['Producción', 'Control Calidad', 'Inventarios'],
     integrations: ['ISO 9001', 'ISO 14001', 'HACCP']
@@ -396,10 +410,12 @@ export const SECTORS: SectorInfo[] = [
     icon: 'ri-service-line',
     description: 'Empresas de servicios profesionales',
     types: [
-      { value: 'IT', label: 'Tecnología de Información' },
-      { value: 'CONSULTING', label: 'Consultoría' },
-      { value: 'FINANCIAL', label: 'Servicios Financieros' },
-      { value: 'SERVICES_GENERAL', label: 'Servicios Generales' }
+      { value: 'empresa_privada', label: 'Empresa Privada' },
+      { value: 'empresa_publica', label: 'Empresa Pública' },
+      { value: 'mixta', label: 'Mixta' },
+      { value: 'fundacion', label: 'Fundación' },
+      { value: 'ong', label: 'ONG' },
+      { value: 'cooperativa', label: 'Cooperativa' }
     ],
     modules: ['Proyectos', 'Satisfacción Cliente', 'SLA'],
     integrations: ['ITIL', 'ISO 27001', 'COBIT']
@@ -410,15 +426,33 @@ export const SECTORS: SectorInfo[] = [
     icon: 'ri-school-line',
     description: 'Instituciones educativas',
     types: [
-      { value: 'UNIVERSITY', label: 'Universidad' },
-      { value: 'SCHOOL', label: 'Colegio' },
-      { value: 'INSTITUTE', label: 'Instituto Técnico' },
-      { value: 'TRAINING', label: 'Centro de Capacitación' }
+      { value: 'universidad', label: 'Universidad' },
+      { value: 'institucion_educativa', label: 'Institución Educativa' },
+      { value: 'empresa_privada', label: 'Centro de Capacitación Privado' },
+      { value: 'fundacion', label: 'Fundación Educativa' }
     ],
     modules: ['Gestión Académica', 'Evaluación', 'Investigación'],
     integrations: ['SNIES', 'MEN', 'ICFES']
   }
 ];
+
+// ✅ Mapeo de frontend a backend
+export const SECTOR_MAPPING: Record<SectorType, string> = {
+  'HEALTHCARE': 'salud',
+  'MANUFACTURING': 'manufactura', 
+  'SERVICES': 'servicios',
+  'EDUCATION': 'educacion',
+};
+
+// ✅ Función utilitaria para mapear sector del frontend al backend
+export function mapSectorToBackend(frontendSector: SectorType): string {
+  return SECTOR_MAPPING[frontendSector] || 'otro';
+}
+
+// ✅ Función utilitaria para mapear tipo de organización (ya están en formato correcto)
+export function mapOrgTypeToBackend(orgType: string): string {
+  return orgType.toLowerCase();
+}
 
 // Module categories - Define first to avoid temporal dead zone
 export const TRANSVERSAL_MODULES = {

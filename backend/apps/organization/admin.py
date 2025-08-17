@@ -5,7 +5,7 @@ Django Admin configuration for Organization module.
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
-from .models import Organization, Location, SectorTemplate, AuditLog, SedePrestadora, SedeServicio
+from .models import Organization, Location, SectorTemplate, AuditLog, SedePrestadora, SedeServicio, HealthOrganization, HealthService
 
 
 @admin.register(Organization)
@@ -569,6 +569,105 @@ class SedeServicioAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+    def save_model(self, request, obj, form, change):
+        """Override save to set audit fields."""
+        if not change:  # Creating new object
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(HealthOrganization)
+class HealthOrganizationAdmin(admin.ModelAdmin):
+    """
+    Admin interface for HealthOrganization model.
+    """
+
+    list_display = [
+        "organization",
+        "codigo_prestador",
+        "tipo_prestador",
+        "nivel_complejidad",
+        "naturaleza_juridica",
+        "verificado_reps",
+        "is_active",
+        "created_at",
+    ]
+
+    list_filter = [
+        "tipo_prestador",
+        "nivel_complejidad",
+        "naturaleza_juridica",
+        "verificado_reps",
+        "is_active",
+        "created_at",
+        "updated_at",
+    ]
+
+    search_fields = [
+        "organization__razon_social",
+        "codigo_prestador",
+        "representante_numero_documento",
+        "resolucion_habilitacion",
+        "representante_nombre_completo",
+    ]
+
+    readonly_fields = [
+        "id",
+        "created_at",
+        "updated_at", 
+        "created_by",
+        "updated_by",
+    ]
+
+    def save_model(self, request, obj, form, change):
+        """Override save to set audit fields."""
+        if not change:  # Creating new object
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(HealthService)
+class HealthServiceAdmin(admin.ModelAdmin):
+    """
+    Admin interface for HealthService model.
+    """
+
+    list_display = [
+        "codigo_servicio",
+        "nombre_servicio",
+        "grupo_servicio",
+        "estado",
+        "modalidad",
+        "is_active",
+        "created_at",
+    ]
+
+    list_filter = [
+        "grupo_servicio",
+        "estado", 
+        "modalidad",
+        "is_active",
+        "created_at",
+        "updated_at",
+    ]
+
+    search_fields = [
+        "codigo_servicio",
+        "nombre_servicio",
+        "descripcion_servicio",
+        "grupo_servicio",
+    ]
+
+    readonly_fields = [
+        "id",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by", 
+    ]
 
     def save_model(self, request, obj, form, change):
         """Override save to set audit fields."""

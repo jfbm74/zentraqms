@@ -568,9 +568,7 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
                       }}>
                         {/* subItems */}
                         {item.subItems && (
-                          console.log('Menu state for', item.label, ':', item.stateVariables),
                           item.subItems.map((subItem: MenuItem, key: number) => {
-                            console.log('Rendering subItem:', subItem.label, 'for parent:', item.label);
                             return (
                             <React.Fragment key={key}>
                                 <li className="nav-item" style={{ display: 'block', visibility: 'visible' }}>
@@ -578,7 +576,6 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
                                     onClick={(e) => {
                                       e.preventDefault();
                                       // Para subItems, navegar a la ruta
-                                      console.log('Navigating to:', subItem.link);
                                       // TODO: Implementar navegación con router
                                     }}
                                     className="nav-link"
@@ -612,7 +609,6 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
                       onClick={(e) => {
                         e.preventDefault();
                         // Para elementos sin subItems, navegar directamente
-                        console.log('Navigating to:', item.link);
                         // TODO: Implementar navegación con router
                       }}
                       className="nav-link menu-link"
