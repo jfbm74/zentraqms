@@ -8,6 +8,8 @@
 import React, { useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useRoleBasedUI } from "../../hooks/usePermissions";
+import { useModuleConfig } from "../../hooks/useModuleConfig";
+import ModuleLayout from "../../components/layout/ModuleLayout";
 import {
   SuperAdminDashboard,
   AdminDashboard,
@@ -26,6 +28,7 @@ import {
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const { uiConfig } = useRoleBasedUI();
+  const moduleConfig = useModuleConfig('dashboard');
 
   useEffect(() => {
     document.title = "Dashboard | ZentraQMS - Sistema de Gestión de Calidad";
@@ -58,21 +61,7 @@ const DashboardPage: React.FC = () => {
   };
 
   return (
-    <React.Fragment>
-      {/* Page Title */}
-      <div className="row">
-        <div className="col-12">
-          <div className="page-title-box d-sm-flex align-items-center justify-content-between">
-            <h4 className="mb-sm-0">Dashboard</h4>
-            <div className="page-title-right">
-              <ol className="breadcrumb m-0">
-                <li className="breadcrumb-item active">Dashboard</li>
-              </ol>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <ModuleLayout module={moduleConfig}>
       {/* Welcome Section */}
       <div className="row">
         <div className="col-12">
@@ -276,7 +265,7 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
-    </React.Fragment>
+    </ModuleLayout>
   );
 };
 

@@ -136,9 +136,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           />
         </div>
         <div className="main-content">
-          <div className="page-content">
-            <div className="container-fluid">{children}</div>
-          </div>
+          {children}
           <Footer />
         </div>
         {/* Overlay for mobile */}

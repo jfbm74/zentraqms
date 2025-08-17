@@ -27,7 +27,7 @@ import LoadingSpinner from "./components/ui/LoadingSpinner";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 
 // Layouts
-import Layout from "./components/layout/Layout";
+import DashboardLayout from "./components/layout/DashboardLayout";
 
 // Pages - Lazy loaded for better performance
 const LoginPage = React.lazy(() => import("./pages/auth/LoginPage"));
@@ -62,12 +62,6 @@ const PageLoader: React.FC = () => (
   </div>
 );
 
-/**
- * Dashboard layout wrapper for protected pages
- */
-const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => <Layout>{children}</Layout>;
 
 /**
  * Router component to handle navigation logic
@@ -139,9 +133,7 @@ const AppRouter: React.FC = () => {
 
       <Route path="/sogcs/dashboard">
         <ProtectedRoute permissions={["sogcs.read"]}>
-          <DashboardLayout>
-            <SOGCSDashboard />
-          </DashboardLayout>
+          <SOGCSDashboard />
         </ProtectedRoute>
       </Route>
 

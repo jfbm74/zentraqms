@@ -3,6 +3,8 @@ import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "../../utils/SimpleRouter";
 import { toast } from "react-toastify";
 import { apiClient } from "../../api/endpoints";
+import { useModuleConfig } from "../../hooks/useModuleConfig";
+import ModuleLayout from "../../components/layout/ModuleLayout";
 
 interface DashboardStats {
   totalUsers?: number;
@@ -20,6 +22,7 @@ interface OrganizationCheck {
 const Dashboard: React.FC = () => {
   const { user, logout, isLoading: authLoading, hasPermission } = useAuth();
   const navigate = useNavigate();
+  const moduleConfig = useModuleConfig('dashboard');
   const [stats, setStats] = useState<DashboardStats>({});
   const [isLoading, setIsLoading] = useState(false);
   
@@ -177,42 +180,22 @@ const Dashboard: React.FC = () => {
 
   if (authLoading || isLoading) {
     return (
-      <div className="page-content">
-        <div className="container-fluid">
-          <div
-            className="d-flex justify-content-center align-items-center"
-            style={{ minHeight: "400px" }}
-          >
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Cargando...</span>
-            </div>
+      <ModuleLayout module={moduleConfig}>
+        <div
+          className="d-flex justify-content-center align-items-center"
+          style={{ minHeight: "400px" }}
+        >
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Cargando...</span>
           </div>
         </div>
-      </div>
+      </ModuleLayout>
     );
   }
 
   return (
-    <div className="page-content">
-      <div className="container-fluid">
-        {/* Page Title */}
-        <div className="row">
-          <div className="col-12">
-            <div className="page-title-box d-sm-flex align-items-center justify-content-between">
-              <h4 className="mb-sm-0">Dashboard</h4>
-              <div className="page-title-right">
-                <ol className="breadcrumb m-0">
-                  <li className="breadcrumb-item">
-                    <a href="#">Home</a>
-                  </li>
-                  <li className="breadcrumb-item active">Dashboard</li>
-                </ol>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Welcome Card */}
+    <ModuleLayout module={moduleConfig}>
+      {/* Welcome Card */}
         <div className="row">
           <div className="col-12">
             <div className="card">
@@ -503,8 +486,7 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </ModuleLayout>
   );
 };
 
