@@ -8,26 +8,54 @@
 
 /* Velzon Page Title Box Styles */
 .page-title-box {
-  padding: 15px 1.5rem;
+  padding: 20px 1.5rem !important;
   background-color: var(--bs-white, #ffffff);
   box-shadow: 0 1px 2px rgba(56, 65, 74, 0.08);
   border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-  margin: -24px -1.5rem 0 -1.5rem;
+  margin: -24px -1.5rem -8px -1.5rem;
   position: relative;
   z-index: 99;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  min-height: 70px !important;
 }
 
 .page-title-box .breadcrumb {
   background-color: transparent;
   padding: 0;
   margin-bottom: 0;
+  display: flex;
+  align-items: center;
 }
 
 .page-title-box h4 {
-  font-weight: 700;
+  font-weight: 700 !important;
   font-size: 15px !important;
-  text-transform: uppercase;
-  margin-bottom: 0;
+  text-transform: uppercase !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  vertical-align: middle !important;
+  transform: translateY(8px) !important;
+  display: inline-block !important;
+}
+
+.page-title-box .page-title-right {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.page-title-box .breadcrumb {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.page-title-box .breadcrumb-item {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.4 !important;
 }
 
 /* Velzon Style Horizontal Navigation */
@@ -37,7 +65,7 @@
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   position: relative;
   z-index: 98;
-  margin: 0 -1.5rem 1.5rem -1.5rem;
+  margin: -8px -1.5rem 0.5rem -1.5rem;
   padding: 0;
 }
 
@@ -62,7 +90,7 @@
   padding: 0;
   flex-wrap: nowrap;
   align-items: stretch;
-  height: auto;
+  height: 60px;
   min-height: 60px;
 }
 
@@ -110,6 +138,8 @@
   color: inherit !important;
   width: 16px;
   text-align: center;
+  transform: translateY(3px) !important;
+  line-height: 1 !important;
 }
 
 .navbar-menu .nav-link span {
@@ -118,6 +148,8 @@
   visibility: visible !important;
   opacity: 1 !important;
   font-size: 14px !important;
+  transform: translateY(3px) !important;
+  line-height: 1 !important;
 }
 
 /* Specific styles for buttons in navbar-menu */
@@ -136,6 +168,8 @@
 .navbar-menu button.nav-link i {
   color: inherit !important;
   display: inline-block !important;
+  transform: translateY(3px) !important;
+  line-height: 1 !important;
 }
 
 .navbar-menu button.nav-link span {
@@ -145,6 +179,8 @@
   opacity: 1 !important;
   font-size: 14px !important;
   margin-left: 8px !important;
+  transform: translateY(3px) !important;
+  line-height: 1 !important;
 }
 
 .navbar-menu .badge {
@@ -368,6 +404,16 @@
 
 .sector-grid {
   min-height: 400px;
+}
+
+/* SOGCS Page Content Optimization */
+.sogcs-page-content {
+  padding-top: 0 !important;
+  margin-top: -16px !important;
+}
+
+.sogcs-page-content .container-fluid {
+  padding-top: 0 !important;
 }
 
 /* Responsive Subheader */

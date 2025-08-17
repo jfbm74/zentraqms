@@ -15,7 +15,7 @@ const DashboardSOGCS = () => {
     document.title="SOGCS - Sistema Obligatorio de Garantía de Calidad en Salud | ZentraQMS";
     return (
         <React.Fragment>
-            <div className="page-content">
+            <div className="page-content sogcs-page-content">
                 <div className="container-fluid">  
                     <BreadCrumb title="SOGCS" pageTitle="Sistema de Gestión de Calidad" />
                     
