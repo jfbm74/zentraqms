@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback, useMemo } from 'react';
-import { useLocation } from "../../utils/SimpleRouter";
+import { useLocation, useNavigate } from "../../utils/SimpleRouter";
 import { usePermissions } from "../../hooks/usePermissions";
 import { PermissionGate } from "../common/PermissionGate";
 
@@ -31,6 +31,7 @@ interface VerticalLayoutProps {
 
 const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const path = location.pathname;
   const { getUserCapabilities } = usePermissions();
 
@@ -41,6 +42,7 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
   const [isAnalisis, setIsAnalisis] = React.useState<boolean>(false);
   const [isDocumentacion, setIsDocumentacion] = React.useState<boolean>(false);
   const [isComites, setIsComites] = React.useState<boolean>(false);
+  const [isSOGCS, setIsSOGCS] = React.useState<boolean>(false);
   const [isPlaneacionEstrategica, setIsPlaneacionEstrategica] = React.useState<boolean>(false);
   const [isModulosEspecializados, setIsModulosEspecializados] = React.useState<boolean>(false);
   const [isConfiguracion, setIsConfiguracion] = React.useState<boolean>(false);
@@ -146,6 +148,76 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
           roles: ["admin", "super_admin", "coordinador"],
         },
       ],
+    },
+    {
+      label: "🏥 SOGCS - SISTEMA OBLIGATORIO",
+      isHeader: true,
+      id: "sogcs-header"
+    },
+    {
+      id: "sogcs",
+      label: "Dashboard SOGCS",
+      icon: "ri-shield-check-line",
+      link: "/sogcs/dashboard",
+      permissions: ["sogcs.read", "sogcs.*"],
+      badgeName: "Principal",
+      badgeColor: "primary",
+    },
+    {
+      id: "sogcs-modulos",
+      label: "Componentes SOGCS",
+      icon: "ri-hospital-line",
+      link: "/#",
+      permissions: ["sogcs.read", "sogcs.*"],
+      stateVariables: isSOGCS,
+      click: function (e: any) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsSOGCS(!isSOGCS);
+        return false;
+      },
+      subItems: [
+        {
+          id: "suh",
+          label: "SUH - Sistema Único de Habilitación",
+          link: "/sogcs/suh",
+          permissions: ["sogcs.suh.read", "sogcs.*"],
+          badgeName: "92.5%",
+          badgeColor: "success",
+        },
+        {
+          id: "pamec",
+          label: "PAMEC - Programa de Auditoría",
+          link: "/sogcs/pamec",
+          permissions: ["sogcs.pamec.read", "sogcs.*"],
+          badgeName: "78.3%",
+          badgeColor: "warning",
+        },
+        {
+          id: "sic",
+          label: "SIC - Sistema de Información",
+          link: "/sogcs/sic",
+          permissions: ["sogcs.sic.read", "sogcs.*"],
+          badgeName: "95.1%",
+          badgeColor: "success",
+        },
+        {
+          id: "sua",
+          label: "SUA - Sistema de Acreditación",
+          link: "/sogcs/sua",
+          permissions: ["sogcs.sua.read", "sogcs.*"],
+          badgeName: "45.7%",
+          badgeColor: "danger",
+        },
+      ],
+    },
+    {
+      id: "sogcs-configuracion",
+      label: "Configuración SOGCS",
+      icon: "ri-settings-3-line",
+      link: "/sogcs/configuracion",
+      permissions: ["sogcs.config.read", "sogcs.*"],
+      roles: ["admin", "super_admin", "coordinador_sogcs"],
     },
     {
       label: "📋 GESTIÓN DE CALIDAD",
@@ -331,7 +403,7 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
     },
     {
       id: "modulos-especializados",
-      label: "Módulos Especializados",
+      label: "Otros Módulos",
       icon: "ri-puzzle-line",
       link: "/#",
       permissions: ["modules.read", "modules.*"],
@@ -344,18 +416,6 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
       },
       subItems: [
         {
-          id: "salud-suh",
-          label: "Salud - SUH",
-          link: "/modulos/salud-suh",
-          permissions: ["health.read", "health.*"],
-        },
-        {
-          id: "pamec",
-          label: "PAMEC",
-          link: "/modulos/pamec",
-          permissions: ["pamec.read", "pamec.*"],
-        },
-        {
           id: "acreditacion",
           label: "Acreditación",
           link: "/modulos/acreditacion",
@@ -366,6 +426,12 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
           label: "Gestión del Riesgo Clínico",
           link: "/modulos/gestion-riesgo-clinico",
           permissions: ["clinical_risk.read", "clinical_risk.*"],
+        },
+        {
+          id: "investigacion-desarrollo",
+          label: "Investigación y Desarrollo",
+          link: "/modulos/investigacion",
+          permissions: ["research.read", "research.*"],
         },
       ],
     },
@@ -404,7 +470,7 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
         },
       ],
     },
-  ], [isDashboard, isOrganizacion, isProcesos, isAnalisis, isDocumentacion, isComites, isPlaneacionEstrategica, isModulosEspecializados, isConfiguracion]);
+  ], [isDashboard, isOrganizacion, isProcesos, isAnalisis, isDocumentacion, isComites, isSOGCS, isPlaneacionEstrategica, isModulosEspecializados, isConfiguracion]);
 
   const resizeSidebarMenu = useCallback(() => {
     var windowSize = document.documentElement.clientWidth;
@@ -575,8 +641,9 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
                                   <div
                                     onClick={(e) => {
                                       e.preventDefault();
-                                      // Para subItems, navegar a la ruta
-                                      // TODO: Implementar navegación con router
+                                      if (subItem.link && subItem.link !== "/#") {
+                                        navigate(subItem.link);
+                                      }
                                     }}
                                     className="nav-link"
                                     style={{ 
@@ -590,7 +657,7 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
                                   >
                                     {subItem.label}
                                     {subItem.badgeName ? (
-                                      <span className={`badge badge-pill bg-${subItem.badgeColor}`} data-key="t-new">
+                                      <span className={`badge badge-pill bg-${subItem.badgeColor} ms-2`} data-key="t-new">
                                         {subItem.badgeName}
                                       </span>
                                     ) : null}
@@ -608,8 +675,9 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
                     <div
                       onClick={(e) => {
                         e.preventDefault();
-                        // Para elementos sin subItems, navegar directamente
-                        // TODO: Implementar navegación con router
+                        if (item.link && item.link !== "/#") {
+                          navigate(item.link);
+                        }
                       }}
                       className="nav-link menu-link"
                       style={{ cursor: 'pointer' }}

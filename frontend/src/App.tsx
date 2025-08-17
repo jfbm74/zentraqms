@@ -45,6 +45,7 @@ const NormogramaPage = React.lazy(
 const IndicadoresPage = React.lazy(
   () => import("./pages/indicadores/IndicadoresPage"),
 );
+const SOGCSDashboard = React.lazy(() => import("./pages/sogcs/dashboard"));
 const ProfilePage = React.lazy(() => import("./pages/profile/ProfilePage"));
 const NotFoundPage = React.lazy(() => import("./pages/NotFoundPage"));
 
@@ -136,6 +137,14 @@ const AppRouter: React.FC = () => {
         </ProtectedRoute>
       </Route>
 
+      <Route path="/sogcs/dashboard">
+        <ProtectedRoute permissions={["sogcs.read"]}>
+          <DashboardLayout>
+            <SOGCSDashboard />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </Route>
+
       <Route path="/profile">
         <ProtectedRoute>
           <DashboardLayout>
@@ -177,6 +186,7 @@ const AppRouter: React.FC = () => {
         "/auditorias",
         "/normograma",
         "/indicadores",
+        "/sogcs/dashboard",
         "/profile",
         "/access-denied",
       ].includes(currentPath) && <NotFoundPage />}

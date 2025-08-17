@@ -40,6 +40,9 @@ urlpatterns = [
     path('api/authorization/', include('apps.authorization.urls')),
     path('api/v1/', include('apps.organization.urls')),
 
+    # SOGCS module
+    path('api/sogcs/', include('apps.sogcs.urls')),
+
     # Future API endpoints
     # path('api/v1/procesos/', include('procesos.urls')),
     # path('api/v1/auditorias/', include('auditorias.urls')),

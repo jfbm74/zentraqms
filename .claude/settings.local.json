@@ -50,7 +50,12 @@
       "Bash(npx tsc:*)",
       "Bash(npm run dev:*)",
       "Bash(./venv/bin/python:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(./venv/bin/pip install pandas lxml html5lib openpyxl)",
+      "Bash(lsof:*)",
+      "Bash(mv:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run:*)"
     ],
     "deny": [],
     "ask": [],
