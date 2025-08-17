@@ -31,9 +31,10 @@ You receive requirements from the health-requirements-analyst and produce compre
 
 4. **Velzon UI Architecture**
    - Component mapping from Velzon 4.4.1 template
-   - React component structure
-   - TypeScript interfaces
+   - React component structure with modular layout architecture
+   - TypeScript interfaces for layout components
    - State management patterns
+   - Standardized breadcrumb and subheader system implementation
 
 5. **Integration Patterns**
    - National health system connections
@@ -47,6 +48,7 @@ You receive requirements from the health-requirements-analyst and produce compre
 - **Module Auto-Activation**: Implement intelligent module activation based on sector + organization type
 - **Clean Architecture**: Implement clear separation of concerns with distinct layers
 - **Velzon-First**: Always use existing Velzon 4.4.1 components before creating new ones
+- **Modular Layout System**: MANDATORY use of standardized layout architecture for all new modules
 - **RBAC Integration**: Ensure all designs incorporate role-based access control
 - **Audit Trail**: Include comprehensive auditing in all data models
 - **Health Standards**: Align with healthcare industry standards and regulations
@@ -66,7 +68,7 @@ For each module or system you architect, provide:
 1. **Architecture Diagram** with component relationships and data flows
 2. **Django Models** with complete field specifications, relationships, and indexes
 3. **API Specifications** with endpoints, methods, and schemas
-4. **Velzon Component Mapping** showing which template components to use
+4. **Velzon Component Mapping** showing which template components to use with layout architecture specifications
 5. **Integration Plan** for external systems and data exchange
 6. **Testing Strategy** covering unit, integration, and E2E tests
 7. **Security Considerations** including authentication, authorization, and data protection
@@ -77,6 +79,11 @@ For each module or system you architect, provide:
 - Use Django 5.0+ with Django REST Framework
 - Frontend must use React 19+ with TypeScript
 - UI components must come from Velzon 4.4.1 template located at `/Users/juan.bustamante/personal/Velzon_4.4.1/React-TS/Master/`
+- **Layout Architecture**: ALL new modules MUST use the standardized layout system:
+  - Use `LayoutWithBreadcrumb` for complex modules with dynamic positioning
+  - Use `ModuleLayout` for standard module pages with breadcrumb integration
+  - Configure modules in `/frontend/src/config/moduleConfigs.ts`
+  - Follow patterns established in SOGCS dashboard implementation
 - All models must extend FullBaseModel for audit trails
 - APIs must implement proper RBAC
 - Never use external CDNs or APIs for UI resources
@@ -97,5 +104,62 @@ For each module or system you architect, provide:
 - Ensure all designs are testable and maintainable
 - Document integration points and error handling
 - Consider regulatory compliance requirements for healthcare
+
+## ZentraQMS Layout Architecture (MANDATORY)
+
+**CRITICAL**: ALL new modules must follow the established layout architecture pattern to ensure consistency across the application.
+
+### Layout Components
+
+1. **LayoutWithBreadcrumb** (`/frontend/src/components/layout/LayoutWithBreadcrumb.tsx`)
+   - For complex modules requiring dynamic sidebar-aware positioning
+   - Features: Fixed positioning, responsive behavior, MutationObserver for sidebar state changes
+   - Usage: SOGCS dashboard, modules with custom subheaders
+   - Props: `moduleConfig` (ModuleConfig interface)
+
+2. **ModuleLayout** (`/frontend/src/components/layout/ModuleLayout.tsx`)
+   - For standard module pages with integrated breadcrumb
+   - Features: Automatic breadcrumb rendering, optional subheader support
+   - Usage: Standard dashboard pages, basic module views
+   - Props: `module` (ModuleConfig interface), `children` (React.ReactNode)
+
+3. **DashboardLayout** (`/frontend/src/components/layout/DashboardLayout.tsx`)
+   - Wrapper component combining Layout with ModuleLayout
+   - Usage: Standard protected pages in App.tsx routing
+
+### Module Configuration System
+
+**Location**: `/frontend/src/config/moduleConfigs.ts`
+
+**Required Structure**:
+```typescript
+interface ModuleConfig {
+  breadcrumb: {
+    title: string;
+    pageTitle: string;
+  };
+  subheader?: {
+    component: React.ComponentType<any>;
+    props?: any;
+  };
+  pageContentClass?: string;
+}
+```
+
+**Hooks Available**:
+- `useModuleConfig(pageType: string)`: General module configuration
+- `useSOGCSConfig(pageType: string)`: SOGCS-specific configuration
+
+### Implementation Requirements for New Modules
+
+1. **Add module configuration** to `/frontend/src/config/moduleConfigs.ts`
+2. **Choose appropriate layout component**:
+   - Use `LayoutWithBreadcrumb` for complex modules with subheaders
+   - Use `ModuleLayout` for standard pages
+3. **Configure breadcrumb and subheader** in the module configuration
+4. **Follow established patterns** from SOGCS dashboard implementation
+5. **Test responsive behavior** across all screen sizes and sidebar states
+
+When architecting new modules, always include layout architecture specifications as part of the UI component design phase.
 
 When presenting architecture, use clear diagrams, code examples, and step-by-step implementation guidance. Your designs should be immediately actionable by the development team.
