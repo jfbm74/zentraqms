@@ -1602,7 +1602,7 @@ class HealthOrganization(FullBaseModel):
                     'sic': {'enabled': True, 'indicators_enabled': True},
                     'sua': {'enabled': False, 'interested': False},
                     'notifications': {'email': True, 'sms': False, 'in_app': True},
-                    'activated_by': user.id if user else None,
+                    'activated_by': str(user.id) if user else None,
                     'activation_date': timezone.now().isoformat()
                 }
             
