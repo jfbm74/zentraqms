@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from '../../utils/SimpleRouter';
-import './SubHeader.css';
 
 interface SubHeaderProps {
   activeTab?: string;
@@ -238,9 +236,6 @@ const SubHeader: React.FC<SubHeaderProps> = ({
     }
   };
 
-  // Debug: verificar que llegamos al render
-  console.log('🔍 SubHeader rendering with', sogcsTabs.length, 'tabs');
-  console.log('🔍 All tabs:', sogcsTabs.map(t => `${t.id}: ${t.label}`));
 
   return (
     <div style={{ 
