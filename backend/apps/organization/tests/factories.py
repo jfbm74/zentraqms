@@ -8,9 +8,13 @@ and supports comprehensive testing of all organization types.
 import factory
 import random
 from factory import fuzzy
+from faker import Faker
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import date, timedelta
+
+# Create a global faker instance
+fake = Faker('es_ES')
 
 from apps.organization.models import (
     Organization, HealthOrganization, HeadquarterLocation, 
@@ -282,7 +286,7 @@ class ManufacturingOrganizationFactory(OrganizationFactory):
             'Industrias', 'Manufacturas', 'Fábrica', 'Textiles',
             'Alimentos', 'Farmacéutica', 'Automotriz'
         ]
-        return f"{random.choice(manufacturing_types)} {factory.Faker('company', locale='es_ES').generate()}"
+        return f"{random.choice(manufacturing_types)} {fake.company()}"
 
 
 class FoodManufacturingFactory(ManufacturingOrganizationFactory):
@@ -290,7 +294,7 @@ class FoodManufacturingFactory(ManufacturingOrganizationFactory):
     
     @factory.lazy_attribute
     def razon_social(self):
-        return f"Alimentos {factory.Faker('company', locale='es_ES').generate()}"
+        return f"Alimentos {fake.company()}"
     
     @factory.lazy_attribute
     def descripcion(self):
@@ -302,7 +306,7 @@ class PharmaManufacturingFactory(ManufacturingOrganizationFactory):
     
     @factory.lazy_attribute
     def razon_social(self):
-        return f"Laboratorios {factory.Faker('company', locale='es_ES').generate()}"
+        return f"Laboratorios {fake.company()}"
     
     @factory.lazy_attribute
     def descripcion(self):
@@ -324,7 +328,7 @@ class ServicesOrganizationFactory(OrganizationFactory):
             'Consultoría', 'Servicios', 'Soluciones', 'Grupo',
             'Corporación', 'Asociados'
         ]
-        return f"{random.choice(service_types)} {factory.Faker('company', locale='es_ES').generate()}"
+        return f"{random.choice(service_types)} {fake.company()}"
 
 
 class ITServicesFactory(ServicesOrganizationFactory):
@@ -332,7 +336,7 @@ class ITServicesFactory(ServicesOrganizationFactory):
     
     @factory.lazy_attribute
     def razon_social(self):
-        return f"Tecnologías {factory.Faker('company', locale='es_ES').generate()}"
+        return f"Tecnologías {fake.company()}"
     
     @factory.lazy_attribute
     def descripcion(self):
@@ -344,7 +348,7 @@ class ConsultingServicesFactory(ServicesOrganizationFactory):
     
     @factory.lazy_attribute
     def razon_social(self):
-        return f"Consultoría {factory.Faker('company', locale='es_ES').generate()}"
+        return f"Consultoría {fake.company()}"
     
     @factory.lazy_attribute
     def descripcion(self):
@@ -366,7 +370,7 @@ class EducationOrganizationFactory(OrganizationFactory):
             'Universidad', 'Instituto', 'Colegio', 'Fundación Educativa',
             'Centro de Estudios', 'Academia'
         ]
-        return f"{random.choice(education_types)} {factory.Faker('last_name', locale='es_ES').generate()}"
+        return f"{random.choice(education_types)} {fake.last_name()}"
 
 
 class UniversityFactory(EducationOrganizationFactory):
@@ -381,7 +385,7 @@ class UniversityFactory(EducationOrganizationFactory):
             'Universidad', 'Universidad Nacional', 'Universidad Católica',
             'Universidad Pontificia', 'Fundación Universitaria'
         ]
-        return f"{random.choice(university_types)} {factory.Faker('last_name', locale='es_ES').generate()}"
+        return f"{random.choice(university_types)} {fake.last_name()}"
 
 
 class SchoolFactory(EducationOrganizationFactory):
@@ -392,7 +396,7 @@ class SchoolFactory(EducationOrganizationFactory):
     
     @factory.lazy_attribute
     def razon_social(self):
-        return f"Colegio {factory.Faker('last_name', locale='es_ES').generate()}"
+        return f"Colegio {fake.last_name()}"
 
 
 # Utility functions for creating test scenarios
@@ -532,7 +536,15 @@ class HeadquarterLocationFactory(factory.django.DjangoModelFactory):
     
     @factory.lazy_attribute
     def municipality_name(self):
-        return factory.Faker('city', locale='es_ES').generate()
+        municipalities = {
+            '05': ['Medellín', 'Bello', 'Itagüí', 'Envigado'],
+            '08': ['Barranquilla', 'Soledad', 'Malambo', 'Galapa'],
+            '11': ['Bogotá D.C.'],
+            '13': ['Cartagena', 'Magangué', 'Turbaco'],
+            '76': ['Cali', 'Palmira', 'Buenaventura', 'Tulúa']
+        }
+        dept_municipalities = municipalities.get(self.department_code, ['Ciudad Test'])
+        return random.choice(dept_municipalities)
     
     # Address and location
     address = factory.Faker('address', locale='es_ES')
