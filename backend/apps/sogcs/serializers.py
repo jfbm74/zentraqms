@@ -10,7 +10,7 @@ Handles serialization/deserialization for:
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from apps.organization.models import HealthOrganization
-from .models import HeadquarterLocation, EnabledHealthService
+from apps.organization.models import HeadquarterLocation, EnabledHealthService
 
 User = get_user_model()
 

@@ -25,7 +25,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 
 from apps.organization.models import HealthOrganization
 from apps.authorization.drf_permissions import HasPermission
-from .models import HeadquarterLocation, EnabledHealthService
+from apps.organization.models import HeadquarterLocation, EnabledHealthService
 from .serializers import (
     HeadquarterLocationSerializer,
     HeadquarterLocationSummarySerializer,

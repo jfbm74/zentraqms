@@ -5,7 +5,11 @@ Django Admin configuration for Organization module.
 from django.contrib import admin
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
-from .models import Organization, Location, SectorTemplate, AuditLog, SedePrestadora, SedeServicio, HealthOrganization, HealthService
+from .models import (
+    Organization, Location, SectorTemplate, AuditLog, SedePrestadora, SedeServicio, 
+    HealthOrganization, HealthService, HeadquarterLocation, EnabledHealthService, 
+    ServiceHabilitationProcess
+)
 
 
 @admin.register(Organization)
@@ -349,7 +353,8 @@ class SectorTemplateAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-@admin.register(SedePrestadora)
+# Commented out - Replaced by HeadquarterLocation (SOGCS implementation)
+# @admin.register(SedePrestadora)
 class SedePrestadoraAdmin(admin.ModelAdmin):
     """
     Admin interface for SedePrestadora model.
@@ -667,6 +672,188 @@ class HealthServiceAdmin(admin.ModelAdmin):
         "updated_at",
         "created_by",
         "updated_by", 
+    ]
+
+    def save_model(self, request, obj, form, change):
+        """Override save to set audit fields."""
+        if not change:  # Creating new object
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+# ============================================================================
+# SOGCS ADMIN CONFIGURATIONS
+# ============================================================================
+
+@admin.register(HeadquarterLocation)
+class HeadquarterLocationAdmin(admin.ModelAdmin):
+    """
+    Admin interface for HeadquarterLocation model (SOGCS).
+    """
+
+    list_display = [
+        "name",
+        "organization",
+        "sede_type",
+        "municipality_name",
+        "department_name",
+        "habilitation_status",
+        "operational_status",
+        "is_main_headquarters",
+        "is_active",
+        "created_at",
+    ]
+
+    list_filter = [
+        "sede_type",
+        "habilitation_status",
+        "operational_status",
+        "is_main_headquarters",
+        "department_name",
+        "is_active",
+        "created_at",
+        "habilitation_date",
+        "next_renewal_date",
+    ]
+
+    search_fields = [
+        "name",
+        "reps_code",
+        "organization__organization__razon_social",
+        "municipality_name",
+        "department_name",
+        "address",
+        "phone_primary",
+        "email",
+    ]
+
+    readonly_fields = [
+        "id",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by",
+        "last_reps_sync",
+        "sync_status",
+    ]
+
+    def save_model(self, request, obj, form, change):
+        """Override save to set audit fields."""
+        if not change:  # Creating new object
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(EnabledHealthService)
+class EnabledHealthServiceAdmin(admin.ModelAdmin):
+    """
+    Admin interface for EnabledHealthService model (SOGCS).
+    """
+
+    list_display = [
+        "service_name",
+        "headquarters", 
+        "service_code",
+        "complexity_level",
+        "habilitation_status",
+        "habilitation_expiry",
+        "is_active",
+        "created_at",
+    ]
+
+    list_filter = [
+        "service_group",
+        "complexity_level",
+        "habilitation_status",
+        "intramural",
+        "extramural",
+        "domiciliary",
+        "telemedicine",
+        "reference_center",
+        "is_active",
+        "created_at",
+        "habilitation_date",
+        "habilitation_expiry",
+    ]
+
+    search_fields = [
+        "service_name",
+        "service_code",
+        "cups_code", 
+        "distinctive_code",
+        "headquarters__name",
+        "headquarters__organization__organization__razon_social",
+    ]
+
+    readonly_fields = [
+        "id",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by",
+        "monthly_production",
+    ]
+
+    def save_model(self, request, obj, form, change):
+        """Override save to set audit fields."""
+        if not change:  # Creating new object
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(ServiceHabilitationProcess)
+class ServiceHabilitationProcessAdmin(admin.ModelAdmin):
+    """
+    Admin interface for ServiceHabilitationProcess model (SOGCS).
+    """
+
+    list_display = [
+        "service_name",
+        "headquarters",
+        "process_type",
+        "current_status",
+        "current_phase",
+        "submission_date",
+        "compliance_deadline",
+        "is_active",
+        "created_at",
+    ]
+
+    list_filter = [
+        "process_type",
+        "current_status", 
+        "current_phase",
+        "health_secretary",
+        "resolution_result",
+        "is_active",
+        "created_at",
+        "submission_date",
+        "verification_scheduled",
+        "verification_completed",
+        "resolution_date",
+        "compliance_deadline",
+    ]
+
+    search_fields = [
+        "service_name",
+        "service_code",
+        "headquarters__name",
+        "submission_number",
+        "resolution_number",
+        "assigned_inspector",
+        "health_secretary",
+    ]
+
+    readonly_fields = [
+        "id",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by",
+        "process_duration_days",
     ]
 
     def save_model(self, request, obj, form, change):

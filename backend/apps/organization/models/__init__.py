@@ -31,6 +31,13 @@ from .suh_sync import (
     SUHSyncSchedule,
 )
 
+# SOGCS SEDES models
+from .sogcs_sedes import (
+    HeadquarterLocation,
+    EnabledHealthService,
+    ServiceHabilitationProcess,
+)
+
 # Export all models and functions for backward compatibility
 __all__ = [
     # Base models
@@ -54,4 +61,9 @@ __all__ = [
     'SUHDataMapping',
     'SUHDiscrepancy',
     'SUHSyncSchedule',
+    
+    # SOGCS SEDES models
+    'HeadquarterLocation',
+    'EnabledHealthService',
+    'ServiceHabilitationProcess',
 ]

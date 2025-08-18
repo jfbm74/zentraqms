@@ -6,14 +6,18 @@ providing REST API endpoints for organization management.
 """
 
 import logging
-from rest_framework import viewsets, status, permissions, serializers
+import json
+from datetime import timedelta
+from rest_framework import viewsets, status, permissions, serializers, filters
 
 logger = logging.getLogger(__name__)
 from rest_framework.decorators import action
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ValidationError as DjangoValidationError
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
+from django_filters.rest_framework import DjangoFilterBackend
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.db import transaction
@@ -26,7 +30,10 @@ from apps.authorization.drf_permissions import (
     CanUpdateOrganization,
     CanDeleteOrganization,
 )
-from .models import Organization, Location, SectorTemplate, AuditLog, HealthOrganization, HealthService, SedePrestadora, SedeServicio
+from .models import (
+    Organization, Location, SectorTemplate, AuditLog, HealthOrganization, HealthService, 
+    SedePrestadora, SedeServicio, HeadquarterLocation, EnabledHealthService, ServiceHabilitationProcess
+)
 from .signals import set_audit_context
 from .serializers import (
     OrganizationSerializer,
@@ -1854,4 +1861,83 @@ class DivipolaViewSet(viewsets.ViewSet):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+# ============================================================================
+# SOGCS VIEWS SECTION
+# ============================================================================
+
+class HeadquarterLocationViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing healthcare facility headquarters."""
+    
+    queryset = HeadquarterLocation.objects.all()
+    permission_classes = [IsAuthenticated, CanViewOrganization]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    
+    def get_serializer_class(self):
+        """Return basic serializer."""
+        from rest_framework import serializers
+        
+        class BasicHeadquarterLocationSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = HeadquarterLocation
+                fields = '__all__'
+        
+        return BasicHeadquarterLocationSerializer
+    
+    def get_queryset(self):
+        """Filter queryset."""
+        queryset = super().get_queryset()
+        queryset = queryset.filter(deleted_at__isnull=True)
+        return queryset
+
+
+class EnabledHealthServiceViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing enabled health services."""
+    
+    queryset = EnabledHealthService.objects.all()
+    permission_classes = [IsAuthenticated, CanViewOrganization]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    
+    def get_serializer_class(self):
+        """Return basic serializer."""
+        from rest_framework import serializers
+        
+        class BasicEnabledHealthServiceSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = EnabledHealthService
+                fields = '__all__'
+        
+        return BasicEnabledHealthServiceSerializer
+    
+    def get_queryset(self):
+        """Filter queryset."""
+        queryset = super().get_queryset()
+        queryset = queryset.filter(deleted_at__isnull=True)
+        return queryset
+
+
+class ServiceHabilitationProcessViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing service habilitation processes."""
+    
+    queryset = ServiceHabilitationProcess.objects.all()
+    permission_classes = [IsAuthenticated, CanViewOrganization]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    
+    def get_serializer_class(self):
+        """Return basic serializer."""
+        from rest_framework import serializers
+        
+        class BasicServiceHabilitationProcessSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = ServiceHabilitationProcess
+                fields = '__all__'
+        
+        return BasicServiceHabilitationProcessSerializer
+    
+    def get_queryset(self):
+        """Filter queryset."""
+        queryset = super().get_queryset()
+        queryset = queryset.filter(deleted_at__isnull=True)
+        return queryset
 

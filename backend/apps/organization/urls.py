@@ -13,7 +13,11 @@ from .views import (
     HealthViewSet,
     SedeViewSet,
     OrganizationWizardViewSet,
-    DivipolaViewSet
+    DivipolaViewSet,
+    # SOGCS views
+    HeadquarterLocationViewSet,
+    EnabledHealthServiceViewSet,
+    ServiceHabilitationProcessViewSet
 )
 
 # Create a router and register viewsets
@@ -26,6 +30,11 @@ router.register(r"sedes", SedeViewSet, basename="sede")
 # Simplified wizard endpoints
 router.register(r"wizard", OrganizationWizardViewSet, basename="organization-wizard")
 router.register(r"divipola", DivipolaViewSet, basename="divipola")
+
+# SOGCS Sedes endpoints
+router.register(r"headquarters", HeadquarterLocationViewSet, basename="headquarters")
+router.register(r"enabled-services", EnabledHealthServiceViewSet, basename="enabled-services")
+router.register(r"habilitation-processes", ServiceHabilitationProcessViewSet, basename="habilitation-processes")
 
 app_name = "organization"
 
