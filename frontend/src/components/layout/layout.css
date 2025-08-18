@@ -24,7 +24,7 @@
   /* Layout Variables */
   --vz-vertical-menu-width: 250px;
   --vz-vertical-menu-width-md: 180px;
-  --vz-vertical-menu-width-sm: 70px;
+  --vz-vertical-menu-width-sm: 100px;
   --vz-header-height: 70px;
   --vz-footer-height: 60px;
   
@@ -704,7 +704,7 @@ body {
 
 .sidebar-collapsed .navbar-brand-box {
   text-align: center;
-  padding: 0 0.5rem;
+  padding: 0 1rem;
 }
 
 .sidebar-collapsed .logo-lg {
@@ -720,8 +720,20 @@ body {
 }
 
 .sidebar-collapsed .sidebar-user .btn {
-  padding: 0.5rem;
+  padding: 0.75rem;
   justify-content: center;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-collapsed .sidebar-user {
+  margin: 0.75rem 0.75rem;
+  text-align: center;
+}
+
+.sidebar-collapsed .sidebar-user .header-profile-user {
+  margin: 0 auto;
 }
 
 .sidebar-collapsed .navbar-nav .nav-link span {
@@ -730,13 +742,21 @@ body {
 
 .sidebar-collapsed .navbar-nav .nav-link {
   justify-content: center;
-  padding: 0.625rem;
-  margin: 0 0.5rem;
+  align-items: center;
+  padding: 0.75rem;
+  margin: 0 0.75rem;
+  border-radius: 0.375rem;
+  display: flex !important;
+  text-align: center;
 }
 
 .sidebar-collapsed .navbar-nav .nav-link i {
-  margin-right: 0;
+  margin-right: 0 !important;
+  margin-left: 0 !important;
   font-size: 1.25rem;
+  display: block;
+  width: auto;
+  text-align: center;
 }
 
 .sidebar-collapsed .menu-title {
@@ -746,6 +766,13 @@ body {
 
 .sidebar-collapsed .menu-title span {
   display: none;
+}
+
+/* Asegurar que los nav-items estén centrados en estado colapsado */
+.sidebar-collapsed .navbar-nav .nav-item {
+  display: block;
+  text-align: center;
+  width: 100%;
 }
 
 .sidebar-collapsed .menu-title:not(:first-child)::before {
