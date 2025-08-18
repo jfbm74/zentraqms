@@ -424,8 +424,8 @@
 
 /* SOGCS Page Content Optimization */
 .sogcs-page-content {
-  padding-top: 0 !important;
-  margin-top: -16px !important;
+  padding-top: 1rem !important;
+  margin-top: 0 !important;
 }
 
 .sogcs-page-content .container-fluid {

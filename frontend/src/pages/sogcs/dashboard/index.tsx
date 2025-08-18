@@ -19,7 +19,7 @@ const DashboardSOGCS = () => {
     return (
         <LayoutWithBreadcrumb moduleConfig={moduleConfig}>
             {/* Métricas principales */}
-            <div className="row">
+            <div className="row mt-4">
                 <MetricasSOGCS />
             </div>
             
