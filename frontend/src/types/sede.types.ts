@@ -123,21 +123,21 @@ export interface SedePrestadora {
 
 /**
  * Simplified interface for sede list views
+ * Matches the API response from HeadquarterLocationSerializer
  */
 export interface SedeListItem {
   id: string;
-  numero_sede: string;
-  nombre_sede: string;
-  tipo_sede: TipoSede;
-  es_sede_principal: boolean;
-  direccion_completa: string;
-  departamento: string;
-  municipio: string;
-  telefono_principal: string;
+  reps_code: string;              // API returns reps_code instead of numero_sede
+  name: string;                   // API returns name instead of nombre_sede
+  sede_type: string;              // API returns sede_type
+  habilitation_status: string;    // API returns habilitation_status instead of estado
+  department_name: string;        // API returns department_name instead of departamento
+  municipality_name: string;      // API returns municipality_name instead of municipio
+  address: string;                // API returns address instead of direccion_completa
+  phone_primary: string;          // API returns phone_primary instead of telefono_principal
   email: string;
-  estado: EstadoSede;
-  total_servicios: number;
-  atencion_24_horas: boolean;
+  services_count: number;         // API returns services_count instead of total_servicios
+  is_active: boolean;             // API returns is_active
   organization_name: string;
   created_at: string;
 }

@@ -95,12 +95,12 @@ const SedesPage = () => {
     if (!sedes) return [];
     
     switch (activeTab) {
-      case "2": // Activas
-        return sedes.filter(sede => sede.estado === 'activa');
-      case "3": // Inactivas
-        return sedes.filter(sede => sede.estado === 'inactiva');
+      case "2": // Habilitadas
+        return sedes.filter(sede => sede.habilitation_status === 'habilitada');
+      case "3": // Suspendidas
+        return sedes.filter(sede => sede.habilitation_status === 'suspendida');
       case "4": // En proceso
-        return sedes.filter(sede => sede.estado === 'en_proceso');
+        return sedes.filter(sede => sede.habilitation_status === 'en_proceso');
       default: // Todas las sedes
         return sedes;
     }
@@ -281,16 +281,16 @@ const SedesPage = () => {
       },
       {
         header: "Número",
-        accessorKey: "numero_sede",
+        accessorKey: "reps_code",
         cell: (value: any) => <span className="fw-medium text-primary">{value}</span>,
       },
       {
         header: "Nombre de la Sede",
-        accessorKey: "nombre_sede",
+        accessorKey: "name",
         cell: (value: any, row: SedeListItem) => (
           <div>
             <span className="fw-medium">{value}</span>
-            {row.es_sede_principal && (
+            {row.sede_type === 'principal' && (
               <span className="badge bg-success-subtle text-success ms-2 small">Principal</span>
             )}
           </div>
@@ -298,17 +298,17 @@ const SedesPage = () => {
       },
       {
         header: "Ubicación", 
-        accessorKey: "direccion_completa",
+        accessorKey: "address",
         cell: (value: any, row: SedeListItem) => (
           <div>
-            <div className="fw-medium">{row.municipio}</div>
-            <small className="text-muted">{row.departamento}</small>
+            <div className="fw-medium">{row.municipality_name}</div>
+            <small className="text-muted">{row.department_name}</small>
           </div>
         ),
       },
       {
         header: "Contacto",
-        accessorKey: "telefono_principal",
+        accessorKey: "phone_primary",
         cell: (value: any, row: SedeListItem) => (
           <div>
             <div className="small">{value}</div>
@@ -318,7 +318,7 @@ const SedesPage = () => {
       },
       {
         header: "Servicios",
-        accessorKey: "total_servicios",
+        accessorKey: "services_count",
         cell: (value: any) => (
           <span className="badge bg-primary-subtle text-primary">
             {value || 0}
@@ -327,18 +327,20 @@ const SedesPage = () => {
       },
       {
         header: 'Estado',
-        accessorKey: 'estado',
+        accessorKey: 'habilitation_status',
         cell: (value: any, row: SedeListItem) => {
           const getEstadoBadge = (estado: string) => {
             switch (estado?.toLowerCase()) {
-              case "activa":
+              case "habilitada":
                 return "bg-success-subtle text-success";
-              case "inactiva":
-                return "bg-danger-subtle text-danger";
               case "en_proceso":
                 return "bg-warning-subtle text-warning";
               case "suspendida":
+                return "bg-danger-subtle text-danger";
+              case "cancelada":
                 return "bg-secondary-subtle text-secondary";
+              case "vencida":
+                return "bg-danger-subtle text-danger";
               default:
                 return "bg-light text-dark";
             }
@@ -346,14 +348,16 @@ const SedesPage = () => {
           
           const displayEstado = (estado: string) => {
             switch (estado?.toLowerCase()) {
-              case "activa":
-                return "Activa";
-              case "inactiva":
-                return "Inactiva";
+              case "habilitada":
+                return "Habilitada";
               case "en_proceso":
                 return "En Proceso";
               case "suspendida":
                 return "Suspendida";
+              case "cancelada":
+                return "Cancelada";
+              case "vencida":
+                return "Vencida";
               default:
                 return estado || "N/A";
             }
@@ -364,9 +368,9 @@ const SedesPage = () => {
               <span className={`badge ${getEstadoBadge(value)}`}>
                 {displayEstado(value)}
               </span>
-              {row.atencion_24_horas && (
+              {row.is_active && (
                 <div className="mt-1">
-                  <span className="badge bg-info-subtle text-info small">24h</span>
+                  <span className="badge bg-info-subtle text-info small">Activa</span>
                 </div>
               )}
             </div>
@@ -577,9 +581,9 @@ const SedesPage = () => {
                       role="tab"
                     >
                       <i className="ri-checkbox-circle-line me-1 align-bottom"></i>
-                      Activas
+                      Habilitadas
                       <span className="badge bg-success ms-2">
-                        {sedes?.filter(s => s.estado === 'activa').length || 0}
+                        {sedes?.filter(s => s.habilitation_status === 'habilitada').length || 0}
                       </span>
                     </a>
                   </li>
@@ -591,9 +595,9 @@ const SedesPage = () => {
                       role="tab"
                     >
                       <i className="ri-close-circle-line me-1 align-bottom"></i>
-                      Inactivas
+                      Suspendidas
                       <span className="badge bg-danger ms-2">
-                        {sedes?.filter(s => s.estado === 'inactiva').length || 0}
+                        {sedes?.filter(s => s.habilitation_status === 'suspendida').length || 0}
                       </span>
                     </a>
                   </li>
@@ -607,7 +611,7 @@ const SedesPage = () => {
                       <i className="ri-time-line me-1 align-bottom"></i>
                       En Proceso
                       <span className="badge bg-warning ms-2">
-                        {sedes?.filter(s => s.estado === 'en_proceso').length || 0}
+                        {sedes?.filter(s => s.habilitation_status === 'en_proceso').length || 0}
                       </span>
                     </a>
                   </li>

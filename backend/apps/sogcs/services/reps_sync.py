@@ -324,10 +324,10 @@ class REPSSynchronizationService:
                 'departamento': ['departamento', 'DEPARTAMENTO', 'Departamento'],
                 'municipio': ['municipio', 'MUNICIPIO', 'Municipio'], 
                 'codigo_prestador': ['codigo_prestador', 'CODIGO_PRESTADOR', 'codigo prestador', 'Código Prestador'],
-                'nombre_prestador': ['nombre_prestador', 'NOMBRE_PRESTADOR', 'nombre prestador', 'Nombre Prestador', 'nombre'],
+                'nombre_prestador': ['nombre_prestador', 'NOMBRE_PRESTADOR', 'nombre prestador', 'Nombre Prestador'],
                 'codigo_habilitacion': ['codigo_habilitacion', 'CODIGO_HABILITACION', 'codigo habilitacion', 'Código Habilitación'],
                 'numero_sede': ['numero_sede', 'NUMERO_SEDE', 'numero sede', 'Número Sede'],
-                'nombre_sede': ['nombre_sede', 'NOMBRE_SEDE', 'nombre sede', 'Nombre Sede', 'nombre'],
+                'nombre_sede': ['nombre_sede', 'NOMBRE_SEDE', 'nombre sede', 'Nombre Sede', 'nombre'],  # Include 'nombre' for REPS HTML
                 'direccion': ['direccion', 'DIRECCION', 'Dirección'],
                 'telefono': ['telefono', 'TELEFONO', 'Teléfono'],
                 'email': ['email', 'EMAIL', 'correo', 'Correo'],
@@ -430,7 +430,7 @@ class REPSSynchronizationService:
             'â€œ': '"', 'â€': '"', 'â€™': "'", 'â€˜': "'",
             'â€"': '–', 'â€"': '—',
             'Â': '', # Often appears as unwanted character
-            '�': '', # Replacement character - remove it
+            '�': 'Á',  # Common replacement for Á in REPS data - try this instead of removing
         }
         
         # Apply fixes
