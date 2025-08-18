@@ -52,7 +52,7 @@ const LayoutWithBreadcrumb: React.FC<LayoutWithBreadcrumbProps> = ({
   const getContentHeight = () => {
     const baseHeight = 70; // Header height
     const breadcrumbHeight = 50; // Estimated breadcrumb height
-    const subheaderHeight = moduleConfig.subheader ? 60 : 0; // Estimated subheader height
+    const subheaderHeight = moduleConfig.subheader ? 80 : 0; // Increased subheader height
     return baseHeight + breadcrumbHeight + subheaderHeight;
   };
 
