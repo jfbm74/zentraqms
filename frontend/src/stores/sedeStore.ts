@@ -168,7 +168,7 @@ export const useSedeStore = create<SedeStore>()(
             throw new Error('Organization ID not found');
           }
 
-          const updatedSede = await sedeService.updateSede(organizationId, sedeId, data);
+          const updatedSede = await sedeService.updateSede(sedeId, data);
           
           set((state) => {
             // Update in the list
@@ -228,7 +228,7 @@ export const useSedeStore = create<SedeStore>()(
             throw new Error('Organization ID not found');
           }
 
-          await sedeService.deleteSede(organizationId, sedeId);
+          await sedeService.deleteSede(sedeId);
           
           set((state) => {
             // Remove from the list
@@ -262,7 +262,7 @@ export const useSedeStore = create<SedeStore>()(
         });
 
         try {
-          const response = await sedeService.bulkCreateSedes(organizationId, sedes);
+          const response = await sedeService.bulkCreateSedes(sedes);
           
           if (response.success && response.sedes) {
             set((state) => {
@@ -302,7 +302,7 @@ export const useSedeStore = create<SedeStore>()(
             throw new Error('Organization ID not found');
           }
 
-          const response = await sedeService.bulkUpdateSedes(organizationId, updates);
+          const response = await sedeService.bulkUpdateSedes(updates);
           
           if (response.success && response.sedes) {
             set((state) => {
@@ -346,7 +346,7 @@ export const useSedeStore = create<SedeStore>()(
             throw new Error('Organization ID not found');
           }
 
-          const response = await sedeService.bulkDeleteSedes(organizationId, sedeIds);
+          const response = await sedeService.bulkDeleteSedes(sedeIds);
           
           if (response.success) {
             set((state) => {

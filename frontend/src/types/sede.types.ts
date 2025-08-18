@@ -253,10 +253,7 @@ export interface SedeApiError {
  */
 export interface SedeImportConfig {
   file: File;
-  format: 'csv' | 'excel';
-  mapping?: Record<string, string>;
-  validate_only: boolean;
-  overwrite_existing: boolean;
+  create_backup?: boolean; // Optional, defaults to true
 }
 
 /**

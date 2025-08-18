@@ -1,80 +1,53 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import classnames from 'classnames';
 import { useSOGCSConfig } from '../../../../hooks/useModuleConfig';
+import { useCurrentOrganization } from '../../../../hooks/useCurrentOrganization';
 import LayoutWithBreadcrumb from '../../../../components/layout/LayoutWithBreadcrumb';
 import SimpleTable from '../../../../components/common/SimpleTable';
 import DeleteModal from '../../../../components/common/DeleteModal';
-import { isEmpty } from 'lodash';
+import SedeFormModal from '../../../../components/forms/SedeFormModal';
+import SedesImporter from '../../../../components/importers/SedesImporter';
+import { useSedeStore } from '../../../../stores/sedeStore';
+import type { SedeListItem, SedeFormData } from '../../../../types/sede.types';
+import { toast } from 'react-toastify';
 
-// React Hook Form - Compatible with React 19
-import { useForm, SubmitHandler } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-
-// Schema de validación para sedes
-const sedeSchema = z.object({
-  codigo: z.string().min(1, "Ingrese el código de la sede"),
-  nombre: z.string().min(1, "Ingrese el nombre de la sede"),
-  direccion: z.string().min(1, "Ingrese la dirección"),
-  ciudad: z.string().min(1, "Ingrese la ciudad"),
-  departamento: z.string().min(1, "Seleccione el departamento"),
-  telefono: z.string().min(1, "Ingrese el teléfono"),
-  estado: z.string().min(1, "Seleccione el estado")
-});
-
-type SedeFormData = z.infer<typeof sedeSchema>;
-
-// Mock data - En producción esto vendría del backend
-const mockSedes = [
-  {
-    id: '1',
-    codigo: 'SDE001',
-    nombre: 'Sede Principal - Bogotá',
-    direccion: 'Calle 100 #15-30',
-    ciudad: 'Bogotá',
-    departamento: 'Cundinamarca',
-    telefono: '+57 1 234-5678',
-    estado: 'Activa',
-    fechaHabilitacion: '2024-01-15',
-    serviciosHabilitados: 15
-  },
-  {
-    id: '2', 
-    codigo: 'SDE002',
-    nombre: 'Sede Norte - Medellín',
-    direccion: 'Carrera 70 #25-80',
-    ciudad: 'Medellín',
-    departamento: 'Antioquia',
-    telefono: '+57 4 567-8901',
-    estado: 'Activa',
-    fechaHabilitacion: '2024-02-20',
-    serviciosHabilitados: 8
-  },
-  {
-    id: '3',
-    codigo: 'SDE003',
-    nombre: 'Sede Centro - Cali',
-    direccion: 'Avenida 6N #28-45',
-    ciudad: 'Cali',
-    departamento: 'Valle del Cauca',
-    telefono: '+57 2 345-6789',
-    estado: 'Inactiva',
-    fechaHabilitacion: '2024-03-10',
-    serviciosHabilitados: 12
-  }
-];
+// Component state interface
+interface SedesPageState {
+  showCreateModal: boolean;
+  showImportModal: boolean;
+  selectedSede: SedeListItem | null;
+  isEditMode: boolean;
+}
 
 const SedesPage = () => {
   document.title = "Sedes - SOGCS | ZentraQMS";
   
-  const [modal, setModal] = useState<boolean>(false);
+  // Hooks
+  const { organization, isLoading: organizationLoading, error: organizationError, hasOrganization } = useCurrentOrganization();
+  const {
+    sedes,
+    loading,
+    error,
+    fetchSedes,
+    createSede,
+    updateSede,
+    deleteSede,
+    bulkDeleteSedes,
+    importSedes,
+    clearError,
+  } = useSedeStore();
+  
+  // State
   const [activeTab, setActiveTab] = useState("1");
-  const [sedesList, setSedesList] = useState<any[]>(mockSedes);
-  const [sede, setSede] = useState<any>(null);
-  const [isEdit, setIsEdit] = useState<boolean>(false);
+  const [state, setState] = useState<SedesPageState>({
+    showCreateModal: false,
+    showImportModal: false,
+    selectedSede: null,
+    isEditMode: false,
+  });
   const [deleteModal, setDeleteModal] = useState<boolean>(false);
   const [deleteModalMulti, setDeleteModalMulti] = useState<boolean>(false);
-  const [selectedCheckBoxDelete, setSelectedCheckBoxDelete] = useState<any>([]);
+  const [selectedCheckBoxDelete, setSelectedCheckBoxDelete] = useState<string[]>([]);
   const [isMultiDeleteButton, setIsMultiDeleteButton] = useState<boolean>(false);
 
   // Personalizar configuración del módulo para sedes
@@ -85,7 +58,7 @@ const SedesPage = () => {
     ...moduleConfig,
     breadcrumb: {
       title: 'SOGCS',
-      pageTitle: 'Sedes',
+      pageTitle: 'Gestión de Sedes',
       links: [
         {
           name: 'SOGCS',
@@ -102,236 +75,315 @@ const SedesPage = () => {
     }
   };
 
-  // Estados para filtros
-  const estadoOptions = [
-    { label: 'Todos', value: 'All' },
-    { label: 'Activa', value: 'Activa' },
-    { label: 'Inactiva', value: 'Inactiva' },
-    { label: 'En proceso', value: 'En proceso' }
-  ];
+  // Load sedes data on component mount
+  useEffect(() => {
+    if (organization?.id) {
+      fetchSedes();
+    }
+  }, [organization?.id, fetchSedes]);
 
-  const departamentoOptions = [
-    { label: 'Todos', value: 'All' },
-    { label: 'Cundinamarca', value: 'Cundinamarca' },
-    { label: 'Antioquia', value: 'Antioquia' },
-    { label: 'Valle del Cauca', value: 'Valle del Cauca' },
-    { label: 'Atlántico', value: 'Atlántico' }
-  ];
+  // Show error toast when there's an error
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      clearError();
+    }
+  }, [error, clearError]);
 
-  // Filtrado de tabs
-  const toggleTab = (tab: any, type: any) => {
+  // Computed filtered sedes based on active tab
+  const filteredSedes = useMemo(() => {
+    if (!sedes) return [];
+    
+    switch (activeTab) {
+      case "2": // Activas
+        return sedes.filter(sede => sede.estado === 'activa');
+      case "3": // Inactivas
+        return sedes.filter(sede => sede.estado === 'inactiva');
+      case "4": // En proceso
+        return sedes.filter(sede => sede.estado === 'en_proceso');
+      default: // Todas las sedes
+        return sedes;
+    }
+  }, [sedes, activeTab]);
+
+  // Tab toggle handler
+  const toggleTab = (tab: string) => {
     if (activeTab !== tab) {
       setActiveTab(tab);
-      let filteredSedes = mockSedes;
-      if (type !== "all") {
-        filteredSedes = mockSedes.filter((sede: any) => sede.estado === type);
+    }
+  };
+
+  // Modal handlers
+  const handleCreateSede = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      showCreateModal: true,
+      selectedSede: null,
+      isEditMode: false,
+    }));
+  }, []);
+
+  const handleEditSede = useCallback((sede: SedeListItem) => {
+    setState(prev => ({
+      ...prev,
+      showCreateModal: true,
+      selectedSede: sede,
+      isEditMode: true,
+    }));
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      showCreateModal: false,
+      selectedSede: null,
+      isEditMode: false,
+    }));
+  }, []);
+
+  const handleShowImport = useCallback(() => {
+    setState(prev => ({ ...prev, showImportModal: true }));
+  }, []);
+
+  const handleCloseImport = useCallback(() => {
+    setState(prev => ({ ...prev, showImportModal: false }));
+  }, []);
+
+  // Handle sede operations
+  const handleSaveSede = useCallback(async (formData: SedeFormData) => {
+    if (!hasOrganization) {
+      toast.error('No se pudo identificar la organización');
+      return;
+    }
+
+    try {
+      if (state.isEditMode && state.selectedSede) {
+        await updateSede(state.selectedSede.id, formData);
+        toast.success('Sede actualizada exitosamente');
+      } else {
+        await createSede(formData);
+        toast.success('Sede creada exitosamente');
       }
-      setSedesList(filteredSedes);
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error saving sede:', error);
+      toast.error(state.isEditMode ? 'Error al actualizar la sede' : 'Error al crear la sede');
     }
-  };
+  }, [hasOrganization, state.isEditMode, state.selectedSede, updateSede, createSede, handleCloseModal]);
 
-  // Modal toggle
-  const toggle = useCallback(() => {
-    if (modal) {
-      setModal(false);
-      setSede(null);
-    } else {
-      setModal(true);
-    }
-  }, [modal]);
-
-  // Handle edit sede
-  const handleSedeClick = useCallback((arg: any) => {
-    const sedeData = arg;
-    setSede({
-      id: sedeData.id,
-      codigo: sedeData.codigo,
-      nombre: sedeData.nombre,
-      direccion: sedeData.direccion,
-      ciudad: sedeData.ciudad,
-      departamento: sedeData.departamento,
-      telefono: sedeData.telefono,
-      estado: sedeData.estado,
-      fechaHabilitacion: sedeData.fechaHabilitacion
-    });
-
-    setIsEdit(true);
-    toggle();
-  }, [toggle]);
-
-  // Delete sede
-  const onClickDelete = (sede: any) => {
-    setSede(sede);
+  // Delete sede operations
+  const onClickDelete = useCallback((sede: SedeListItem) => {
+    setState(prev => ({ ...prev, selectedSede: sede }));
     setDeleteModal(true);
-  };
+  }, []);
 
-  const handleDeleteSede = () => {
-    if (sede) {
-      setSedesList(sedesList.filter(s => s.id !== sede.id));
+  const handleDeleteSede = useCallback(async () => {
+    if (!state.selectedSede) return;
+
+    try {
+      await deleteSede(state.selectedSede.id);
+      toast.success('Sede eliminada exitosamente');
       setDeleteModal(false);
+      setState(prev => ({ ...prev, selectedSede: null }));
+    } catch (error) {
+      console.error('Error deleting sede:', error);
+      toast.error('Error al eliminar la sede');
     }
-  };
+  }, [state.selectedSede, deleteSede]);
 
   // Checkbox operations
   const checkedAll = useCallback(() => {
-    const checkall: any = document.getElementById("checkBoxAll");
-    const ele = document.querySelectorAll(".sedeCheckBox");
-    if (checkall.checked) {
-      ele.forEach((ele: any) => {
-        ele.checked = true;
+    const checkall = document.getElementById("checkBoxAll") as HTMLInputElement;
+    const checkboxes = document.querySelectorAll(".sedeCheckBox") as NodeListOf<HTMLInputElement>;
+    
+    if (checkall?.checked) {
+      checkboxes.forEach((checkbox) => {
+        checkbox.checked = true;
       });
+      const allIds = filteredSedes.map(sede => sede.id);
+      setSelectedCheckBoxDelete(allIds);
+      setIsMultiDeleteButton(allIds.length > 0);
     } else {
-      ele.forEach((ele: any) => {
-        ele.checked = false;
+      checkboxes.forEach((checkbox) => {
+        checkbox.checked = false;
       });
+      setSelectedCheckBoxDelete([]);
+      setIsMultiDeleteButton(false);
     }
-    deleteCheckbox();
+  }, [filteredSedes]);
+
+  const handleCheckboxChange = useCallback((sedeId: string, checked: boolean) => {
+    setSelectedCheckBoxDelete(prev => {
+      const newSelected = checked 
+        ? [...prev, sedeId]
+        : prev.filter(id => id !== sedeId);
+      setIsMultiDeleteButton(newSelected.length > 0);
+      return newSelected;
+    });
   }, []);
 
-  const deleteCheckbox = () => {
-    const ele = document.querySelectorAll(".sedeCheckBox:checked");
-    ele.length > 0 ? setIsMultiDeleteButton(true) : setIsMultiDeleteButton(false);
-    setSelectedCheckBoxDelete(ele);
-  };
+  const handleDeleteMultiple = useCallback(async () => {
+    if (!hasOrganization || selectedCheckBoxDelete.length === 0) return;
 
-  const deleteMultiple = () => {
-    const checkall: any = document.getElementById("checkBoxAll");
-    const idsToDelete = Array.from(selectedCheckBoxDelete).map((elem: any) => elem.value);
-    setSedesList(sedesList.filter(sede => !idsToDelete.includes(sede.id)));
-    setIsMultiDeleteButton(false);
-    checkall.checked = false;
-  };
-
-  // React Hook Form setup
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-    setValue
-  } = useForm<SedeFormData>({
-    resolver: zodResolver(sedeSchema),
-    defaultValues: {
-      codigo: '',
-      nombre: '',
-      direccion: '',
-      ciudad: '',
-      departamento: '',
-      telefono: '',
-      estado: 'Activa'
+    try {
+      await bulkDeleteSedes(selectedCheckBoxDelete);
+      toast.success(`${selectedCheckBoxDelete.length} sedes eliminadas exitosamente`);
+      setSelectedCheckBoxDelete([]);
+      setIsMultiDeleteButton(false);
+      setDeleteModalMulti(false);
+      
+      // Clear all checkboxes
+      const checkboxes = document.querySelectorAll(".sedeCheckBox") as NodeListOf<HTMLInputElement>;
+      const checkall = document.getElementById("checkBoxAll") as HTMLInputElement;
+      checkboxes.forEach(checkbox => checkbox.checked = false);
+      if (checkall) checkall.checked = false;
+    } catch (error) {
+      console.error('Error deleting multiple sedes:', error);
+      toast.error('Error al eliminar las sedes seleccionadas');
     }
-  });
+  }, [hasOrganization, selectedCheckBoxDelete, bulkDeleteSedes]);
 
-  // Update form values when editing
-  useEffect(() => {
-    if (sede && isEdit) {
-      setValue('codigo', sede.codigo || '');
-      setValue('nombre', sede.nombre || '');
-      setValue('direccion', sede.direccion || '');
-      setValue('ciudad', sede.ciudad || '');
-      setValue('departamento', sede.departamento || '');
-      setValue('telefono', sede.telefono || '');
-      setValue('estado', sede.estado || 'Activa');
-    } else if (!isEdit) {
-      reset({
-        codigo: '',
-        nombre: '',
-        direccion: '',
-        ciudad: '',
-        departamento: '',
-        telefono: '',
-        estado: 'Activa'
-      });
-    }
-  }, [sede, isEdit, setValue, reset]);
-
-  // Handle form submission
-  const onSubmit: SubmitHandler<SedeFormData> = (data) => {
-    if (isEdit) {
-      const updatedSedes = sedesList.map(s => 
-        s.id === sede.id ? { ...s, ...data } : s
-      );
-      setSedesList(updatedSedes);
+  // Handle import completion
+  const handleImportComplete = useCallback((result: any) => {
+    if (result.success) {
+      toast.success(`Importación completada: ${result.imported_count} sedes importadas`);
+      if (hasOrganization) {
+        fetchSedes(); // Refresh the list
+      }
     } else {
-      const newSede = {
-        id: (Math.floor(Math.random() * (100 - 10)) + 10).toString(),
-        ...data,
-        fechaHabilitacion: new Date().toISOString().split('T')[0],
-        serviciosHabilitados: 0
-      };
-      setSedesList([...sedesList, newSede]);
+      toast.error(result.message || 'Error durante la importación');
     }
-    reset();
-    toggle();
-  };
+    handleCloseImport();
+  }, [hasOrganization, fetchSedes, handleCloseImport]);
 
   // Table columns
   const columns = useMemo(
     () => [
       {
-        header: <input type="checkbox" id="checkBoxAll" className="form-check-input" onClick={() => checkedAll()} />,
+        header: (
+          <input 
+            type="checkbox" 
+            id="checkBoxAll" 
+            className="form-check-input" 
+            onClick={checkedAll} 
+          />
+        ),
         accessorKey: '#',
         enableSorting: false,
-        cell: (value: any, row: any) => (
-          <input type="checkbox" className="sedeCheckBox form-check-input" value={row.id} onChange={() => deleteCheckbox()} />
+        cell: (value: any, row: SedeListItem) => (
+          <input 
+            type="checkbox" 
+            className="sedeCheckBox form-check-input" 
+            value={row.id} 
+            onChange={(e) => handleCheckboxChange(row.id, e.target.checked)} 
+          />
         ),
       },
       {
-        header: "Código",
-        accessorKey: "codigo",
+        header: "Número",
+        accessorKey: "numero_sede",
         cell: (value: any) => <span className="fw-medium text-primary">{value}</span>,
       },
       {
         header: "Nombre de la Sede",
-        accessorKey: "nombre",
+        accessorKey: "nombre_sede",
+        cell: (value: any, row: SedeListItem) => (
+          <div>
+            <span className="fw-medium">{value}</span>
+            {row.es_sede_principal && (
+              <span className="badge bg-success-subtle text-success ms-2 small">Principal</span>
+            )}
+          </div>
+        ),
       },
       {
-        header: "Ciudad", 
-        accessorKey: "ciudad",
+        header: "Ubicación", 
+        accessorKey: "direccion_completa",
+        cell: (value: any, row: SedeListItem) => (
+          <div>
+            <div className="fw-medium">{row.municipio}</div>
+            <small className="text-muted">{row.departamento}</small>
+          </div>
+        ),
       },
       {
-        header: "Departamento",
-        accessorKey: "departamento",
-      },
-      {
-        header: "Teléfono",
-        accessorKey: "telefono",
+        header: "Contacto",
+        accessorKey: "telefono_principal",
+        cell: (value: any, row: SedeListItem) => (
+          <div>
+            <div className="small">{value}</div>
+            <div className="small text-muted">{row.email}</div>
+          </div>
+        ),
       },
       {
         header: "Servicios",
-        accessorKey: "serviciosHabilitados",
+        accessorKey: "total_servicios",
         cell: (value: any) => (
           <span className="badge bg-primary-subtle text-primary">
-            {value}
+            {value || 0}
           </span>
         ),
       },
       {
         header: 'Estado',
         accessorKey: 'estado',
-        cell: (value: any) => {
-          switch (value) {
-            case "Activa":
-              return <span className="badge bg-success-subtle text-success">Activa</span>;
-            case "Inactiva":
-              return <span className="badge bg-danger-subtle text-danger">Inactiva</span>;
-            case "En proceso":
-              return <span className="badge bg-warning-subtle text-warning">En proceso</span>;
-            default:
-              return <span className="badge bg-secondary-subtle text-secondary">{value}</span>;
-          }
+        cell: (value: any, row: SedeListItem) => {
+          const getEstadoBadge = (estado: string) => {
+            switch (estado?.toLowerCase()) {
+              case "activa":
+                return "bg-success-subtle text-success";
+              case "inactiva":
+                return "bg-danger-subtle text-danger";
+              case "en_proceso":
+                return "bg-warning-subtle text-warning";
+              case "suspendida":
+                return "bg-secondary-subtle text-secondary";
+              default:
+                return "bg-light text-dark";
+            }
+          };
+          
+          const displayEstado = (estado: string) => {
+            switch (estado?.toLowerCase()) {
+              case "activa":
+                return "Activa";
+              case "inactiva":
+                return "Inactiva";
+              case "en_proceso":
+                return "En Proceso";
+              case "suspendida":
+                return "Suspendida";
+              default:
+                return estado || "N/A";
+            }
+          };
+          
+          return (
+            <div>
+              <span className={`badge ${getEstadoBadge(value)}`}>
+                {displayEstado(value)}
+              </span>
+              {row.atencion_24_horas && (
+                <div className="mt-1">
+                  <span className="badge bg-info-subtle text-info small">24h</span>
+                </div>
+              )}
+            </div>
+          );
         }
       },
       {
         header: "Acciones",
         accessorKey: "acciones",
         enableSorting: false,
-        cell: (value: any, row: any) => (
+        cell: (value: any, row: SedeListItem) => (
           <ul className="list-inline hstack gap-2 mb-0">
             <li className="list-inline-item">
               <button
                 className="btn btn-primary btn-sm btn-icon"
                 onClick={() => console.log('Ver sede:', row)}
+                title="Ver detalles"
               >
                 <i className="ri-eye-fill"></i>
               </button>
@@ -339,7 +391,8 @@ const SedesPage = () => {
             <li className="list-inline-item edit">
               <button
                 className="btn btn-success btn-sm btn-icon"
-                onClick={() => handleSedeClick(row)}
+                onClick={() => handleEditSede(row)}
+                title="Editar sede"
               >
                 <i className="ri-pencil-fill"></i>
               </button>
@@ -348,6 +401,7 @@ const SedesPage = () => {
               <button
                 className="btn btn-danger btn-sm btn-icon"
                 onClick={() => onClickDelete(row)}
+                title="Eliminar sede"
               >
                 <i className="ri-delete-bin-5-fill"></i>
               </button>
@@ -356,11 +410,54 @@ const SedesPage = () => {
         ),
       },
     ],
-    [handleSedeClick, checkedAll]
+    [checkedAll, handleCheckboxChange, handleEditSede, onClickDelete]
   );
+
+  // Loading and error states
+  if (organizationLoading || (loading && !sedes.length)) {
+    return (
+      <LayoutWithBreadcrumb moduleConfig={customModuleConfig}>
+        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+          <div className="text-center">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Cargando...</span>
+            </div>
+            <p className="mt-2 text-muted">
+              {organizationLoading ? 'Cargando información de la organización...' : 'Cargando sedes...'}
+            </p>
+          </div>
+        </div>
+      </LayoutWithBreadcrumb>
+    );
+  }
+
+  // Show organization error
+  if (organizationError && !hasOrganization) {
+    return (
+      <LayoutWithBreadcrumb moduleConfig={customModuleConfig}>
+        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+          <div className="text-center">
+            <div className="mb-4">
+              <i className="ri-building-line display-4 text-warning mb-3"></i>
+              <h5 className="text-warning">Problema con la Organización</h5>
+              <p className="text-muted mb-3">{organizationError}</p>
+              <button 
+                className="btn btn-primary"
+                onClick={() => window.location.reload()}
+              >
+                <i className="ri-refresh-line me-1"></i>
+                Intentar de Nuevo
+              </button>
+            </div>
+          </div>
+        </div>
+      </LayoutWithBreadcrumb>
+    );
+  }
 
   return (
     <LayoutWithBreadcrumb moduleConfig={customModuleConfig}>
+      {/* Delete Modals */}
       <DeleteModal
         show={deleteModal}
         onDeleteClick={handleDeleteSede}
@@ -368,12 +465,52 @@ const SedesPage = () => {
       />
       <DeleteModal
         show={deleteModalMulti}
-        onDeleteClick={() => {
-          deleteMultiple();
-          setDeleteModalMulti(false);
-        }}
+        onDeleteClick={handleDeleteMultiple}
         onCloseClick={() => setDeleteModalMulti(false)}
       />
+      
+      {/* Sede Form Modal */}
+      {state.showCreateModal && hasOrganization && (
+        <SedeFormModal
+          isOpen={state.showCreateModal}
+          onClose={handleCloseModal}
+          onSave={handleSaveSede}
+          sede={state.selectedSede}
+          organizationId={organization!.id}
+          isLoading={loading}
+        />
+      )}
+      
+      {/* Import Modal */}
+      {state.showImportModal && hasOrganization && (
+        <div className={`modal fade show`} 
+             style={{ display: 'block', zIndex: 1055, backgroundColor: 'rgba(0,0,0,0.5)' }} 
+             tabIndex={-1}>
+          <div className="modal-dialog modal-xl">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  <i className="ri-upload-cloud-line me-2"></i>
+                  Importar Sedes
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={handleCloseImport}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <SedesImporter
+                  organizationId={organization!.id}
+                  onImportComplete={handleImportComplete}
+                  onCancel={handleCloseImport}
+                  isOpen={true}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="row">
         <div className="col-12">
@@ -388,28 +525,28 @@ const SedesPage = () => {
                     <button
                       className="btn btn-success add-btn"
                       id="create-btn"
-                      onClick={() => { 
-                        setIsEdit(false); 
-                        reset();
-                        toggle(); 
-                      }}
+                      onClick={handleCreateSede}
+                      disabled={!hasOrganization}
                     >
                       <i className="ri-add-line align-bottom me-1"></i>
                       Crear Sede
                     </button>
                     <button 
                       className="btn btn-info"
-                      onClick={() => console.log('Importar sedes')}
+                      onClick={handleShowImport}
+                      disabled={!hasOrganization}
                     >
                       <i className="ri-upload-cloud-line align-bottom me-1"></i>
                       Importar
                     </button>
                     {isMultiDeleteButton && (
                       <button 
-                        className="btn btn-danger btn-soft-danger"
+                        className="btn btn-danger"
                         onClick={() => setDeleteModalMulti(true)}
+                        title={`Eliminar ${selectedCheckBoxDelete.length} sede(s) seleccionada(s)`}
                       >
-                        <i className="ri-delete-bin-2-line"></i>
+                        <i className="ri-delete-bin-2-line me-1"></i>
+                        Eliminar ({selectedCheckBoxDelete.length})
                       </button>
                     )}
                   </div>
@@ -423,235 +560,117 @@ const SedesPage = () => {
                   <li className="nav-item">
                     <a
                       className={classnames("nav-link", { active: activeTab === "1" })}
-                      onClick={() => toggleTab("1", "all")}
+                      onClick={() => toggleTab("1")}
                       href="#"
+                      role="tab"
                     >
                       <i className="ri-building-line me-1 align-bottom"></i>
                       Todas las Sedes
+                      <span className="badge bg-secondary ms-2">{sedes?.length || 0}</span>
                     </a>
                   </li>
                   <li className="nav-item">
                     <a
                       className={classnames("nav-link", { active: activeTab === "2" })}
-                      onClick={() => toggleTab("2", "Activa")}
+                      onClick={() => toggleTab("2")}
                       href="#"
+                      role="tab"
                     >
                       <i className="ri-checkbox-circle-line me-1 align-bottom"></i>
                       Activas
+                      <span className="badge bg-success ms-2">
+                        {sedes?.filter(s => s.estado === 'activa').length || 0}
+                      </span>
                     </a>
                   </li>
                   <li className="nav-item">
                     <a
                       className={classnames("nav-link", { active: activeTab === "3" })}
-                      onClick={() => toggleTab("3", "Inactiva")}
+                      onClick={() => toggleTab("3")}
                       href="#"
+                      role="tab"
                     >
                       <i className="ri-close-circle-line me-1 align-bottom"></i>
                       Inactivas
+                      <span className="badge bg-danger ms-2">
+                        {sedes?.filter(s => s.estado === 'inactiva').length || 0}
+                      </span>
                     </a>
                   </li>
                   <li className="nav-item">
                     <a
                       className={classnames("nav-link", { active: activeTab === "4" })}
-                      onClick={() => toggleTab("4", "En proceso")}
+                      onClick={() => toggleTab("4")}
                       href="#"
+                      role="tab"
                     >
                       <i className="ri-time-line me-1 align-bottom"></i>
                       En Proceso
+                      <span className="badge bg-warning ms-2">
+                        {sedes?.filter(s => s.estado === 'en_proceso').length || 0}
+                      </span>
                     </a>
                   </li>
                 </ul>
 
-                <SimpleTable
-                  columns={columns}
-                  data={sedesList || []}
-                  isGlobalFilter={true}
-                  customPageSize={8}
-                  divClass="table-responsive table-card mb-1 mt-3"
-                  tableClass="align-middle table-nowrap"
-                  theadClass="table-light text-muted text-uppercase"
-                  SearchPlaceholder='Buscar por código, nombre, ciudad o departamento...'
-                />
-              </div>
-
-              {/* Modal para crear/editar sede */}
-              <div className={`modal fade ${modal ? 'show' : ''}`} 
-                   id="showModal" 
-                   style={{ display: modal ? 'block' : 'none' }}
-                   tabIndex={-1} 
-                   aria-labelledby="modalLabel" 
-                   aria-hidden={!modal}>
-                <div className="modal-dialog modal-lg modal-dialog-centered">
-                  <div className="modal-content">
-                    <div className="modal-header bg-light p-3">
-                      <h5 className="modal-title" id="modalLabel">
-                        {isEdit ? "Editar Sede" : "Crear Nueva Sede"}
-                      </h5>
-                      <button 
-                        type="button" 
-                        className="btn-close" 
-                        onClick={toggle}
-                        aria-label="Close"
-                      ></button>
-                    </div>
-                    <form className="tablelist-form" onSubmit={handleSubmit(onSubmit)}>
-                      <div className="modal-body">
-                        <div className="row">
-                          <div className="col-md-6">
-                            <div className="mb-3">
-                              <label htmlFor="codigo-field" className="form-label">
-                                Código de la Sede <span className="text-danger">*</span>
-                              </label>
-                              <input
-                                {...register('codigo')}
-                                id="codigo-field"
-                                className={`form-control ${errors.codigo ? 'is-invalid' : ''}`}
-                                placeholder="Ej: SDE001"
-                                type="text"
-                              />
-                              {errors.codigo && (
-                                <div className="invalid-feedback">{errors.codigo.message}</div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="col-md-6">
-                            <div className="mb-3">
-                              <label htmlFor="estado-field" className="form-label">
-                                Estado <span className="text-danger">*</span>
-                              </label>
-                              <select
-                                {...register('estado')}
-                                className={`form-select ${errors.estado ? 'is-invalid' : ''}`}
-                              >
-                                {estadoOptions.slice(1).map((item, key) => (
-                                  <option value={item.value} key={key}>{item.label}</option>
-                                ))}
-                              </select>
-                              {errors.estado && (
-                                <div className="invalid-feedback">{errors.estado.message}</div>
-                              )}
-                            </div>
-                          </div>
+                {filteredSedes.length > 0 ? (
+                  <SimpleTable
+                    columns={columns}
+                    data={filteredSedes}
+                    isGlobalFilter={true}
+                    customPageSize={10}
+                    divClass="table-responsive table-card mb-1 mt-3"
+                    tableClass="align-middle table-nowrap"
+                    theadClass="table-light text-muted text-uppercase"
+                    SearchPlaceholder='Buscar por número, nombre, ciudad o departamento...'
+                  />
+                ) : (
+                  <div className="mt-4 text-center py-4">
+                    {loading ? (
+                      <div>
+                        <div className="spinner-border text-primary mb-3" role="status">
+                          <span className="visually-hidden">Cargando...</span>
                         </div>
-
-                        <div className="mb-3">
-                          <label htmlFor="nombre-field" className="form-label">
-                            Nombre de la Sede <span className="text-danger">*</span>
-                          </label>
-                          <input
-                            {...register('nombre')}
-                            id="nombre-field"
-                            className={`form-control ${errors.nombre ? 'is-invalid' : ''}`}
-                            placeholder="Nombre completo de la sede"
-                            type="text"
-                          />
-                          {errors.nombre && (
-                            <div className="invalid-feedback">{errors.nombre.message}</div>
-                          )}
-                        </div>
-
-                        <div className="mb-3">
-                          <label htmlFor="direccion-field" className="form-label">
-                            Dirección <span className="text-danger">*</span>
-                          </label>
-                          <textarea
-                            {...register('direccion')}
-                            id="direccion-field"
-                            className={`form-control ${errors.direccion ? 'is-invalid' : ''}`}
-                            placeholder="Dirección completa"
-                            rows={2}
-                          />
-                          {errors.direccion && (
-                            <div className="invalid-feedback">{errors.direccion.message}</div>
-                          )}
-                        </div>
-
-                        <div className="row">
-                          <div className="col-md-6">
-                            <div className="mb-3">
-                              <label htmlFor="ciudad-field" className="form-label">
-                                Ciudad <span className="text-danger">*</span>
-                              </label>
-                              <input
-                                {...register('ciudad')}
-                                id="ciudad-field"
-                                className={`form-control ${errors.ciudad ? 'is-invalid' : ''}`}
-                                placeholder="Ciudad"
-                                type="text"
-                              />
-                              {errors.ciudad && (
-                                <div className="invalid-feedback">{errors.ciudad.message}</div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="col-md-6">
-                            <div className="mb-3">
-                              <label htmlFor="departamento-field" className="form-label">
-                                Departamento <span className="text-danger">*</span>
-                              </label>
-                              <select
-                                {...register('departamento')}
-                                className={`form-select ${errors.departamento ? 'is-invalid' : ''}`}
-                              >
-                                <option value="">Seleccionar departamento</option>
-                                {departamentoOptions.slice(1).map((item, key) => (
-                                  <option value={item.value} key={key}>{item.label}</option>
-                                ))}
-                              </select>
-                              {errors.departamento && (
-                                <div className="invalid-feedback">{errors.departamento.message}</div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mb-3">
-                          <label htmlFor="telefono-field" className="form-label">
-                            Teléfono <span className="text-danger">*</span>
-                          </label>
-                          <input
-                            {...register('telefono')}
-                            id="telefono-field"
-                            className={`form-control ${errors.telefono ? 'is-invalid' : ''}`}
-                            placeholder="+57 1 234-5678"
-                            type="text"
-                          />
-                          {errors.telefono && (
-                            <div className="invalid-feedback">{errors.telefono.message}</div>
-                          )}
-                        </div>
+                        <p className="text-muted">Cargando sedes...</p>
                       </div>
-                      <div className="modal-footer">
-                        <div className="hstack gap-2 justify-content-end">
+                    ) : (
+                      <div>
+                        <i className="ri-building-line display-4 text-muted mb-3"></i>
+                        <h5 className="text-muted">No hay sedes registradas</h5>
+                        <p className="text-muted mb-3">
+                          {activeTab === "1" 
+                            ? "No se han registrado sedes para esta organización."
+                            : `No hay sedes con el estado seleccionado.`}
+                        </p>
+                        {activeTab === "1" && hasOrganization && (
                           <button
-                            type="button"
-                            className="btn btn-light"
-                            onClick={() => setModal(false)}
+                            className="btn btn-primary"
+                            onClick={handleCreateSede}
                           >
-                            Cancelar
+                            <i className="ri-add-line me-1"></i>
+                            Crear Primera Sede
                           </button>
-                          <button 
-                            type="submit" 
-                            className="btn btn-success" 
-                            disabled={isSubmitting}
-                          >
-                            {isSubmitting ? "Procesando..." : (isEdit ? "Actualizar" : "Crear Sede")}
-                          </button>
-                        </div>
+                        )}
                       </div>
-                    </form>
+                    )}
                   </div>
-                </div>
+                )}
               </div>
-
-              {/* Modal backdrop */}
-              {modal && (
-                <div 
-                  className="modal-backdrop fade show" 
-                  onClick={toggle}
-                ></div>
-              )}
             </div>
+
+            {/* Error Display */}
+            {error && (
+              <div className="alert alert-danger alert-dismissible mt-3" role="alert">
+                <i className="ri-error-warning-line me-1"></i>
+                {error}
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={clearError}
+                ></button>
+              </div>
+            )}
+
           </div>
         </div>
       </div>

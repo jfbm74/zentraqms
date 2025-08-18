@@ -740,31 +740,8 @@ class REPSImportViewSet(viewsets.ViewSet):
                 create_backup=create_backup
             )
             
-            # Prepare response
-            response_data = {
-                'status': stats['status'],
-                'message': 'Importación completada exitosamente',
-                'summary': {
-                    'total_headquarters': stats.get('total_headquarters', 0),
-                    'total_services': stats.get('total_services', 0),
-                    'backup_created': stats.get('backup_created', False),
-                    'errors_count': len(stats.get('errors', [])),
-                    'warnings_count': len(stats.get('warnings', []))
-                },
-                'details': {
-                    'files_processed': stats.get('files_processed', []),
-                    'duration': str(stats.get('end_time', timezone.now()) - stats.get('start_time', timezone.now())),
-                    'backup_id': stats.get('backup_id')
-                }
-            }
-            
-            if stats.get('errors'):
-                response_data['errors'] = stats['errors'][:10]  # Limit errors shown
-            
-            if stats.get('warnings'):
-                response_data['warnings'] = stats['warnings'][:10]  # Limit warnings shown
-            
-            return Response(response_data, status=status.HTTP_200_OK)
+            # Return the stats directly as expected by frontend
+            return Response(stats, status=status.HTTP_200_OK)
             
         except REPSSyncError as e:
             logger.error(f"REPS sync error: {str(e)}")

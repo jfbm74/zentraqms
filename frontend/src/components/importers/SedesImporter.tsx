@@ -40,8 +40,6 @@ const SedesImporter: React.FC<SedesImporterProps> = ({
   const [currentStep, setCurrentStep] = useState<'upload' | 'validate' | 'review' | 'import' | 'complete'>('upload');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileFormat, setFileFormat] = useState<'csv' | 'excel'>('csv');
-  const [overwriteExisting, setOverwriteExisting] = useState(false);
-  const [validateOnly, setValidateOnly] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [validationResults, setValidationResults] = useState<SedeImportValidationResult[]>([]);
   const [importResponse, setImportResponse] = useState<SedeImportResponse | null>(null);
@@ -78,7 +76,7 @@ const SedesImporter: React.FC<SedesImporterProps> = ({
       id: 'import',
       title: 'Importar Datos',
       description: 'Ejecutar la importación final',
-      completed: importResponse?.success === true && !validateOnly,
+      completed: importResponse?.success === true,
       active: currentStep === 'import',
     },
   ];
@@ -154,9 +152,7 @@ const SedesImporter: React.FC<SedesImporterProps> = ({
     try {
       const config: SedeImportConfig = {
         file: selectedFile,
-        format: fileFormat,
-        validate_only: true,
-        overwrite_existing: overwriteExisting,
+        create_backup: true,
       };
 
       const response = await sedeService.importSedes(organizationId, config);
@@ -178,14 +174,11 @@ const SedesImporter: React.FC<SedesImporterProps> = ({
     setIsProcessing(true);
     setError(null);
     setCurrentStep('import');
-    setValidateOnly(false);
 
     try {
       const config: SedeImportConfig = {
         file: selectedFile,
-        format: fileFormat,
-        validate_only: false,
-        overwrite_existing: overwriteExisting,
+        create_backup: true,
       };
 
       // Simulate progress for better UX
@@ -217,8 +210,6 @@ const SedesImporter: React.FC<SedesImporterProps> = ({
     setCurrentStep('upload');
     setSelectedFile(null);
     setFileFormat('csv');
-    setOverwriteExisting(false);
-    setValidateOnly(true);
     setValidationResults([]);
     setImportResponse(null);
     setError(null);
@@ -330,41 +321,42 @@ const SedesImporter: React.FC<SedesImporterProps> = ({
 
       {/* Configuration Options */}
       <div className="mt-4">
-        <h6 className="fw-semibold mb-3">Opciones de Importación</h6>
+        <h6 className="fw-semibold mb-3">Información del Archivo</h6>
         
         <div className="row">
           <div className="col-lg-6">
             <div className="mb-3">
               <label className="form-label" htmlFor="fileFormat">
-                Formato del Archivo
+                Formato Detectado
               </label>
-              <select
-                className="form-select"
+              <input
+                className="form-control"
                 id="fileFormat"
-                value={fileFormat}
-                onChange={(e) => setFileFormat(e.target.value as 'csv' | 'excel')}
-              >
-                <option value="csv">CSV (Valores separados por comas)</option>
-                <option value="excel">Excel (.xlsx, .xls)</option>
-              </select>
+                value={fileFormat.toUpperCase()}
+                readOnly
+                disabled
+              />
+              <small className="text-muted">
+                El formato se detecta automáticamente según la extensión del archivo
+              </small>
             </div>
           </div>
 
           <div className="col-lg-6">
             <div className="mb-3">
-              <label className="form-label">Configuración Adicional</label>
+              <label className="form-label">Configuración de Importación</label>
               <div className="form-check">
                 <input
                   className="form-check-input"
                   type="checkbox"
-                  id="overwriteExisting"
-                  checked={overwriteExisting}
-                  onChange={(e) => setOverwriteExisting(e.target.checked)}
+                  id="createBackup"
+                  checked={true}
+                  disabled
                 />
-                <label className="form-check-label" htmlFor="overwriteExisting">
-                  Sobrescribir sedes existentes
+                <label className="form-check-label" htmlFor="createBackup">
+                  Crear respaldo automático
                   <small className="text-muted d-block">
-                    Si una sede ya existe, actualizar sus datos
+                    Se crea automáticamente un respaldo antes de la importación
                   </small>
                 </label>
               </div>

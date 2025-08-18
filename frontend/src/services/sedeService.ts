@@ -28,21 +28,24 @@ import type {
 // ====================================
 
 const ENDPOINTS = {
-  // Base endpoints
-  sedes: '/api/v1/sedes/',
-  sedesById: (id: string) => `/api/v1/sedes/${id}/`,
-  
-  // Organization-specific endpoints
-  organizationSedes: (orgId: string) => `/api/v1/organizations/${orgId}/sedes/`,
-  organizationSedeById: (orgId: string, sedeId: string) => `/api/v1/organizations/${orgId}/sedes/${sedeId}/`,
-  organizationSedesImport: (orgId: string) => `/api/v1/organizations/${orgId}/sedes/import/`,
-  organizationSedesExport: (orgId: string) => `/api/v1/organizations/${orgId}/sedes/export/`,
-  organizationSedesValidate: (orgId: string) => `/api/v1/organizations/${orgId}/sedes/validate/`,
-  organizationSedesBulkCreate: (orgId: string) => `/api/v1/organizations/${orgId}/sedes/bulk-create/`,
+  // SOGCS API endpoints - organization filtering is handled automatically by backend
+  sedes: '/api/sogcs/api/v1/headquarters/',
+  sedesById: (id: string) => `/api/sogcs/api/v1/headquarters/${id}/`,
+  sedesImport: '/api/sogcs/api/v1/import/upload/',
+  sedesExport: '/api/sogcs/api/v1/headquarters/export/',
+  sedesValidate: '/api/sogcs/api/v1/headquarters/validate/',
+  sedesBulkCreate: '/api/sogcs/api/v1/headquarters/bulk-create/',
+  sedesBulkUpdate: '/api/sogcs/api/v1/headquarters/bulk-update/',
+  sedesBulkDelete: '/api/sogcs/api/v1/headquarters/bulk-delete/',
   
   // Service management endpoints
-  sedeServicios: (sedeId: string) => `/api/v1/sedes/${sedeId}/servicios/`,
-  sedeAddServicio: (sedeId: string) => `/api/v1/sedes/${sedeId}/servicios/agregar/`,
+  sedeServicios: (sedeId: string) => `/api/sogcs/api/v1/headquarters/${sedeId}/services/`,
+  sedeAddServicio: (sedeId: string) => `/api/sogcs/api/v1/services/`,
+  
+  // Dashboard and overview endpoints
+  overview: '/api/sogcs/api/v1/overview/',
+  dashboard: '/api/sogcs/api/v1/overview/dashboard/',
+  alerts: '/api/sogcs/api/v1/overview/alerts/',
 } as const;
 
 // ====================================
@@ -83,10 +86,10 @@ export const sedeService = {
   /**
    * Get list of sedes for an organization
    */
-  async getSedes(organizationId: string, filters: SedeFilters = {}): Promise<SedeListResponse> {
+  async getSedes(organizationId?: string, filters: SedeFilters = {}): Promise<SedeListResponse> {
     try {
       const queryParams = buildQueryParams(filters);
-      const url = `${ENDPOINTS.organizationSedes(organizationId)}?${queryParams}`;
+      const url = `${ENDPOINTS.sedes}?${queryParams}`;
       
       const response = await apiClient.get<SedeListResponse>(url);
       return response.data;
@@ -115,7 +118,7 @@ export const sedeService = {
   async createSede(organizationId: string, data: SedeFormData): Promise<SedePrestadora> {
     try {
       const response = await apiClient.post<SedePrestadora>(
-        ENDPOINTS.organizationSedes(organizationId),
+        ENDPOINTS.sedes,
         data
       );
       return response.data;
@@ -128,10 +131,10 @@ export const sedeService = {
   /**
    * Update an existing sede
    */
-  async updateSede(organizationId: string, sedeId: string, data: Partial<SedeFormData>): Promise<SedePrestadora> {
+  async updateSede(sedeId: string, data: Partial<SedeFormData>): Promise<SedePrestadora> {
     try {
       const response = await apiClient.patch<SedePrestadora>(
-        ENDPOINTS.organizationSedeById(organizationId, sedeId),
+        ENDPOINTS.sedesById(sedeId),
         data
       );
       return response.data;
@@ -144,9 +147,9 @@ export const sedeService = {
   /**
    * Delete a sede
    */
-  async deleteSede(organizationId: string, sedeId: string): Promise<void> {
+  async deleteSede(sedeId: string): Promise<void> {
     try {
-      await apiClient.delete(ENDPOINTS.organizationSedeById(organizationId, sedeId));
+      await apiClient.delete(ENDPOINTS.sedesById(sedeId));
     } catch (error) {
       console.error('Error deleting sede:', error);
       handleApiError(error);
@@ -163,7 +166,7 @@ export const sedeService = {
   async validateSede(organizationId: string, data: SedeFormData): Promise<{ is_valid: boolean; errors?: Record<string, string[]> }> {
     try {
       const response = await apiClient.post(
-        ENDPOINTS.organizationSedesValidate(organizationId),
+        ENDPOINTS.sedesValidate,
         data
       );
       return response.data;
@@ -191,7 +194,7 @@ export const sedeService = {
     try {
       const request: SedeBulkCreateRequest = { sedes };
       const response = await apiClient.post<SedeBulkResponse>(
-        ENDPOINTS.organizationSedesBulkCreate(organizationId),
+        ENDPOINTS.sedesBulkCreate,
         request
       );
       return response.data;
@@ -208,7 +211,7 @@ export const sedeService = {
     try {
       const request: SedeBulkUpdateRequest = { updates };
       const response = await apiClient.patch<SedeBulkResponse>(
-        `${ENDPOINTS.organizationSedes(organizationId)}bulk-update/`,
+        ENDPOINTS.sedesBulkUpdate,
         request
       );
       return response.data;
@@ -225,7 +228,7 @@ export const sedeService = {
     try {
       const request: SedeBulkDeleteRequest = { sede_ids: sedeIds };
       const response = await apiClient.delete<SedeBulkResponse>(
-        `${ENDPOINTS.organizationSedes(organizationId)}bulk-delete/`,
+        ENDPOINTS.sedesBulkDelete,
         { data: request }
       );
       return response.data;
@@ -245,17 +248,13 @@ export const sedeService = {
   async importSedes(organizationId: string, config: SedeImportConfig): Promise<SedeImportResponse> {
     try {
       const formData = new FormData();
-      formData.append('file', config.file);
-      formData.append('format', config.format);
-      formData.append('validate_only', config.validate_only.toString());
-      formData.append('overwrite_existing', config.overwrite_existing.toString());
-      
-      if (config.mapping) {
-        formData.append('mapping', JSON.stringify(config.mapping));
-      }
+      // Backend expects 'headquarters_file' for sedes data
+      formData.append('headquarters_file', config.file);
+      // Optional backup creation (defaults to true)
+      formData.append('create_backup', 'true');
 
       const response = await apiClient.post<SedeImportResponse>(
-        ENDPOINTS.organizationSedesImport(organizationId),
+        ENDPOINTS.sedesImport,
         formData,
         {
           headers: {
@@ -292,7 +291,7 @@ export const sedeService = {
       });
 
       const response = await apiClient.get(
-        `${ENDPOINTS.organizationSedesExport(organizationId)}?${params}`,
+        `${ENDPOINTS.sedesExport}?${params}`,
         {
           responseType: 'blob',
         }
