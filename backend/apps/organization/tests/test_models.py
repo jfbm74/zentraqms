@@ -177,11 +177,11 @@ class OrganizationModelTestCase(TestCase):
             'ong', 'cooperativa', 'ips', 'eps', 'hospital'
         ]
         
-        for tipo in valid_types:
+        for i, tipo in enumerate(valid_types):
             with self.subTest(tipo=tipo):
                 org = self.create_organization(
                     tipo_organizacion=tipo,
-                    nit=f'12345678{len(tipo)}'  # Unique NIT
+                    nit=f'12345678{i:02d}'  # Unique NIT using index
                 )
                 self.assertEqual(org.tipo_organizacion, tipo)
 
@@ -189,11 +189,11 @@ class OrganizationModelTestCase(TestCase):
         """Test valid company size choices."""
         valid_sizes = ['microempresa', 'pequeña', 'mediana', 'grande']
         
-        for size in valid_sizes:
+        for i, size in enumerate(valid_sizes):
             with self.subTest(size=size):
                 org = self.create_organization(
                     tamaño_empresa=size,
-                    nit=f'98765432{len(size)}'  # Unique NIT
+                    nit=f'98765432{i:02d}'  # Unique NIT using index
                 )
                 self.assertEqual(org.tamaño_empresa, size)
 
@@ -220,6 +220,9 @@ class OrganizationModelTestCase(TestCase):
 
 class HealthOrganizationModelTestCase(TestCase):
     """Test HealthOrganization model functionality."""
+    
+    # Class-level counter for unique codes
+    _codigo_prestador_counter = 0
 
     def setUp(self):
         """Set up test data."""
@@ -243,16 +246,23 @@ class HealthOrganizationModelTestCase(TestCase):
 
     def create_health_organization(self, **kwargs):
         """Helper to create test health organization."""
+        # Generate unique codigo_prestador if not provided
+        if 'codigo_prestador' not in kwargs:
+            HealthOrganizationModelTestCase._codigo_prestador_counter += 1
+            codigo_prestador = f'12345678{HealthOrganizationModelTestCase._codigo_prestador_counter:04d}'
+        else:
+            codigo_prestador = kwargs['codigo_prestador']
+        
         defaults = {
             'organization': self.organization,
-            'codigo_prestador': '123456789012',
+            'codigo_prestador': codigo_prestador,
             'tipo_prestador': 'IPS',
             'nivel_complejidad': 'I',
             'naturaleza_juridica': 'privada',
             'representante_tipo_documento': 'CC',
             'representante_numero_documento': '12345678',
             'representante_nombre_completo': 'Juan Pérez',
-            'representante_telefono': '+57 300 123 4567',
+            'representante_telefono': '3001234567',  # Fixed: no spaces, within 15 char limit
             'representante_email': 'juan@hospital.com',
             'created_by': self.user
         }
@@ -264,7 +274,7 @@ class HealthOrganizationModelTestCase(TestCase):
         health_org = self.create_health_organization()
         
         self.assertEqual(health_org.organization, self.organization)
-        self.assertEqual(health_org.codigo_prestador, '123456789012')
+        self.assertTrue(health_org.codigo_prestador.startswith('12345678'))  # Check pattern instead of exact value
         self.assertEqual(health_org.tipo_prestador, 'IPS')
         self.assertEqual(health_org.nivel_complejidad, 'I')
         self.assertEqual(health_org.naturaleza_juridica, 'privada')
@@ -329,14 +339,14 @@ class HealthOrganizationModelTestCase(TestCase):
             'LABORATORIO', 'CENTRO_DIAGNOSTICO', 'AMBULATORIO'
         ]
         
-        for tipo in valid_types:
+        for i, tipo in enumerate(valid_types):
             with self.subTest(tipo=tipo):
                 # Create unique organization for each test
                 org = Organization.objects.create(
                     razon_social=f'Hospital {tipo}',
-                    nit=f'12345678{len(tipo)}',
+                    nit=f'12345678{i:02d}',  # Unique NIT using index
                     digito_verificacion='1',
-                    email_contacto=f'test{len(tipo)}@hospital.com',
+                    email_contacto=f'test{i:02d}@hospital.com',  # Unique email using index
                     telefono_principal='+57 1 234 5678',
                     sector_economico='salud',
                     tipo_organizacion='ips',
@@ -347,7 +357,7 @@ class HealthOrganizationModelTestCase(TestCase):
                 health_org = self.create_health_organization(
                     organization=org,
                     tipo_prestador=tipo,
-                    codigo_prestador=f'12345678901{len(tipo)}'
+                    codigo_prestador=f'12345678901{i:02d}'  # Unique provider code using index
                 )
                 self.assertEqual(health_org.tipo_prestador, tipo)
 
@@ -355,13 +365,13 @@ class HealthOrganizationModelTestCase(TestCase):
         """Test valid nivel_complejidad choices."""
         valid_levels = ['I', 'II', 'III', 'IV']
         
-        for level in valid_levels:
+        for i, level in enumerate(valid_levels):
             with self.subTest(level=level):
                 org = Organization.objects.create(
                     razon_social=f'Hospital Nivel {level}',
-                    nit=f'87654321{len(level)}',
+                    nit=f'87654321{i:02d}',  # Unique NIT using index
                     digito_verificacion='1',
-                    email_contacto=f'nivel{level}@hospital.com',
+                    email_contacto=f'nivel{i:02d}@hospital.com',  # Unique email using index
                     telefono_principal='+57 1 234 5678',
                     sector_economico='salud',
                     tipo_organizacion='ips',
@@ -372,7 +382,7 @@ class HealthOrganizationModelTestCase(TestCase):
                 health_org = self.create_health_organization(
                     organization=org,
                     nivel_complejidad=level,
-                    codigo_prestador=f'87654321012{len(level)}'
+                    codigo_prestador=f'87654321012{i:02d}'  # Unique provider code using index
                 )
                 self.assertEqual(health_org.nivel_complejidad, level)
 
@@ -380,13 +390,13 @@ class HealthOrganizationModelTestCase(TestCase):
         """Test valid naturaleza_juridica choices."""
         valid_natures = ['privada', 'publica', 'mixta']
         
-        for nature in valid_natures:
+        for i, nature in enumerate(valid_natures):
             with self.subTest(nature=nature):
                 org = Organization.objects.create(
                     razon_social=f'Hospital {nature}',
-                    nit=f'55555555{len(nature)}',
+                    nit=f'55555555{i:02d}',  # Unique NIT using index
                     digito_verificacion='1',
-                    email_contacto=f'{nature}@hospital.com',
+                    email_contacto=f'{nature}{i}@hospital.com',  # Unique email using index
                     telefono_principal='+57 1 234 5678',
                     sector_economico='salud',
                     tipo_organizacion='ips',
@@ -397,7 +407,7 @@ class HealthOrganizationModelTestCase(TestCase):
                 health_org = self.create_health_organization(
                     organization=org,
                     naturaleza_juridica=nature,
-                    codigo_prestador=f'55555555012{len(nature)}'
+                    codigo_prestador=f'55555555012{i:02d}'  # Unique provider code using index
                 )
                 self.assertEqual(health_org.naturaleza_juridica, nature)
 
@@ -510,13 +520,13 @@ class HealthOrganizationModelTestCase(TestCase):
         """Test valid representante document types."""
         valid_doc_types = ['CC', 'CE', 'PA', 'NIT', 'TI']
         
-        for doc_type in valid_doc_types:
+        for i, doc_type in enumerate(valid_doc_types):
             with self.subTest(doc_type=doc_type):
                 org = Organization.objects.create(
                     razon_social=f'Hospital Doc {doc_type}',
-                    nit=f'44444444{len(doc_type)}',
+                    nit=f'44444444{i:02d}',  # Unique NIT using index
                     digito_verificacion='1',
-                    email_contacto=f'doc{doc_type}@hospital.com',
+                    email_contacto=f'doc{doc_type}{i}@hospital.com',  # Unique email using index
                     telefono_principal='+57 1 234 5678',
                     sector_economico='salud',
                     tipo_organizacion='ips',
@@ -527,7 +537,7 @@ class HealthOrganizationModelTestCase(TestCase):
                 health_org = self.create_health_organization(
                     organization=org,
                     representante_tipo_documento=doc_type,
-                    codigo_prestador=f'44444444012{len(doc_type)}'
+                    codigo_prestador=f'44444444012{i:02d}'  # Unique provider code using index
                 )
                 self.assertEqual(health_org.representante_tipo_documento, doc_type)
 

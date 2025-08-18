@@ -16,6 +16,7 @@ from decimal import Decimal
 
 from apps.common.models import FullBaseModel
 from .health import HealthOrganization
+from ..validators import validate_divipola_department, validate_divipola_municipality
 
 # ============================================================================
 # CHOICES DEFINITIONS
@@ -193,7 +194,8 @@ class HeadquarterLocation(FullBaseModel):
             RegexValidator(
                 regex=r'^\d{2}$',
                 message=_('Código de departamento debe tener 2 dígitos.')
-            )
+            ),
+            validate_divipola_department
         ],
         help_text=_('Código DIVIPOLA del departamento.')
     )
@@ -513,6 +515,21 @@ class HeadquarterLocation(FullBaseModel):
             if existing_main.exists():
                 raise ValidationError({
                     'is_main_headquarters': _('Ya existe una sede principal para esta organización.')
+                })
+        
+        # Validate DIVIPOLA municipality code against department
+        if self.department_code and self.municipality_code:
+            # Extract the department part from municipality code (first 2 digits)
+            municipality_dept = self.municipality_code[:2]
+            if municipality_dept != self.department_code:
+                raise ValidationError({
+                    'municipality_code': _('El código de municipio debe corresponder al departamento.')
+                })
+            
+            # Validate municipality code format
+            if self.municipality_code == '00000':
+                raise ValidationError({
+                    'municipality_code': _('Código de municipio no válido.')
                 })
         
         # Validate suspension dates

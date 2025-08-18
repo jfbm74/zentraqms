@@ -109,9 +109,16 @@ class TestResolution3100Compliance(ColombianHealthComplianceTestCase):
         
         for level in valid_levels:
             with self.subTest(level=level):
-                health_org = HealthOrganizationProfileFactory.create(
-                    nivel_complejidad=level
-                )
+                # For level IV, ensure we use a valid prestador type
+                if level == 'IV':
+                    health_org = HealthOrganizationProfileFactory.create(
+                        nivel_complejidad=level,
+                        tipo_prestador='HOSPITAL'  # Only hospitals/clinics can have level IV
+                    )
+                else:
+                    health_org = HealthOrganizationProfileFactory.create(
+                        nivel_complejidad=level
+                    )
                 
                 health_org.full_clean()
                 self.assertEqual(health_org.nivel_complejidad, level)
@@ -323,13 +330,13 @@ class TestDecree780HealthSectorCompliance(ColombianHealthComplianceTestCase):
             ('laboratorio', 'IPS')
         ]
         
-        for org_type, expected_prestador_type in health_provider_types:
+        for i, (org_type, expected_prestador_type) in enumerate(health_provider_types):
             with self.subTest(org_type=org_type):
                 org = OrganizationService.create_organization(
                     self.user,
                     {
                         'razon_social': f'Test {org_type.upper()}',
-                        'nit': f'86012345{len(org_type)}',
+                        'nit': f'86012345{i:02d}',  # Use index to ensure uniqueness
                         'digito_verificacion': '1',
                         'email_contacto': f'{org_type}@test.com',
                         'telefono_principal': '+57 1 234 5678',

@@ -33,6 +33,16 @@ class HeadquarterLocationModelTestCase(TestCase):
         self.user = UserFactory.create()
         self.health_org = HealthOrganizationProfileFactory.create()
     
+    def build_headquarters_with_users(self, **kwargs):
+        """Helper method to build headquarters with proper user assignments."""
+        defaults = {
+            'created_by': self.user,
+            'updated_by': self.user,
+            'organization': self.health_org
+        }
+        defaults.update(kwargs)
+        return HeadquarterLocationFactory.build(**defaults)
+    
     def test_create_headquarters_with_valid_data(self):
         """Test creating headquarters with valid data."""
         headquarters = HeadquarterLocationFactory.create(
@@ -64,8 +74,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         
         for code in valid_codes:
             with self.subTest(reps_code=code):
-                headquarters = HeadquarterLocationFactory.build(
-                    organization=self.health_org,
+                headquarters = self.build_headquarters_with_users(
                     reps_code=code
                 )
                 headquarters.full_clean()  # Should not raise ValidationError
@@ -83,8 +92,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         for code in invalid_codes:
             with self.subTest(reps_code=code):
                 with self.assertRaises(ValidationError):
-                    headquarters = HeadquarterLocationFactory.build(
-                        organization=self.health_org,
+                    headquarters = self.build_headquarters_with_users(
                         reps_code=code
                     )
                     headquarters.full_clean()
@@ -99,8 +107,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         
         # Try to create second headquarters with same REPS code
         with self.assertRaises(ValidationError):
-            duplicate_hq = HeadquarterLocationFactory.build(
-                organization=self.health_org,
+            duplicate_hq = self.build_headquarters_with_users(
                 reps_code='TEST123'
             )
             duplicate_hq.full_clean()
@@ -117,8 +124,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         
         for dept_code in valid_dept_codes:
             with self.subTest(department_code=dept_code):
-                headquarters = HeadquarterLocationFactory.build(
-                    organization=self.health_org,
+                headquarters = self.build_headquarters_with_users(
                     department_code=dept_code
                 )
                 headquarters.full_clean()
@@ -135,8 +141,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         for dept_code in invalid_dept_codes:
             with self.subTest(department_code=dept_code):
                 with self.assertRaises(ValidationError):
-                    headquarters = HeadquarterLocationFactory.build(
-                        organization=self.health_org,
+                    headquarters = self.build_headquarters_with_users(
                         department_code=dept_code
                     )
                     headquarters.full_clean()
@@ -152,8 +157,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         
         for mun_code in valid_municipality_codes:
             with self.subTest(municipality_code=mun_code):
-                headquarters = HeadquarterLocationFactory.build(
-                    organization=self.health_org,
+                headquarters = self.build_headquarters_with_users(
                     municipality_code=mun_code,
                     department_code=mun_code[:2]  # First 2 digits match department
                 )
@@ -171,8 +175,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         for mun_code in invalid_municipality_codes:
             with self.subTest(municipality_code=mun_code):
                 with self.assertRaises(ValidationError):
-                    headquarters = HeadquarterLocationFactory.build(
-                        organization=self.health_org,
+                    headquarters = self.build_headquarters_with_users(
                         municipality_code=mun_code
                     )
                     headquarters.full_clean()
@@ -189,8 +192,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         
         for phone in valid_phones:
             with self.subTest(phone=phone):
-                headquarters = HeadquarterLocationFactory.build(
-                    organization=self.health_org,
+                headquarters = self.build_headquarters_with_users(
                     phone_primary=phone
                 )
                 headquarters.full_clean()
@@ -206,8 +208,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         for phone in invalid_phones:
             with self.subTest(phone=phone):
                 with self.assertRaises(ValidationError):
-                    headquarters = HeadquarterLocationFactory.build(
-                        organization=self.health_org,
+                    headquarters = self.build_headquarters_with_users(
                         phone_primary=phone
                     )
                     headquarters.full_clean()
@@ -224,8 +225,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         
         for lat, lon in valid_coordinates:
             with self.subTest(latitude=lat, longitude=lon):
-                headquarters = HeadquarterLocationFactory.build(
-                    organization=self.health_org,
+                headquarters = self.build_headquarters_with_users(
                     latitude=Decimal(str(lat)),
                     longitude=Decimal(str(lon))
                 )
@@ -243,8 +243,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         for lat, lon in invalid_coordinates:
             with self.subTest(latitude=lat, longitude=lon):
                 with self.assertRaises(ValidationError):
-                    headquarters = HeadquarterLocationFactory.build(
-                        organization=self.health_org,
+                    headquarters = self.build_headquarters_with_users(
                         latitude=Decimal(str(lat)),
                         longitude=Decimal(str(lon))
                     )
@@ -253,8 +252,7 @@ class HeadquarterLocationModelTestCase(TestCase):
     def test_suspension_dates_validation(self):
         """Test suspension date validation logic."""
         # Valid: end date after start date
-        headquarters = HeadquarterLocationFactory.build(
-            organization=self.health_org,
+        headquarters = self.build_headquarters_with_users(
             suspension_start=date(2024, 1, 1),
             suspension_end=date(2024, 2, 1)
         )
@@ -262,8 +260,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         
         # Invalid: end date before start date
         with self.assertRaises(ValidationError):
-            headquarters = HeadquarterLocationFactory.build(
-                organization=self.health_org,
+            headquarters = self.build_headquarters_with_users(
                 suspension_start=date(2024, 2, 1),
                 suspension_end=date(2024, 1, 1)
             )
@@ -271,8 +268,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         
         # Invalid: same date
         with self.assertRaises(ValidationError):
-            headquarters = HeadquarterLocationFactory.build(
-                organization=self.health_org,
+            headquarters = self.build_headquarters_with_users(
                 suspension_start=date(2024, 1, 1),
                 suspension_end=date(2024, 1, 1)
             )
@@ -281,8 +277,7 @@ class HeadquarterLocationModelTestCase(TestCase):
     def test_capacity_validation(self):
         """Test validation of bed capacity constraints."""
         # Valid: ICU beds less than total beds
-        headquarters = HeadquarterLocationFactory.build(
-            organization=self.health_org,
+        headquarters = self.build_headquarters_with_users(
             total_beds=100,
             icu_beds=10
         )
@@ -290,8 +285,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         
         # Invalid: ICU beds exceed total beds
         with self.assertRaises(ValidationError):
-            headquarters = HeadquarterLocationFactory.build(
-                organization=self.health_org,
+            headquarters = self.build_headquarters_with_users(
                 total_beds=10,
                 icu_beds=15
             )
@@ -307,8 +301,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         
         # Try to create second main headquarters for same organization
         with self.assertRaises(ValidationError):
-            duplicate_main = MainHeadquarterLocationFactory.build(
-                organization=self.health_org,
+            duplicate_main = self.build_headquarters_with_users(
                 is_main_headquarters=True
             )
             duplicate_main.full_clean()
@@ -436,8 +429,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         
         for sede_type in valid_sede_types:
             with self.subTest(sede_type=sede_type):
-                headquarters = HeadquarterLocationFactory.build(
-                    organization=self.health_org,
+                headquarters = self.build_headquarters_with_users(
                     sede_type=sede_type
                 )
                 headquarters.full_clean()
@@ -451,8 +443,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         
         for status in valid_statuses:
             with self.subTest(habilitation_status=status):
-                headquarters = HeadquarterLocationFactory.build(
-                    organization=self.health_org,
+                headquarters = self.build_headquarters_with_users(
                     habilitation_status=status
                 )
                 headquarters.full_clean()
@@ -466,8 +457,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         
         for status in valid_statuses:
             with self.subTest(operational_status=status):
-                headquarters = HeadquarterLocationFactory.build(
-                    organization=self.health_org,
+                headquarters = self.build_headquarters_with_users(
                     operational_status=status
                 )
                 headquarters.full_clean()
@@ -478,8 +468,7 @@ class HeadquarterLocationModelTestCase(TestCase):
         
         for status in valid_statuses:
             with self.subTest(sync_status=status):
-                headquarters = HeadquarterLocationFactory.build(
-                    organization=self.health_org,
+                headquarters = self.build_headquarters_with_users(
                     sync_status=status
                 )
                 headquarters.full_clean()
@@ -490,7 +479,9 @@ class HeadquarterLocationModelTestCase(TestCase):
         
         self.assertEqual(headquarters.sync_errors, [])
         self.assertEqual(headquarters.reps_data, {})
-        self.assertEqual(headquarters.working_hours, {})
+        # working_hours is generated by factory, so check it's a dict with expected structure
+        self.assertIsInstance(headquarters.working_hours, dict)
+        self.assertIn('monday', headquarters.working_hours)
     
     def test_audit_trail_fields(self):
         """Test audit trail fields are properly set."""

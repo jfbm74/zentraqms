@@ -7,7 +7,7 @@ providing API serialization and validation.
 
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
-from .models import Organization, Location, SectorTemplate, AuditLog, HealthOrganization, HealthService, SedePrestadora, SedeServicio
+from ..models import Organization, Location, SectorTemplate, AuditLog, HealthOrganization, HealthService, SedePrestadora, SedeServicio
 
 
 class LocationSerializer(serializers.ModelSerializer):

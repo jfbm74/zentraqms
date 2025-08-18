@@ -51,7 +51,7 @@ class OrganizationFactory(factory.django.DjangoModelFactory):
     
     # Contact information
     email_contacto = factory.Faker('company_email', locale='es_ES')
-    telefono_principal = factory.Faker('phone_number', locale='es_CO')
+    telefono_principal = factory.LazyFunction(lambda: fake.numerify('3#########'))  # Colombian mobile, 10 digits
     website = factory.Faker('url')
     
     # Classification
@@ -177,13 +177,13 @@ class HealthOrganizationProfileFactory(factory.django.DjangoModelFactory):
         'IPS', 'HOSPITAL', 'CLINICA', 'CENTRO_MEDICO',
         'LABORATORIO', 'CENTRO_DIAGNOSTICO'
     ])
-    nivel_complejidad = fuzzy.FuzzyChoice(['I', 'II', 'III', 'IV'])
+    nivel_complejidad = fuzzy.FuzzyChoice(['I', 'II', 'III'])  # Avoid IV for general factory
     
     # Legal representative
     representante_tipo_documento = fuzzy.FuzzyChoice(['CC', 'CE', 'PA'])
-    representante_numero_documento = factory.Faker('random_number', digits=8)
+    representante_numero_documento = factory.LazyFunction(lambda: fake.numerify('########'))  # Generate as string
     representante_nombre_completo = factory.Faker('name', locale='es_ES')
-    representante_telefono = factory.Faker('phone_number', locale='es_CO')
+    representante_telefono = factory.LazyFunction(lambda: fake.numerify('30########'))  # Colombian mobile format, 10 digits
     representante_email = factory.Faker('email', locale='es_ES')
     
     # Dates
@@ -243,7 +243,7 @@ class BogotaHealthOrganizationFactory(HealthOrganizationProfileFactory):
     
     @factory.lazy_attribute
     def representante_telefono(self):
-        return f"+57 1 {random.randint(200, 799)} {random.randint(1000, 9999)}"
+        return f"1{random.randint(200, 799)}{random.randint(1000, 9999)}"  # Bogotá landline, 10 digits
     
     @factory.post_generation
     def bogota_specific(self, create, extracted, **kwargs):
@@ -260,7 +260,7 @@ class MedellinHealthOrganizationFactory(HealthOrganizationProfileFactory):
     
     @factory.lazy_attribute
     def representante_telefono(self):
-        return f"+57 4 {random.randint(200, 799)} {random.randint(1000, 9999)}"
+        return f"4{random.randint(200, 799)}{random.randint(1000, 9999)}"  # Medellín landline, 10 digits
 
 
 class CaliHealthOrganizationFactory(HealthOrganizationProfileFactory):
@@ -268,7 +268,7 @@ class CaliHealthOrganizationFactory(HealthOrganizationProfileFactory):
     
     @factory.lazy_attribute
     def representante_telefono(self):
-        return f"+57 2 {random.randint(300, 699)} {random.randint(1000, 9999)}"
+        return f"2{random.randint(300, 699)}{random.randint(1000, 9999)}"  # Cali landline, 10 digits
 
 
 # Manufacturing sector factories
@@ -417,7 +417,7 @@ def create_wizard_test_data():
         'nit': '860123456',
         'digito_verificacion': '7',
         'email_contacto': 'info@hospitalsan rafael.com',
-        'telefono_principal': '+57 1 456 7890',
+        'telefono_principal': '14567890',  # 8 digits, within limit
         'website': 'https://www.hospitalsanrafael.com',
         'descripcion': 'Hospital universitario de alta complejidad especializado en servicios médicos y quirúrgicos.',
         'tamaño_empresa': 'grande',
@@ -711,7 +711,7 @@ class EnabledHealthServiceFactory(factory.django.DjangoModelFactory):
         }
     )
     current_professionals = factory.LazyAttribute(
-        lambda obj: {k: random.randint(1, v) for k, v in obj.required_professionals.items()}
+        lambda obj: {k: random.randint(1, max(1, v)) for k, v in obj.required_professionals.items()}
     )
     
     # Compliance metrics (Resolution 3100/2019)

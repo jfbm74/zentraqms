@@ -13,6 +13,7 @@ from rest_framework.test import APIRequestFactory
 from rest_framework.exceptions import ValidationError
 from decimal import Decimal
 from datetime import date, timedelta
+import uuid
 
 from apps.organization.serializers.sogcs_sedes_serializers import (
     HeadquarterLocationListSerializer,
@@ -150,7 +151,13 @@ class HeadquarterLocationSerializerTestCase(TestCase):
             'name': 'Primera Sede',
             'sede_type': 'principal',
             'department_code': '11',
-            'municipality_code': '11001'
+            'department_name': 'Bogotá D.C.',
+            'municipality_code': '11001',
+            'municipality_name': 'Bogotá',
+            'address': 'Calle 123 # 45-67',
+            'phone_primary': '+57 1 234 5678',
+            'email': 'primera.sede@test.com',
+            'administrative_contact': 'Juan Pérez'
         }
         
         serializer = HeadquarterLocationCreateSerializer(
@@ -173,8 +180,16 @@ class HeadquarterLocationSerializerTestCase(TestCase):
         # Test invalid REPS code
         invalid_data = {
             'organization': str(self.health_org.id),
-            'reps_code': 'INVALID',  # Invalid format
-            'name': 'Test Sede'
+            'reps_code': 'inv@lid',  # Invalid format - contains special characters
+            'name': 'Test Sede',
+            'department_code': '11',
+            'department_name': 'Bogotá D.C.',
+            'municipality_code': '11001',
+            'municipality_name': 'Bogotá',
+            'address': 'Calle 123 # 45-67',
+            'phone_primary': '+57 1 234 5678',
+            'email': 'test.sede@test.com',
+            'administrative_contact': 'Juan Pérez'
         }
         
         serializer = HeadquarterLocationCreateSerializer(
@@ -195,6 +210,14 @@ class HeadquarterLocationSerializerTestCase(TestCase):
             'organization': str(self.health_org.id),
             'reps_code': '11888888',
             'name': 'Test Sede',
+            'department_code': '11',
+            'department_name': 'Bogotá D.C.',
+            'municipality_code': '11001',
+            'municipality_name': 'Bogotá',
+            'address': 'Calle 123 # 45-67',
+            'phone_primary': '+57 1 234 5678',
+            'email': 'suspension.sede@test.com',
+            'administrative_contact': 'Juan Pérez',
             'suspension_start': '2024-02-01',
             'suspension_end': '2024-01-01'  # Before start
         }
@@ -217,6 +240,14 @@ class HeadquarterLocationSerializerTestCase(TestCase):
             'organization': str(self.health_org.id),
             'reps_code': '11777777',
             'name': 'Test Sede',
+            'department_code': '11',
+            'department_name': 'Bogotá D.C.',
+            'municipality_code': '11001',
+            'municipality_name': 'Bogotá',
+            'address': 'Calle 123 # 45-67',
+            'phone_primary': '+57 1 234 5678',
+            'email': 'capacity.sede@test.com',
+            'administrative_contact': 'Juan Pérez',
             'total_beds': 10,
             'icu_beds': 15  # Exceeds total
         }
@@ -383,6 +414,12 @@ class EnabledHealthServiceSerializerTestCase(TestCase):
             'headquarters': str(self.headquarters.id),
             'service_code': '203',
             'service_name': 'Test Service',
+            'service_group': 'consulta_externa',
+            'complexity_level': 1,
+            'habilitation_date': '2024-01-01',
+            'habilitation_expiry': '2026-01-01',
+            'habilitation_act': 'Acto-123456',
+            'distinctive_code': 'DC12345679',
             'intramural': False,
             'extramural': False,
             'domiciliary': False,
@@ -407,6 +444,10 @@ class EnabledHealthServiceSerializerTestCase(TestCase):
             'headquarters': str(self.headquarters.id),
             'service_code': '204',
             'service_name': 'Test Service',
+            'service_group': 'consulta_externa',
+            'complexity_level': 1,
+            'habilitation_act': 'Acto-123456',
+            'distinctive_code': 'DC12345679',
             'intramural': True,
             'habilitation_date': '2024-01-01',
             'habilitation_expiry': '2023-01-01'  # Before habilitation
@@ -430,6 +471,12 @@ class EnabledHealthServiceSerializerTestCase(TestCase):
             'headquarters': str(self.headquarters.id),
             'service_code': '205',
             'service_name': 'Test Service',
+            'service_group': 'consulta_externa',
+            'complexity_level': 1,
+            'habilitation_date': '2024-01-01',
+            'habilitation_expiry': '2026-01-01',
+            'habilitation_act': 'Acto-123456',
+            'distinctive_code': 'DC12345679',
             'intramural': True,
             'infrastructure_compliance': 150.0  # Above 100%
         }
@@ -455,6 +502,12 @@ class EnabledHealthServiceSerializerTestCase(TestCase):
             'headquarters': str(self.headquarters.id),
             'service_code': '206',
             'service_name': 'Surgery Service',
+            'service_group': 'quirurgicos',
+            'complexity_level': 2,
+            'habilitation_date': '2024-01-01',
+            'habilitation_expiry': '2026-01-01',
+            'habilitation_act': 'Acto-123456',
+            'distinctive_code': 'DC12345679',
             'intramural': True,
             'interdependencies': [str(dependency.id)]
         }
@@ -750,7 +803,7 @@ class SOGCSUtilitySerializerTestCase(TestCase):
             'alert_type': 'renewal_required',
             'severity': 'high',
             'entity_type': 'service',
-            'entity_id': 'uuid-string',
+            'entity_id': str(uuid.uuid4()),
             'entity_name': 'Medicina General',
             'message': 'Service renewal required within 30 days',
             'days_remaining': 30,
@@ -857,6 +910,9 @@ class SerializerFieldTransformationTestCase(TestCase):
         """Set up test data."""
         self.headquarters = HeadquarterLocationFactory.create()
         self.service = EnabledHealthServiceFactory.create(
+            headquarters=self.headquarters
+        )
+        self.process = ServiceHabilitationProcessFactory.create(
             headquarters=self.headquarters
         )
     
