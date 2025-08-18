@@ -23,7 +23,9 @@ class HeadquarterLocation(BaseModel):
     organization = models.ForeignKey(
         Organization,
         on_delete=models.CASCADE,
-        related_name='headquarter_locations'
+        related_name='headquarter_locations',
+        null=True,
+        blank=True
     )
     name = models.CharField(max_length=200, verbose_name="Nombre de la sede")
     address = models.TextField(verbose_name="Dirección")
@@ -46,7 +48,9 @@ class EnabledHealthService(BaseModel):
     organization = models.ForeignKey(
         Organization,
         on_delete=models.CASCADE,
-        related_name='enabled_services'
+        related_name='enabled_services',
+        null=True,
+        blank=True
     )
     headquarters = models.ForeignKey(
         HeadquarterLocation,
@@ -62,9 +66,10 @@ class EnabledHealthService(BaseModel):
             ('MEDIA', 'Media complejidad'),
             ('ALTA', 'Alta complejidad'),
         ],
+        default='BAJA',
         verbose_name="Nivel de complejidad"
     )
-    enabled_date = models.DateField(verbose_name="Fecha de habilitación")
+    enabled_date = models.DateField(null=True, blank=True, verbose_name="Fecha de habilitación")
     expiration_date = models.DateField(null=True, blank=True, verbose_name="Fecha de vencimiento")
     is_active = models.BooleanField(default=True, verbose_name="Activo")
     
