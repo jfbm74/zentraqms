@@ -52,9 +52,9 @@ const TendenciasCumplimiento = () => {
                             </div>
                             
                             {/* Resumen por componente */}
-                            <div className="row g-2 mb-2">
+                            <div className="row g-3 mb-3">
                                 <div className="col-6">
-                                    <div className="p-2 border rounded">
+                                    <div className="p-3 border rounded">
                                         <div className="d-flex align-items-center">
                                             <div className="flex-shrink-0">
                                                 <div className="avatar-xs">
@@ -63,15 +63,15 @@ const TendenciasCumplimiento = () => {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="flex-grow-1 ms-2">
-                                                <p className="text-uppercase fw-medium text-muted mb-0 fs-11">SUH</p>
+                                            <div className="flex-grow-1 ms-3">
+                                                <p className="text-uppercase fw-medium text-muted mb-1 fs-11">SUH</p>
                                                 <h6 className="mb-0 fs-13">92.5%</h6>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="col-6">
-                                    <div className="p-2 border rounded">
+                                    <div className="p-3 border rounded">
                                         <div className="d-flex align-items-center">
                                             <div className="flex-shrink-0">
                                                 <div className="avatar-xs">
@@ -80,15 +80,15 @@ const TendenciasCumplimiento = () => {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="flex-grow-1 ms-2">
-                                                <p className="text-uppercase fw-medium text-muted mb-0 fs-11">PAMEC</p>
+                                            <div className="flex-grow-1 ms-3">
+                                                <p className="text-uppercase fw-medium text-muted mb-1 fs-11">PAMEC</p>
                                                 <h6 className="mb-0 fs-13">78.3%</h6>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="col-6">
-                                    <div className="p-2 border rounded">
+                                    <div className="p-3 border rounded">
                                         <div className="d-flex align-items-center">
                                             <div className="flex-shrink-0">
                                                 <div className="avatar-xs">
@@ -97,15 +97,15 @@ const TendenciasCumplimiento = () => {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="flex-grow-1 ms-2">
-                                                <p className="text-uppercase fw-medium text-muted mb-0 fs-11">SIC</p>
+                                            <div className="flex-grow-1 ms-3">
+                                                <p className="text-uppercase fw-medium text-muted mb-1 fs-11">SIC</p>
                                                 <h6 className="mb-0 fs-13">95.1%</h6>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="col-6">
-                                    <div className="p-2 border rounded">
+                                    <div className="p-3 border rounded">
                                         <div className="d-flex align-items-center">
                                             <div className="flex-shrink-0">
                                                 <div className="avatar-xs">
@@ -114,8 +114,8 @@ const TendenciasCumplimiento = () => {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <div className="flex-grow-1 ms-2">
-                                                <p className="text-uppercase fw-medium text-muted mb-0 fs-11">SUA</p>
+                                            <div className="flex-grow-1 ms-3">
+                                                <p className="text-uppercase fw-medium text-muted mb-1 fs-11">SUA</p>
                                                 <h6 className="mb-0 fs-13">45.7%</h6>
                                             </div>
                                         </div>
