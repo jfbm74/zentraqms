@@ -65,6 +65,8 @@ from .serializers import (
     OrganizationWizardCreateSerializer,
     DepartmentSerializer,
     MunicipalitySerializer,
+    # Health organization serializer
+    HealthOrganizationSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -303,6 +305,32 @@ class OrganizationViewSet(viewsets.ModelViewSet):
 
         return Response({"locations": serializer.data, "count": locations.count()})
 
+    @action(detail=True, methods=["get"], url_path="health-profile")
+    def health_profile(self, request, pk=None):
+        """
+        Get health profile for a health organization.
+
+        Args:
+            request: HTTP request object
+            pk: Organization primary key
+
+        Returns:
+            Response: Health profile data or 404 if not found
+        """
+        organization = self.get_object()
+        
+        try:
+            health_profile = organization.health_profile
+            serializer = HealthOrganizationSerializer(health_profile)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except HealthOrganization.DoesNotExist:
+            return Response(
+                {
+                    "error": "Health profile not found",
+                    "message": "Esta organización no tiene perfil de salud configurado"
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     @action(detail=True, methods=["get"], url_path="audit-history")
     def audit_history(self, request, pk=None):

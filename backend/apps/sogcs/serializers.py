@@ -38,23 +38,23 @@ class HeadquarterLocationSerializer(serializers.ModelSerializer):
         model = HeadquarterLocation
         fields = [
             # Basic identification
-            'id', 'codigo_sede', 'nombre_sede', 'tipo_sede', 'estado_sede',
+            'id', 'reps_code', 'name', 'sede_type', 'habilitation_status',
             
             # Location
-            'departamento', 'codigo_departamento', 'municipio', 'codigo_municipio',
-            'direccion', 'telefono', 'email',
+            'department_name', 'department_code', 'municipality_name', 'municipality_code',
+            'address', 'phone_primary', 'email',
             
             # Administrative
-            'representante_legal', 'director_sede',
+            'administrative_contact',
             
             # Dates
-            'fecha_apertura', 'fecha_habilitacion', 'fecha_vencimiento',
+            'opening_date', 'habilitation_date', 'next_renewal_date',
             
             # Technical info
-            'nivel_atencion', 'categoria', 'numero_camas',
+            'total_beds', 'icu_beds', 'emergency_beds', 'surgery_rooms', 'consultation_rooms',
             
             # REPS metadata
-            'fecha_actualizacion_reps', 'version_reps',
+            'last_reps_sync', 'sync_status',
             
             # Computed fields
             'is_active', 'is_about_to_expire', 'services_count',
@@ -74,22 +74,22 @@ class HeadquarterLocationSerializer(serializers.ModelSerializer):
 
     def get_is_active(self, obj):
         """Check if headquarters is currently active"""
-        return obj.is_active()
+        return obj.is_operational
 
     def get_is_about_to_expire(self, obj):
         """Check if headquarters habilitación is about to expire (30 days)"""
-        return obj.is_about_to_expire(days=30)
+        return obj.needs_renewal_alert(days_threshold=30)
 
     def get_services_count(self, obj):
         """Get count of enabled services in this headquarters"""
-        return obj.get_services_count()
+        return obj.enabled_services.count()
 
-    def validate_codigo_sede(self, value):
-        """Validate that codigo_sede is unique within organization"""
+    def validate_reps_code(self, value):
+        """Validate that reps_code is unique within organization"""
         if self.instance:
             # Update case
             existing = HeadquarterLocation.objects.filter(
-                codigo_sede=value,
+                reps_code=value,
                 organization=self.instance.organization
             ).exclude(id=self.instance.id)
         else:
@@ -98,7 +98,7 @@ class HeadquarterLocationSerializer(serializers.ModelSerializer):
             if not organization:
                 raise serializers.ValidationError("Organization context required for validation")
             existing = HeadquarterLocation.objects.filter(
-                codigo_sede=value,
+                reps_code=value,
                 organization=organization
             )
         
@@ -130,12 +130,9 @@ class EnabledHealthServiceSerializer(serializers.ModelSerializer):
     # Computed fields
     is_enabled = serializers.SerializerMethodField()
     is_about_to_expire = serializers.SerializerMethodField()
-    utilization_percentage = serializers.SerializerMethodField()
-    requires_renewal_soon = serializers.SerializerMethodField()
     
     # Related headquarters info
-    headquarters_name = serializers.CharField(source='headquarters.nombre_sede', read_only=True)
-    headquarters_codigo = serializers.CharField(source='headquarters.codigo_sede', read_only=True)
+    headquarters_name = serializers.CharField(source='headquarters.name', read_only=True)
     organization_name = serializers.CharField(source='headquarters.organization.organization.razon_social', read_only=True)
     
     # Created by info
@@ -145,83 +142,62 @@ class EnabledHealthServiceSerializer(serializers.ModelSerializer):
         model = EnabledHealthService
         fields = [
             # Basic identification
-            'id', 'codigo_servicio', 'nombre_servicio', 'tipo_servicio', 
-            'modalidad', 'estado',
+            'id', 'service_code', 'service_name', 'cups_code', 
+            'habilitation_status',
             
             # Classification
-            'grupo_servicio', 'subgrupo_servicio', 'especialidad',
+            'service_group', 'complexity_level',
             
             # Capacity
-            'capacidad_instalada', 'capacidad_utilizada', 'numero_profesionales',
+            'installed_capacity', 'operational_capacity', 'monthly_production',
             
-            # Technical
-            'complejidad', 'ambito',
+            # Modalities
+            'intramural', 'extramural', 'domiciliary', 'telemedicine',
             
             # Dates
-            'fecha_habilitacion', 'fecha_vencimiento', 'fecha_ultima_actualizacion',
-            
-            # Contact
-            'responsable_servicio', 'telefono_servicio',
+            'habilitation_date', 'habilitation_expiry',
             
             # Characteristics
-            'requiere_autorizacion', 'atiende_urgencias', 'disponible_24h',
+            'requires_authorization', 'reference_center',
             
             # Legal
-            'numero_resolucion', 'fecha_resolucion',
+            'habilitation_act', 'distinctive_code',
             
             # Computed fields
-            'is_enabled', 'is_about_to_expire', 'utilization_percentage', 
-            'requires_renewal_soon',
+            'is_enabled', 'is_about_to_expire',
             
             # Related info
-            'headquarters', 'headquarters_name', 'headquarters_codigo', 'organization_name',
+            'headquarters', 'headquarters_name', 'organization_name',
             'created_by_name',
             
             # Timestamps
             'created_at', 'updated_at'
         ]
         read_only_fields = [
-            'id', 'headquarters_name', 'headquarters_codigo', 'organization_name',
+            'id', 'headquarters_name', 'organization_name',
             'created_by_name', 'is_enabled', 'is_about_to_expire', 
-            'utilization_percentage', 'requires_renewal_soon', 'created_at', 'updated_at'
+            'created_at', 'updated_at'
         ]
 
     def get_is_enabled(self, obj):
         """Check if service is currently enabled"""
-        return obj.is_enabled()
+        return obj.is_valid
 
     def get_is_about_to_expire(self, obj):
         """Check if service habilitación is about to expire (30 days)"""
-        return obj.is_about_to_expire(days=30)
-
-    def get_utilization_percentage(self, obj):
-        """Get capacity utilization percentage"""
-        return obj.get_utilization_percentage()
-
-    def get_requires_renewal_soon(self, obj):
-        """Check if service requires renewal soon (90 days)"""
-        return obj.requires_renewal_soon(days=90)
+        return obj.needs_renewal_alert(days_threshold=30)
 
     def validate(self, attrs):
         """Cross-field validation"""
         # Date validation
-        fecha_habilitacion = attrs.get('fecha_habilitacion')
-        fecha_vencimiento = attrs.get('fecha_vencimiento')
+        habilitation_date = attrs.get('habilitation_date')
+        habilitation_expiry = attrs.get('habilitation_expiry')
         
-        if fecha_habilitacion and fecha_vencimiento:
-            if fecha_vencimiento < fecha_habilitacion:
+        if habilitation_date and habilitation_expiry:
+            if habilitation_expiry < habilitation_date:
                 raise serializers.ValidationError({
-                    'fecha_vencimiento': 'La fecha de vencimiento no puede ser anterior a la fecha de habilitación'
+                    'habilitation_expiry': 'La fecha de vencimiento no puede ser anterior a la fecha de habilitación'
                 })
-        
-        # Capacity validation
-        capacidad_instalada = attrs.get('capacidad_instalada', 0)
-        capacidad_utilizada = attrs.get('capacidad_utilizada', 0)
-        
-        if capacidad_utilizada > capacidad_instalada:
-            raise serializers.ValidationError({
-                'capacidad_utilizada': 'La capacidad utilizada no puede ser mayor a la capacidad instalada'
-            })
         
         return attrs
 
@@ -235,25 +211,25 @@ class HeadquarterLocationSummarySerializer(serializers.ModelSerializer):
     class Meta:
         model = HeadquarterLocation
         fields = [
-            'id', 'codigo_sede', 'nombre_sede', 'estado_sede',
-            'departamento', 'municipio', 'services_count'
+            'id', 'reps_code', 'name', 'habilitation_status',
+            'department_name', 'municipality_name', 'services_count'
         ]
 
     def get_services_count(self, obj):
-        return obj.get_services_count()
+        return obj.enabled_services.count()
 
 
 class EnabledHealthServiceSummarySerializer(serializers.ModelSerializer):
     """
     Lightweight serializer for services summaries and dropdowns.
     """
-    headquarters_name = serializers.CharField(source='headquarters.nombre_sede', read_only=True)
+    headquarters_name = serializers.CharField(source='headquarters.name', read_only=True)
     
     class Meta:
         model = EnabledHealthService
         fields = [
-            'id', 'codigo_servicio', 'nombre_servicio', 'estado',
-            'complejidad', 'grupo_servicio', 'headquarters_name'
+            'id', 'service_code', 'service_name', 'habilitation_status',
+            'complexity_level', 'service_group', 'headquarters_name'
         ]
 
 

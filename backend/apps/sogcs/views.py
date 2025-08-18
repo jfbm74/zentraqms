@@ -56,26 +56,25 @@ class HeadquarterLocationViewSet(viewsets.ModelViewSet):
     
     # Filtering
     filterset_fields = {
-        'estado_sede': ['exact', 'in'],
-        'departamento': ['exact', 'icontains'],
-        'municipio': ['exact', 'icontains'],
-        'nivel_atencion': ['exact', 'in'],
-        'tipo_sede': ['exact', 'icontains'],
-        'fecha_habilitacion': ['gte', 'lte', 'exact'],
-        'fecha_vencimiento': ['gte', 'lte', 'exact'],
+        'habilitation_status': ['exact', 'in'],
+        'department_name': ['exact', 'icontains'],
+        'municipality_name': ['exact', 'icontains'],
+        'sede_type': ['exact', 'icontains'],
+        'habilitation_date': ['gte', 'lte', 'exact'],
+        'next_renewal_date': ['gte', 'lte', 'exact'],
         'created_at': ['gte', 'lte']
     }
     
     # Search
     search_fields = [
-        'codigo_sede', 'nombre_sede', 'direccion', 
-        'representante_legal', 'director_sede'
+        'reps_code', 'name', 'address', 
+        'administrative_contact'
     ]
     
     # Ordering
     ordering_fields = [
-        'codigo_sede', 'nombre_sede', 'fecha_habilitacion', 
-        'fecha_vencimiento', 'created_at'
+        'reps_code', 'name', 'habilitation_date', 
+        'next_renewal_date', 'created_at'
     ]
     ordering = ['-created_at']
 
@@ -89,15 +88,26 @@ class HeadquarterLocationViewSet(viewsets.ModelViewSet):
         if hasattr(user, 'current_organization'):
             organization = user.current_organization
         else:
-            # Fallback to user's primary organization
+            # Get organization through HealthOrganization model
             try:
-                from apps.authorization.models import UserRole
-                user_role = UserRole.objects.filter(user=user, is_active=True).first()
-                if user_role and hasattr(user_role, 'organization'):
-                    organization = user_role.organization
-                else:
+                from apps.organization.models import Organization
+                # For now, get the first available organization for the user
+                # TODO: Implement proper user-organization relationship
+                organization_query = Organization.objects.filter(is_active=True)
+                organization = organization_query.first()
+                
+                if not organization:
                     return HeadquarterLocation.objects.none()
-            except:
+                    
+                # Try to get HealthOrganization profile
+                try:
+                    health_org = HealthOrganization.objects.get(organization=organization)
+                    organization = health_org
+                except HealthOrganization.DoesNotExist:
+                    # If no health profile, return empty queryset
+                    return HeadquarterLocation.objects.none()
+            except Exception as e:
+                logger.error(f"Error getting user organization: {str(e)}")
                 return HeadquarterLocation.objects.none()
         
         queryset = HeadquarterLocation.objects.filter(
@@ -127,12 +137,22 @@ class HeadquarterLocationViewSet(viewsets.ModelViewSet):
         if hasattr(user, 'current_organization'):
             organization = user.current_organization
         else:
-            # Fallback logic
-            from apps.authorization.models import UserRole
-            user_role = UserRole.objects.filter(user=user, is_active=True).first()
-            if user_role and hasattr(user_role, 'organization'):
-                organization = user_role.organization
-            else:
+            # Get organization through HealthOrganization model
+            try:
+                from apps.organization.models import Organization
+                organization_query = Organization.objects.filter(is_active=True)
+                base_organization = organization_query.first()
+                
+                if not base_organization:
+                    raise ValueError("Usuario no tiene organización asociada")
+                    
+                # Try to get HealthOrganization profile
+                try:
+                    organization = HealthOrganization.objects.get(organization=base_organization)
+                except HealthOrganization.DoesNotExist:
+                    raise ValueError("La organización no tiene perfil de salud configurado")
+            except Exception as e:
+                logger.error(f"Error getting user organization for create: {str(e)}")
                 raise ValueError("Usuario no tiene organización asociada")
         
         serializer.save(
@@ -149,24 +169,24 @@ class HeadquarterLocationViewSet(viewsets.ModelViewSet):
         
         # Basic counts
         total = queryset.count()
-        active = queryset.filter(estado_sede='ACTIVA').count()
-        suspended = queryset.filter(estado_sede='SUSPENDIDA').count()
+        active = queryset.filter(habilitation_status='habilitada').count()
+        suspended = queryset.filter(habilitation_status='suspendida').count()
         
         # About to expire (30 days)
         from datetime import date, timedelta
         expiry_threshold = date.today() + timedelta(days=30)
         about_to_expire = queryset.filter(
-            fecha_vencimiento__lte=expiry_threshold,
-            fecha_vencimiento__gte=date.today()
+            next_renewal_date__lte=expiry_threshold,
+            next_renewal_date__gte=date.today()
         ).count()
         
-        # By nivel_atencion
-        by_level = queryset.values('nivel_atencion').annotate(
+        # By sede_type
+        by_type = queryset.values('sede_type').annotate(
             count=Count('id')
-        ).order_by('nivel_atencion')
+        ).order_by('sede_type')
         
-        # By departamento
-        by_department = queryset.values('departamento').annotate(
+        # By department
+        by_department = queryset.values('department_name').annotate(
             count=Count('id')
         ).order_by('-count')[:10]  # Top 10
         
@@ -175,7 +195,7 @@ class HeadquarterLocationViewSet(viewsets.ModelViewSet):
             'active': active,
             'suspended': suspended,
             'about_to_expire': about_to_expire,
-            'by_level': list(by_level),
+            'by_type': list(by_type),
             'by_department': list(by_department)
         })
 
@@ -184,7 +204,7 @@ class HeadquarterLocationViewSet(viewsets.ModelViewSet):
         """
         Get simplified list for dropdowns.
         """
-        queryset = self.get_queryset().filter(estado_sede='ACTIVA')
+        queryset = self.get_queryset().filter(habilitation_status='habilitada')
         serializer = HeadquarterLocationSummarySerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -211,14 +231,14 @@ class HeadquarterLocationViewSet(viewsets.ModelViewSet):
             if headquarters.is_about_to_expire(days=days):
                 alerts.append({
                     'days': days,
-                    'expires_on': headquarters.fecha_vencimiento,
+                    'expires_on': headquarters.next_renewal_date,
                     'message': f'La habilitación vence en {days} días o menos'
                 })
         
         return Response({
-            'headquarters': headquarters.nombre_sede,
-            'current_status': headquarters.estado_sede,
-            'expiration_date': headquarters.fecha_vencimiento,
+            'headquarters': headquarters.name,
+            'current_status': headquarters.habilitation_status,
+            'expiration_date': headquarters.next_renewal_date,
             'alerts': alerts
         })
 
@@ -237,32 +257,32 @@ class EnabledHealthServiceViewSet(viewsets.ModelViewSet):
     
     # Filtering
     filterset_fields = {
-        'estado': ['exact', 'in'],
-        'grupo_servicio': ['exact', 'icontains'],
-        'complejidad': ['exact', 'in'],
-        'ambito': ['exact', 'in'],
-        'tipo_servicio': ['exact', 'icontains'],
-        'modalidad': ['exact', 'icontains'],
-        'fecha_habilitacion': ['gte', 'lte', 'exact'],
-        'fecha_vencimiento': ['gte', 'lte', 'exact'],
-        'requiere_autorizacion': ['exact'],
-        'atiende_urgencias': ['exact'],
-        'disponible_24h': ['exact'],
+        'habilitation_status': ['exact', 'in'],
+        'service_group': ['exact', 'icontains'],
+        'complexity_level': ['exact', 'in'],
+        'intramural': ['exact'],
+        'extramural': ['exact'],
+        'domiciliary': ['exact'],
+        'telemedicine': ['exact'],
+        'habilitation_date': ['gte', 'lte', 'exact'],
+        'habilitation_expiry': ['gte', 'lte', 'exact'],
+        'requires_authorization': ['exact'],
+        'reference_center': ['exact'],
         'headquarters': ['exact'],
-        'headquarters__departamento': ['exact', 'icontains'],
-        'headquarters__municipio': ['exact', 'icontains']
+        'headquarters__department_name': ['exact', 'icontains'],
+        'headquarters__municipality_name': ['exact', 'icontains']
     }
     
     # Search
     search_fields = [
-        'codigo_servicio', 'nombre_servicio', 'grupo_servicio',
-        'especialidad', 'responsable_servicio'
+        'service_code', 'service_name', 'service_group',
+        'cups_code'
     ]
     
     # Ordering
     ordering_fields = [
-        'codigo_servicio', 'nombre_servicio', 'fecha_habilitacion',
-        'fecha_vencimiento', 'capacidad_instalada', 'created_at'
+        'service_code', 'service_name', 'habilitation_date',
+        'habilitation_expiry', 'monthly_production', 'created_at'
     ]
     ordering = ['-created_at']
 
@@ -276,14 +296,22 @@ class EnabledHealthServiceViewSet(viewsets.ModelViewSet):
         if hasattr(user, 'current_organization'):
             organization = user.current_organization
         else:
+            # Get organization through HealthOrganization model
             try:
-                from apps.authorization.models import UserRole
-                user_role = UserRole.objects.filter(user=user, is_active=True).first()
-                if user_role and hasattr(user_role, 'organization'):
-                    organization = user_role.organization
-                else:
+                from apps.organization.models import Organization
+                organization_query = Organization.objects.filter(is_active=True)
+                base_organization = organization_query.first()
+                
+                if not base_organization:
                     return EnabledHealthService.objects.none()
-            except:
+                    
+                # Try to get HealthOrganization profile
+                try:
+                    organization = HealthOrganization.objects.get(organization=base_organization)
+                except HealthOrganization.DoesNotExist:
+                    return EnabledHealthService.objects.none()
+            except Exception as e:
+                logger.error(f"Error getting user organization for services: {str(e)}")
                 return EnabledHealthService.objects.none()
         
         queryset = EnabledHealthService.objects.filter(
@@ -309,32 +337,32 @@ class EnabledHealthServiceViewSet(viewsets.ModelViewSet):
         
         # Basic counts
         total = queryset.count()
-        enabled = queryset.filter(estado='HABILITADO').count()
-        suspended = queryset.filter(estado='SUSPENDIDO').count()
+        enabled = queryset.filter(habilitation_status='activo').count()
+        suspended = queryset.filter(habilitation_status='suspendido').count()
         
         # About to expire (30 days)
         from datetime import date, timedelta
         expiry_threshold = date.today() + timedelta(days=30)
         about_to_expire = queryset.filter(
-            fecha_vencimiento__lte=expiry_threshold,
-            fecha_vencimiento__gte=date.today()
+            habilitation_expiry__lte=expiry_threshold,
+            habilitation_expiry__gte=date.today()
         ).count()
         
-        # By grupo_servicio
-        by_group = queryset.values('grupo_servicio').annotate(
+        # By service_group
+        by_group = queryset.values('service_group').annotate(
             count=Count('id')
         ).order_by('-count')[:10]
         
-        # By complejidad
-        by_complexity = queryset.values('complejidad').annotate(
+        # By complexity_level
+        by_complexity = queryset.values('complexity_level').annotate(
             count=Count('id')
-        ).order_by('complejidad')
+        ).order_by('complexity_level')
         
         # Capacity utilization
         capacity_stats = queryset.filter(
-            capacidad_instalada__gt=0
+            monthly_production__gt=0
         ).aggregate(
-            avg_utilization=Avg('capacidad_utilizada')
+            avg_utilization=Avg('monthly_production')
         )
         
         return Response({
@@ -352,7 +380,7 @@ class EnabledHealthServiceViewSet(viewsets.ModelViewSet):
         """
         Get simplified list for dropdowns.
         """
-        queryset = self.get_queryset().filter(estado='HABILITADO')
+        queryset = self.get_queryset().filter(habilitation_status='activo')
         serializer = EnabledHealthServiceSummarySerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -365,12 +393,12 @@ class EnabledHealthServiceViewSet(viewsets.ModelViewSet):
         
         # Group by headquarters
         by_hq = queryset.values(
-            'headquarters__codigo_sede',
-            'headquarters__nombre_sede'
+            'headquarters__reps_code',
+            'headquarters__name'
         ).annotate(
             total_services=Count('id'),
-            enabled_services=Count('id', filter=Q(estado='HABILITADO'))
-        ).order_by('headquarters__nombre_sede')
+            enabled_services=Count('id', filter=Q(habilitation_status='activo'))
+        ).order_by('headquarters__name')
         
         return Response(list(by_hq))
 
@@ -392,9 +420,8 @@ class EnabledHealthServiceViewSet(viewsets.ModelViewSet):
             recommendations.append('Baja utilización - revisar eficiencia')
         
         return Response({
-            'service': service.nombre_servicio,
-            'capacidad_instalada': service.capacidad_instalada,
-            'capacidad_utilizada': service.capacidad_utilizada,
+            'service': service.service_name,
+            'monthly_production': service.monthly_production,
             'utilization_percentage': utilization,
             'recommendations': recommendations
         })
@@ -418,14 +445,21 @@ class SOGCSOverviewViewSet(viewsets.ViewSet):
             return user.current_organization
         
         try:
-            from apps.authorization.models import UserRole
-            user_role = UserRole.objects.filter(user=user, is_active=True).first()
-            if user_role and hasattr(user_role, 'organization'):
-                return user_role.organization
-        except:
-            pass
-        
-        return None
+            from apps.organization.models import Organization
+            organization_query = Organization.objects.filter(is_active=True)
+            base_organization = organization_query.first()
+            
+            if not base_organization:
+                return None
+                
+            # Try to get HealthOrganization profile
+            try:
+                return HealthOrganization.objects.get(organization=base_organization)
+            except HealthOrganization.DoesNotExist:
+                return None
+        except Exception as e:
+            logger.error(f"Error getting user organization: {str(e)}")
+            return None
 
     @action(detail=False, methods=['get'])
     def dashboard(self, request):
@@ -459,14 +493,14 @@ class SOGCSOverviewViewSet(viewsets.ViewSet):
         headquarters = HeadquarterLocation.objects.filter(organization=organization)
         data.update({
             'total_headquarters': headquarters.count(),
-            'active_headquarters': headquarters.filter(estado_sede='ACTIVA').count(),
+            'active_headquarters': headquarters.filter(habilitation_status='habilitada').count(),
         })
         
         # Services metrics
         services = EnabledHealthService.objects.filter(headquarters__organization=organization)
         data.update({
             'total_services': services.count(),
-            'enabled_services': services.filter(estado='HABILITADO').count(),
+            'enabled_services': services.filter(habilitation_status='activo').count(),
         })
         
         # Compliance percentages
@@ -642,14 +676,21 @@ class REPSImportViewSet(viewsets.ViewSet):
             return user.current_organization
         
         try:
-            from apps.authorization.models import UserRole
-            user_role = UserRole.objects.filter(user=user, is_active=True).first()
-            if user_role and hasattr(user_role, 'organization'):
-                return user_role.organization
-        except:
-            pass
-        
-        return None
+            from apps.organization.models import Organization
+            organization_query = Organization.objects.filter(is_active=True)
+            base_organization = organization_query.first()
+            
+            if not base_organization:
+                return None
+                
+            # Try to get HealthOrganization profile
+            try:
+                return HealthOrganization.objects.get(organization=base_organization)
+            except HealthOrganization.DoesNotExist:
+                return None
+        except Exception as e:
+            logger.error(f"Error getting user organization: {str(e)}")
+            return None
 
     @action(detail=False, methods=['post'])
     def upload(self, request):
