@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from '../../utils/SimpleRouter';
+import './SubHeader.css';
 
 interface SubHeaderProps {
   activeTab?: string;
@@ -120,25 +121,33 @@ const SubHeader: React.FC<SubHeaderProps> = ({
     }
   };
 
-  // Efecto para recalcular posición cuando cambia el layout y cerrar dropdown al hacer clic fuera
+  // Efecto para manejar clic fuera y cerrar dropdown
   useEffect(() => {
     if (openDropdown) {
+      const handleClickOutside = (event: MouseEvent) => {
+        const target = event.target as Element;
+        
+        // Buscar el contenedor del SubHeader y los dropdowns
+        const subheaderContainer = document.querySelector('.sogcs-subheader');
+        const dropdownMenu = document.querySelector('.sogcs-dropdown-menu');
+        
+        // Verificar si el clic fue dentro del SubHeader o dentro de un dropdown
+        const clickedInSubheader = subheaderContainer && subheaderContainer.contains(target);
+        const clickedInDropdown = dropdownMenu && dropdownMenu.contains(target);
+        
+        // Si el clic fue fuera del SubHeader y fuera de cualquier dropdown, cerrar
+        if (!clickedInSubheader && !clickedInDropdown) {
+          setOpenDropdown(null);
+        }
+      };
+
       const handleResize = () => {
         setTimeout(recalculatePosition, 300); // Delay más largo para la animación del sidebar
       };
 
-      const handleClickOutside = (event: MouseEvent) => {
-        if (activeButtonRef.current && !activeButtonRef.current.contains(event.target as Node)) {
-          const dropdownElement = document.querySelector('.dropdown-menu.show');
-          if (dropdownElement && !dropdownElement.contains(event.target as Node)) {
-            setOpenDropdown(null);
-          }
-        }
-      };
-
-      // Listeners para cambios de layout
+      // Agregar listeners
+      document.addEventListener('mousedown', handleClickOutside); // mousedown es mejor que click
       window.addEventListener('resize', handleResize);
-      document.addEventListener('click', handleClickOutside);
       
       // Observer más específico para detectar cambios en el sidebar
       const observer = new MutationObserver((mutations) => {
@@ -163,12 +172,50 @@ const SubHeader: React.FC<SubHeaderProps> = ({
       });
 
       return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
         window.removeEventListener('resize', handleResize);
-        document.removeEventListener('click', handleClickOutside);
         observer.disconnect();
       };
     }
   }, [openDropdown]);
+
+  // Efecto separado para manejar la visibilidad del componente cuando cambia el sidebar
+  useEffect(() => {
+    const handleSidebarChange = () => {
+      // Forzar re-render del componente cuando cambia el sidebar
+      const subheaderElement = document.querySelector('.navbar-menu');
+      if (subheaderElement) {
+        // Trigger reflow para asegurar que el componente se renderice correctamente
+        subheaderElement.style.display = 'none';
+        subheaderElement.offsetHeight; // Force reflow
+        subheaderElement.style.display = '';
+      }
+    };
+
+    // Observer para cambios en el sidebar que afectan la visibilidad del subheader
+    const sidebarObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          const target = mutation.target as Element;
+          if (target.classList.contains('vertical-collpsed') || 
+              target.classList.contains('sidebar-enable') ||
+              target.id === 'layout-wrapper') {
+            setTimeout(handleSidebarChange, 350); // Después de la animación del sidebar
+          }
+        }
+      });
+    });
+    
+    sidebarObserver.observe(document.body, { 
+      attributes: true, 
+      attributeFilter: ['class'],
+      subtree: true 
+    });
+
+    return () => {
+      sidebarObserver.disconnect();
+    };
+  }, []); // Solo se ejecuta una vez al montar el componente
 
   const toggleDropdown = (tabId: string, event?: React.MouseEvent) => {
     if (event && event.currentTarget) {
@@ -191,81 +238,207 @@ const SubHeader: React.FC<SubHeaderProps> = ({
     }
   };
 
+  // Debug: verificar que llegamos al render
+  console.log('🔍 SubHeader rendering with', sogcsTabs.length, 'tabs');
+  console.log('🔍 All tabs:', sogcsTabs.map(t => `${t.id}: ${t.label}`));
+
   return (
-    <div className="navbar-menu">
-      <div className="container-fluid">
-        <div className="navbar-nav-scroll">
-          <ul className="navbar-nav" id="navbar-nav">
-            {/* Tabs de navegación principales */}
-            {sogcsTabs.map((tab) => (
-              <li key={tab.id} className={`nav-item ${tab.children ? 'dropdown' : ''}`} style={{position: 'relative'}}>
-                {tab.children ? (
-                  // Item padre con hijos (dropdown)
-                  <>
-                    <button
-                      type="button"
-                      className={`nav-link ${currentTab === tab.id ? 'active' : ''} ${openDropdown === tab.id ? 'show' : ''}`}
-                      onClick={(e) => handleItemClick(tab, e)}
-                    >
-                      <i className={tab.icon}></i>
-                      <span>{tab.label}</span>
-                      {tab.badge && (
-                        <span className={`badge bg-${tab.badge.variant}-subtle`}>
-                          {tab.badge.text}
-                        </span>
-                      )}
-                      <i className="dropdown-arrow ri-arrow-down-s-line"></i>
-                    </button>
-                    <ul className={`dropdown-menu ${openDropdown === tab.id ? 'show' : ''}`} style={{
-                      backgroundColor: 'white', 
-                      border: '1px solid #dee2e6', 
-                      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                      display: openDropdown === tab.id ? 'block' : 'none',
-                      position: 'fixed',
-                      top: `${dropdownPosition.top}px`,
-                      left: `${dropdownPosition.left}px`,
-                      zIndex: 9999,
-                      minWidth: '180px',
-                      padding: '8px 0',
-                      borderRadius: '4px'
-                    }}>
-                      {tab.children.map((child) => (
-                        <li key={child.id}>
-                          <Link
-                            to={child.href}
-                            className="dropdown-item"
-                            onClick={() => setOpenDropdown(null)}
-                          >
-                            {child.label}
-                            {child.badge && (
-                              <span className={`badge bg-${child.badge.variant}-subtle ms-2`}>
-                                {child.badge.text}
-                              </span>
-                            )}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                ) : (
-                  // Item simple (sin hijos)
-                  <Link
-                    to={tab.href!}
-                    className={`nav-link ${currentTab === tab.id ? 'active' : ''}`}
-                  >
-                    <i className={tab.icon}></i>
-                    <span>{tab.label}</span>
-                    {tab.badge && (
-                      <span className={`badge bg-${tab.badge.variant}-subtle`}>
-                        {tab.badge.text}
-                      </span>
-                    )}
-                  </Link>
+    <div style={{ 
+      width: '100%', 
+      backgroundColor: '#f8f9fa',
+      padding: '8px 16px',
+      borderBottom: '1px solid #dee2e6'
+    }}>
+      <div style={{ 
+        display: 'flex',
+        gap: '8px',
+        overflowX: 'auto',
+        overflowY: 'hidden',
+        scrollBehavior: 'smooth',
+        WebkitOverflowScrolling: 'touch'
+      }}>
+        {sogcsTabs.map((tab) => (
+          tab.children ? (
+            // Tab con dropdown
+            <div key={tab.id} style={{ position: 'relative', flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={(e) => handleItemClick(tab, e)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '10px 14px',
+                  backgroundColor: currentTab === tab.id ? '#0d6efd' : '#ffffff',
+                  color: currentTab === tab.id ? '#ffffff' : '#495057',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap',
+                  minWidth: 'fit-content'
+                }}
+                onMouseOver={(e) => {
+                  if (currentTab !== tab.id) {
+                    e.currentTarget.style.backgroundColor = '#e9ecef';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (currentTab !== tab.id) {
+                    e.currentTarget.style.backgroundColor = '#ffffff';
+                  }
+                }}
+              >
+                <i className={tab.icon} style={{ fontSize: '16px' }}></i>
+                <span>{tab.label}</span>
+                {tab.badge && (
+                  <span style={{
+                    backgroundColor: tab.badge.variant === 'success' ? '#198754' : 
+                                   tab.badge.variant === 'warning' ? '#fd7e14' : 
+                                   tab.badge.variant === 'danger' ? '#dc3545' : '#6c757d',
+                    color: '#ffffff',
+                    padding: '2px 6px',
+                    borderRadius: '10px',
+                    fontSize: '11px',
+                    fontWeight: '600'
+                  }}>
+                    {tab.badge.text}
+                  </span>
                 )}
-              </li>
-            ))}
-          </ul>
-        </div>
+                <i className="ri-arrow-down-s-line" style={{ fontSize: '16px' }}></i>
+              </button>
+              
+              {/* Dropdown menu */}
+              {openDropdown === tab.id && (
+                <ul 
+                  className="sogcs-dropdown-menu"
+                  style={{
+                    position: 'fixed',
+                    top: `${dropdownPosition.top}px`,
+                    left: `${dropdownPosition.left}px`,
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #dee2e6',
+                    borderRadius: '6px',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
+                    zIndex: 9999,
+                    minWidth: '200px',
+                    padding: '8px 0',
+                    margin: 0,
+                    listStyle: 'none'
+                  }}>
+                  {tab.children.map((child) => (
+                    <li key={child.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpenDropdown(null);
+                          window.location.href = child.href;
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          width: '100%',
+                          padding: '10px 16px',
+                          backgroundColor: 'transparent',
+                          color: '#495057',
+                          border: 'none',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          textAlign: 'left'
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f1f3f4';
+                          e.currentTarget.style.color = '#1f2937';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                          e.currentTarget.style.color = '#495057';
+                        }}
+                      >
+                        {child.label}
+                        {child.badge && (
+                          <span style={{
+                            backgroundColor: child.badge.variant === 'success' ? '#198754' : 
+                                           child.badge.variant === 'warning' ? '#fd7e14' : 
+                                           child.badge.variant === 'danger' ? '#dc3545' : '#6c757d',
+                            color: '#ffffff',
+                            padding: '2px 6px',
+                            borderRadius: '10px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            marginLeft: 'auto'
+                          }}>
+                            {child.badge.text}
+                          </span>
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : (
+            // Tab simple
+            <div key={tab.id} style={{ position: 'relative', flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  // Navigate manually using window.location
+                  window.location.href = tab.href!;
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '10px 14px',
+                  backgroundColor: currentTab === tab.id ? '#0d6efd' : '#ffffff',
+                  color: currentTab === tab.id ? '#ffffff' : '#495057',
+                  border: '1px solid #dee2e6',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  minWidth: 'fit-content'
+                }}
+                onMouseOver={(e) => {
+                  if (currentTab !== tab.id) {
+                    e.currentTarget.style.backgroundColor = '#e9ecef';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (currentTab !== tab.id) {
+                    e.currentTarget.style.backgroundColor = '#ffffff';
+                  }
+                }}
+              >
+              <i className={tab.icon} style={{ fontSize: '16px' }}></i>
+              <span>{tab.label}</span>
+              {tab.badge && (
+                <span style={{
+                  backgroundColor: tab.badge.variant === 'success' ? '#198754' : 
+                                 tab.badge.variant === 'warning' ? '#fd7e14' : 
+                                 tab.badge.variant === 'danger' ? '#dc3545' : '#6c757d',
+                  color: '#ffffff',
+                  padding: '2px 6px',
+                  borderRadius: '10px',
+                  fontSize: '11px',
+                  fontWeight: '600'
+                }}>
+                  {tab.badge.text}
+                </span>
+              )}
+              </button>
+            </div>
+          )
+        ))}
       </div>
     </div>
   );

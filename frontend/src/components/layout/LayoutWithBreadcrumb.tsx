@@ -69,7 +69,9 @@ const LayoutWithBreadcrumb: React.FC<LayoutWithBreadcrumbProps> = ({
           borderBottom: '1px solid var(--vz-border-color)',
           zIndex: 998, // Debajo del header y sidebar, pero arriba del contenido
           padding: '0 1.5rem', // Consistent con el header padding
-          transition: 'all 0.3s ease'
+          transition: 'all 0.3s ease',
+          overflow: 'visible', // Asegurar que no corte el contenido
+          width: `calc(100% - ${getLeftPosition()})` // Ancho dinámico
         }}
         className="breadcrumb-subheader-fixed"
       >
@@ -83,7 +85,13 @@ const LayoutWithBreadcrumb: React.FC<LayoutWithBreadcrumbProps> = ({
         
         {/* SubHeader si está configurado */}
         {moduleConfig.subheader && (
-          <div style={{ paddingBottom: '12px' }}>
+          <div style={{ 
+            marginLeft: '-1.5rem', // Compensar el padding del contenedor
+            marginRight: '-1.5rem', // Compensar el padding del contenedor
+            paddingBottom: '12px',
+            width: 'calc(100% + 3rem)', // Ancho completo más padding
+            overflow: 'visible'
+          }}>
             <moduleConfig.subheader.component {...(moduleConfig.subheader.props || {})} />
           </div>
         )}
