@@ -86,7 +86,7 @@ body {
 }
 
 .page-content {
-  padding: calc(var(--vz-header-height) + 24px) calc(24px * 0.5) var(--vz-footer-height) calc(24px * 0.5);
+  padding: calc(var(--vz-header-height) + 24px) 24px var(--vz-footer-height) 24px;
 }
 
 /* Sidebar Styles - Exact Velzon Structure */
@@ -119,6 +119,10 @@ body {
 /* Logo Styles */
 .logo {
   line-height: var(--vz-header-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
 }
 
 .logo .logo-sm {
@@ -133,8 +137,22 @@ body {
   display: block !important;
 }
 
+.sidebar-collapsed .logo-lg {
+  display: none !important;
+}
+
 .logo-light {
   display: none;
+}
+
+/* ZentraQMS Logo adjustments */
+.logo img {
+  filter: brightness(1);
+  transition: all 0.3s ease;
+}
+
+.logo:hover img {
+  filter: brightness(1.1);
 }
 
 /* Sidebar User - Exact Velzon Structure */
@@ -898,6 +916,19 @@ body {
   padding-left: 0;
   margin-right: auto;
   margin-left: auto;
+}
+
+/* Ensure consistent alignment for page elements */
+.page-title-box {
+  padding-left: 0;
+  padding-right: 0;
+  margin-bottom: 1.5rem;
+}
+
+/* Align breadcrumb and content consistently */
+.page-content .container-fluid {
+  padding-left: 0;
+  padding-right: 0;
 }
 
 /* Height utilities */

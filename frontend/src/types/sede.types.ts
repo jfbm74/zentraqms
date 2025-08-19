@@ -254,6 +254,7 @@ export interface SedeApiError {
 export interface SedeImportConfig {
   file: File;
   create_backup?: boolean; // Optional, defaults to true
+  force_recreate?: boolean; // Optional, defaults to false - deletes all existing sedes before import
 }
 
 /**

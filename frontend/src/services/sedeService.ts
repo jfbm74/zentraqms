@@ -36,7 +36,8 @@ const ENDPOINTS = {
   sedesValidate: '/api/sogcs/api/v1/headquarters/validate/',
   sedesBulkCreate: '/api/sogcs/api/v1/headquarters/bulk-create/',
   sedesBulkUpdate: '/api/sogcs/api/v1/headquarters/bulk-update/',
-  sedesBulkDelete: '/api/sogcs/api/v1/headquarters/bulk-delete/',
+  sedesBulkDelete: '/api/sogcs/api/v1/headquarters/bulk_delete/',
+  sedesClearAll: '/api/sogcs/api/v1/headquarters/clear_all/',
   
   // Service management endpoints
   sedeServicios: (sedeId: string) => `/api/sogcs/api/v1/headquarters/${sedeId}/services/`,
@@ -224,16 +225,36 @@ export const sedeService = {
   /**
    * Delete multiple sedes at once
    */
-  async bulkDeleteSedes(organizationId: string, sedeIds: string[]): Promise<SedeBulkResponse> {
+  async bulkDeleteSedes(sedeIds: string[]): Promise<SedeBulkResponse> {
     try {
       const request: SedeBulkDeleteRequest = { sede_ids: sedeIds };
-      const response = await apiClient.delete<SedeBulkResponse>(
+      const response = await apiClient.post<SedeBulkResponse>(
         ENDPOINTS.sedesBulkDelete,
-        { data: request }
+        request
       );
       return response.data;
     } catch (error) {
       console.error('Error in bulk delete sedes:', error);
+      handleApiError(error);
+    }
+  },
+
+  /**
+   * Clear all sedes for re-import (WARNING: Deletes ALL sedes including principal)
+   */
+  async clearAllSedes(reason: string = 'Preparing for data re-import'): Promise<SedeBulkResponse> {
+    try {
+      const request = { 
+        confirm: true, 
+        reason: reason 
+      };
+      const response = await apiClient.post<SedeBulkResponse>(
+        ENDPOINTS.sedesClearAll,
+        request
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error clearing all sedes:', error);
       handleApiError(error);
     }
   },
@@ -251,7 +272,9 @@ export const sedeService = {
       // Backend expects 'headquarters_file' for sedes data
       formData.append('headquarters_file', config.file);
       // Optional backup creation (defaults to true)
-      formData.append('create_backup', 'true');
+      formData.append('create_backup', config.create_backup !== false ? 'true' : 'false');
+      // Optional force recreate (defaults to false)
+      formData.append('force_recreate', config.force_recreate === true ? 'true' : 'false');
 
       const response = await apiClient.post<SedeImportResponse>(
         ENDPOINTS.sedesImport,

@@ -1,12 +1,8 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect } from "react";
 import { Link } from "../../utils/SimpleRouter";
-import { useAuth } from "../../hooks/useAuth";
 import VerticalLayout from "./VerticalLayout.tsx";
 //import logo
-import logoSm from "../../assets/images/logo-sm.png";
-import logoDark from "../../assets/images/logo-dark.png";
-import logoLight from "../../assets/images/logo-light.png";
-import avatar1 from "../../assets/images/users/avatar-1.jpg";
+import zentraLogo from "../../assets/images/Logo-Texto-Horizontl-blanco-recortado.png";
 
 interface SidebarProps {
   layoutType?: string;
@@ -14,9 +10,6 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ layoutType = "vertical", isVisible = true }) => {
-  const { user, logout } = useAuth();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const verticalOverlay = document.getElementsByClassName("vertical-overlay");
@@ -27,19 +20,6 @@ const Sidebar: React.FC<SidebarProps> = ({ layoutType = "vertical", isVisible = 
     }
   });
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   const addEventListenerOnSmHoverMenu = () => {
     // add listener Sidebar Hover icon on change layout from setting
@@ -52,29 +32,33 @@ const Sidebar: React.FC<SidebarProps> = ({ layoutType = "vertical", isVisible = 
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-  };
 
   return (
     <React.Fragment>
       <div className={`app-menu navbar-menu ${isVisible ? 'show' : ''}`}>
         <div className="navbar-brand-box">
-          <Link to="/" className="logo logo-dark">
-            <span className="logo-sm">
-              <img src={logoSm} alt="" height="22" />
-            </span>
+          <Link to="/" className="logo">
             <span className="logo-lg">
-              <img src={logoDark} alt="" height="17" />
+              <img 
+                src={zentraLogo} 
+                alt="ZentraQMS" 
+                style={{ 
+                  height: '40px',
+                  maxWidth: '200px',
+                  objectFit: 'contain'
+                }} 
+              />
             </span>
-          </Link>
-
-          <Link to="/" className="logo logo-light">
             <span className="logo-sm">
-              <img src={logoSm} alt="" height="22" />
-            </span>
-            <span className="logo-lg">
-              <img src={logoLight} alt="" height="17" />
+              <img 
+                src={zentraLogo} 
+                alt="ZentraQMS" 
+                style={{ 
+                  height: '30px',
+                  maxWidth: '60px',
+                  objectFit: 'contain'
+                }} 
+              />
             </span>
           </Link>
           <button
@@ -87,55 +71,6 @@ const Sidebar: React.FC<SidebarProps> = ({ layoutType = "vertical", isVisible = 
           </button>
         </div>
 
-        <div className="sidebar-user m-1 rounded" ref={dropdownRef}>
-          <button 
-            type="button" 
-            className="btn material-shadow-none" 
-            id="page-header-user-dropdown"
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-          >
-            <span className="d-flex align-items-center gap-2">
-              <img 
-                className="rounded header-profile-user" 
-                src={avatar1} 
-                alt="Header Avatar" 
-              />
-              <span className="text-start">
-                <span className="d-block fw-medium sidebar-user-name-text">
-                  {user?.first_name || user?.email || 'Usuario'}
-                </span>
-              </span>
-            </span>
-          </button>
-          {dropdownOpen && (
-            <div className="dropdown-menu dropdown-menu-end show">
-              <h6 className="dropdown-header">¡Bienvenido {user?.first_name || 'Usuario'}!</h6>
-              <Link className="dropdown-item" to="/perfil" onClick={() => setDropdownOpen(false)}>
-                <i className="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i> 
-                <span className="align-middle">Perfil</span>
-              </Link>
-              <Link className="dropdown-item" to="/organizacion/perfil" onClick={() => setDropdownOpen(false)}>
-                <i className="mdi mdi-building text-muted fs-16 align-middle me-1"></i> 
-                <span className="align-middle">Mi Organización</span>
-              </Link>
-              <Link className="dropdown-item" to="/configuracion" onClick={() => setDropdownOpen(false)}>
-                <i className="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i> 
-                <span className="align-middle">Configuración</span>
-              </Link>
-              <div className="dropdown-divider"></div>
-              <button 
-                className="dropdown-item" 
-                onClick={() => {
-                  setDropdownOpen(false);
-                  handleLogout();
-                }}
-              >
-                <i className="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> 
-                <span className="align-middle">Cerrar Sesión</span>
-              </button>
-            </div>
-          )}
-        </div>
         
         {layoutType === "horizontal" ? (
           <div id="scrollbar">

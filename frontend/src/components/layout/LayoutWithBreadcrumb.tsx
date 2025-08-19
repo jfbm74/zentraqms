@@ -51,9 +51,10 @@ const LayoutWithBreadcrumb: React.FC<LayoutWithBreadcrumbProps> = ({
   // Calculate dynamic content padding
   const getContentHeight = () => {
     const baseHeight = 70; // Header height
-    const breadcrumbHeight = 50; // Estimated breadcrumb height
-    const subheaderHeight = moduleConfig.subheader ? 80 : 0; // Increased subheader height
-    return baseHeight + breadcrumbHeight + subheaderHeight;
+    const breadcrumbHeight = 45; // Breadcrumb height 
+    const subheaderHeight = moduleConfig.subheader ? 100 : 0; // Subheader height (más espacio)
+    const extraPadding = 25; // Additional padding to prevent overlap
+    return baseHeight + breadcrumbHeight + subheaderHeight + extraPadding;
   };
 
   return (
@@ -83,11 +84,12 @@ const LayoutWithBreadcrumb: React.FC<LayoutWithBreadcrumbProps> = ({
           />
         </div>
         
-        {/* SubHeader si está configurado */}
+        {/* SubHeader si está configurado - pegado al breadcrumb */}
         {moduleConfig.subheader && (
           <div style={{ 
             marginLeft: '-1.5rem', // Compensar el padding del contenedor
             marginRight: '-1.5rem', // Compensar el padding del contenedor
+            marginTop: '-8px', // Pegar al breadcrumb sin espacio
             paddingBottom: '12px',
             width: 'calc(100% + 3rem)', // Ancho completo más padding
             overflow: 'visible'

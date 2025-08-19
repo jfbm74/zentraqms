@@ -53,7 +53,7 @@ export const useSedeStore = create<SedeStore>()(
       // CORE CRUD OPERATIONS
       // ====================================
 
-      fetchSedes: async (organizationId: string, filters: SedeFilters = {}) => {
+      fetchSedes: async (filters: SedeFilters = {}) => {
         set((state) => {
           state.loading = true;
           state.error = null;
@@ -61,7 +61,7 @@ export const useSedeStore = create<SedeStore>()(
         });
 
         try {
-          const response = await sedeService.getSedes(organizationId, filters);
+          const response = await sedeService.getSedes(undefined, filters);
           
           set((state) => {
             state.sedes = response.results;
@@ -107,14 +107,14 @@ export const useSedeStore = create<SedeStore>()(
         }
       },
 
-      createSede: async (organizationId: string, data: SedeFormData): Promise<SedePrestadora> => {
+      createSede: async (data: SedeFormData): Promise<SedePrestadora> => {
         set((state) => {
           state.loading = true;
           state.error = null;
         });
 
         try {
-          const newSede = await sedeService.createSede(organizationId, data);
+          const newSede = await sedeService.createSede('', data);
           
           set((state) => {
             // Add to the list if it matches current filters
@@ -255,14 +255,14 @@ export const useSedeStore = create<SedeStore>()(
       // BULK OPERATIONS
       // ====================================
 
-      bulkCreateSedes: async (organizationId: string, sedes: SedeFormData[]): Promise<SedeBulkResponse> => {
+      bulkCreateSedes: async (sedes: SedeFormData[]): Promise<SedeBulkResponse> => {
         set((state) => {
           state.loading = true;
           state.error = null;
         });
 
         try {
-          const response = await sedeService.bulkCreateSedes(sedes);
+          const response = await sedeService.bulkCreateSedes('', sedes);
           
           if (response.success && response.sedes) {
             set((state) => {
@@ -295,14 +295,7 @@ export const useSedeStore = create<SedeStore>()(
         });
 
         try {
-          const organizationId = get().currentSede?.health_organization || 
-                                get().sedes[0]?.id; // This is a simplification
-          
-          if (!organizationId) {
-            throw new Error('Organization ID not found');
-          }
-
-          const response = await sedeService.bulkUpdateSedes(updates);
+          const response = await sedeService.bulkUpdateSedes('', updates);
           
           if (response.success && response.sedes) {
             set((state) => {
@@ -339,13 +332,6 @@ export const useSedeStore = create<SedeStore>()(
         });
 
         try {
-          const organizationId = get().currentSede?.health_organization || 
-                                get().sedes[0]?.id; // This is a simplification
-          
-          if (!organizationId) {
-            throw new Error('Organization ID not found');
-          }
-
           const response = await sedeService.bulkDeleteSedes(sedeIds);
           
           if (response.success) {
@@ -382,14 +368,14 @@ export const useSedeStore = create<SedeStore>()(
       // IMPORT/EXPORT OPERATIONS
       // ====================================
 
-      importSedes: async (organizationId: string, config: SedeImportConfig): Promise<SedeImportResponse> => {
+      importSedes: async (config: SedeImportConfig): Promise<SedeImportResponse> => {
         set((state) => {
           state.loading = true;
           state.error = null;
         });
 
         try {
-          const response = await sedeService.importSedes(organizationId, config);
+          const response = await sedeService.importSedes('', config);
           
           if (response.success && response.sedes && !config.validate_only) {
             set((state) => {
@@ -414,18 +400,18 @@ export const useSedeStore = create<SedeStore>()(
         }
       },
 
-      validateImport: async (organizationId: string, config: SedeImportConfig): Promise<SedeImportResponse> => {
-        return get().importSedes(organizationId, { ...config, validate_only: true });
+      validateImport: async (config: SedeImportConfig): Promise<SedeImportResponse> => {
+        return get().importSedes({ ...config, validate_only: true });
       },
 
-      exportSedes: async (organizationId: string, format: 'csv' | 'excel', includeServices?: boolean): Promise<Blob> => {
+      exportSedes: async (format: 'csv' | 'excel', includeServices?: boolean): Promise<Blob> => {
         set((state) => {
           state.loading = true;
           state.error = null;
         });
 
         try {
-          const blob = await sedeService.exportSedes(organizationId, format, includeServices);
+          const blob = await sedeService.exportSedes('', format, includeServices);
           
           set((state) => {
             state.loading = false;

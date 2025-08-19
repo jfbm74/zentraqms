@@ -46,6 +46,7 @@ const SedesImporter: React.FC<SedesImporterProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [forceRecreate, setForceRecreate] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -179,6 +180,7 @@ const SedesImporter: React.FC<SedesImporterProps> = ({
       const config: SedeImportConfig = {
         file: selectedFile,
         create_backup: true,
+        force_recreate: forceRecreate,
       };
 
       // Simulate progress for better UX
@@ -357,6 +359,26 @@ const SedesImporter: React.FC<SedesImporterProps> = ({
                   Crear respaldo automático
                   <small className="text-muted d-block">
                     Se crea automáticamente un respaldo antes de la importación
+                  </small>
+                </label>
+              </div>
+              
+              <div className="form-check mt-2">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="forceRecreate"
+                  checked={forceRecreate}
+                  onChange={(e) => setForceRecreate(e.target.checked)}
+                />
+                <label className="form-check-label" htmlFor="forceRecreate">
+                  <span className="text-warning fw-medium">
+                    <i className="ri-error-warning-line me-1"></i>
+                    Recrear completamente
+                  </span>
+                  <small className="text-muted d-block">
+                    ⚠️ Elimina TODAS las sedes existentes antes de importar. 
+                    Usar solo si quieres reemplazar completamente los datos.
                   </small>
                 </label>
               </div>
