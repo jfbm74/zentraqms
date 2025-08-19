@@ -477,6 +477,29 @@ class HeadquarterLocation(FullBaseModel):
         help_text=_('Observaciones adicionales sobre la sede.')
     )
     
+    # === ADDITIONAL REPS FIELDS ===
+    # These fields exist in the database but were missing from the Django model
+    atencion_24_horas = models.BooleanField(
+        _('atención 24 horas'),
+        default=False,
+        help_text=_('Indica si la sede presta atención las 24 horas.')
+    )
+    
+    barrio = models.CharField(
+        _('barrio'),
+        max_length=100,
+        blank=True,
+        default='',
+        help_text=_('Barrio o zona de ubicación de la sede.')
+    )
+    
+    cargo_responsable_administrativo = models.CharField(
+        _('cargo responsable administrativo'),
+        max_length=100,
+        default='Administrador',
+        help_text=_('Cargo del responsable administrativo de la sede.')
+    )
+    
     class Meta:
         verbose_name = _('sede prestadora SOGCS')
         verbose_name_plural = _('sedes prestadoras SOGCS')

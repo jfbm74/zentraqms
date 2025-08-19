@@ -501,12 +501,81 @@ class REPSSynchronizationService:
                 'operational_status': sede_data.get('estado', 'activa'),
                 'created_by': self.user,
                 'updated_by': self.user,
+                
+                # Missing required fields with defaults - only fields that exist in the model
+                'postal_code': '',
+                'phone_secondary': '',
+                'administrative_contact_phone': '',
+                'administrative_contact_email': sede_data.get('email', ''),
+                'habilitation_resolution': '',
+                'suspension_reason': '',
+                'total_beds': 0,
+                'icu_beds': 0,
+                'emergency_beds': 0,
+                'surgery_rooms': 0,
+                'consultation_rooms': 1,  # At least one consultation room
+                'sync_status': 'imported',
+                'sync_errors': '',
+                'reps_data': '',
+                'is_main_headquarters': sede_data.get('tipo_sede', 'principal') == 'principal',
+                'working_hours': '{}',  # Empty JSON object
+                'has_emergency_service': False,
+                'observations': '',
             }
             
-            # Create the record
-            headquarters = HeadquarterLocation.objects.create(**headquarters_data)
-            logger.info(f"Sede creada: {headquarters.name} (ID: {headquarters.id})")
-            return 1
+            # Use Django ORM with all fields now properly defined
+            try:
+                headquarters = HeadquarterLocation(
+                    organization=self.organization,
+                    reps_code=unique_reps_code,
+                    name=sede_data.get('nombre_sede', ''),
+                    sede_type=self._map_sede_type(sede_data.get('tipo_sede', 'principal')),
+                    department_code='00',
+                    department_name=sede_data.get('departamento', ''),
+                    municipality_code='00000',  
+                    municipality_name=sede_data.get('municipio', ''),
+                    address=sede_data.get('direccion', ''),
+                    postal_code='',
+                    phone_primary=sede_data.get('telefono', ''),
+                    phone_secondary='',
+                    email=sede_data.get('email', ''),
+                    administrative_contact=sede_data.get('gerente', 'No especificado'),
+                    administrative_contact_phone='',
+                    administrative_contact_email=sede_data.get('email', ''),
+                    habilitation_status='habilitada' if sede_data.get('estado') == 'activa' else 'en_proceso',
+                    habilitation_resolution='',
+                    operational_status=sede_data.get('estado', 'activa'),
+                    suspension_reason='',
+                    total_beds=0,
+                    icu_beds=0,
+                    emergency_beds=0,
+                    surgery_rooms=0,
+                    consultation_rooms=1,
+                    sync_status='imported',
+                    sync_errors='',
+                    reps_data='',
+                    is_main_headquarters=(sede_data.get('tipo_sede', 'principal') == 'principal'),
+                    working_hours='{}',
+                    has_emergency_service=False,
+                    observations='',
+                    # Now we can include the previously missing fields
+                    atencion_24_horas=False,
+                    barrio=sede_data.get('barrio', 'No especificado'),
+                    cargo_responsable_administrativo='Administrador',
+                    created_by=self.user,
+                    updated_by=self.user,
+                )
+                
+                # Save the headquarters record
+                headquarters.save()
+                    
+                logger.info(f"Sede creada exitosamente: {sede_data.get('nombre_sede', '')} (ID: {headquarters.id})")
+                return 1
+                
+            except Exception as e:
+                logger.error(f"Error creating sede: {str(e)}")
+                logger.warning(f"Skipping sede due to error: {sede_data.get('nombre_sede', 'Unknown')}")
+                return 0
             
         except Exception as e:
             logger.error(f"Error creando sede {sede_data.get('nombre_sede', 'Unknown')}: {str(e)}")
