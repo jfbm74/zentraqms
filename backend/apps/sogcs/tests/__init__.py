@@ -1,0 +1,1 @@
+# Tests for SOGCS (Sistema Obligatorio de Garantía de Calidad en Salud)

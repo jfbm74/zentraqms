@@ -614,7 +614,7 @@ const SedesImporter: React.FC<SedesImporterProps> = ({
         <div className="row justify-content-center">
           <div className="col-lg-8">
             {importResponse.success ? (
-              <div className="alert alert-success">
+              <div className="alert alert-success" role="alert">
                 <i className="ri-check-circle-line me-2" aria-hidden="true"></i>
                 Se importaron <strong>{importResponse.imported_count}</strong> sedes correctamente.
                 {importResponse.error_count && importResponse.error_count > 0 && (
@@ -626,7 +626,7 @@ const SedesImporter: React.FC<SedesImporterProps> = ({
                 )}
               </div>
             ) : (
-              <div className="alert alert-danger">
+              <div className="alert alert-danger" role="alert">
                 <i className="ri-error-warning-line me-2" aria-hidden="true"></i>
                 {importResponse.message || 'Error durante la importación'}
               </div>
