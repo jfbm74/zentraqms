@@ -95,9 +95,14 @@ export interface SedePrestadora {
   email_responsable?: string;
   
   // Estado y habilitación
-  estado: EstadoSede;
+  estado?: EstadoSede;
+  habilitation_status?: string;
+  operational_status?: string;
   fecha_habilitacion?: string;
   fecha_renovacion?: string;
+  habilitation_date?: string;
+  next_renewal_date?: string;
+  habilitation_resolution?: string;
   
   // Capacidad instalada
   numero_camas: number;
@@ -113,10 +118,59 @@ export interface SedePrestadora {
   total_servicios: number;
   observaciones?: string;
   
+  // REPS Synchronization
+  last_reps_sync?: string;
+  sync_status?: string;
+  sync_errors?: any[];
+  reps_data?: Record<string, any>;
+  
+  // Operational Control
+  opening_date?: string;
+  closing_date?: string;
+  suspension_start?: string;
+  suspension_end?: string;
+  suspension_reason?: string;
+  
+  // Installed Capacity (backend field names)
+  total_beds?: number;
+  icu_beds?: number;
+  emergency_beds?: number;
+  surgery_rooms?: number;
+  consultation_rooms?: number;
+  
+  // Additional backend fields
+  is_main_headquarters?: boolean;
+  has_emergency_service?: boolean;
+  working_hours?: Record<string, any>;
+  complete_address?: string;
+  
+  // Contact fields (backend names)
+  phone_primary?: string;
+  phone_secondary?: string;
+  administrative_contact?: string;
+  administrative_contact_phone?: string;
+  administrative_contact_email?: string;
+  cargo_responsable_administrativo?: string;
+  
+  // Location fields (backend names)
+  address?: string;
+  department_name?: string;
+  municipality_name?: string;
+  department_code?: string;
+  municipality_code?: string;
+  postal_code?: string;
+  latitude?: number;
+  longitude?: number;
+  
+  // Service name (backend name)
+  name?: string;
+  reps_code?: string;
+  sede_type?: string;
+  
   // Auditoría
-  imported_from_file: boolean;
+  imported_from_file?: boolean;
   import_date?: string;
-  is_active: boolean;
+  is_active?: boolean;
   created_at: string;
   updated_at: string;
 }

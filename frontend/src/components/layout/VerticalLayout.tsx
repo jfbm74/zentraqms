@@ -125,7 +125,7 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
     // Contexto de la Organización
     {
       id: "contexto-organizacion",
-      label: "Contexto de la Organización",
+      label: "Organización",
       icon: "ri-compass-3-line",
       link: "/#",
       permissions: ["strategic.read", "strategic.*"],

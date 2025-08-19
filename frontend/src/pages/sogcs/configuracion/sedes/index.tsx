@@ -6,6 +6,7 @@ import LayoutWithBreadcrumb from '../../../../components/layout/LayoutWithBreadc
 import SimpleTable from '../../../../components/common/SimpleTable';
 import DeleteModal from '../../../../components/common/DeleteModal';
 import SedeFormModal from '../../../../components/forms/SedeFormModal';
+import SedeDetailModal from '../../../../components/modals/SedeDetailModal';
 import SedesImporter from '../../../../components/importers/SedesImporter';
 import { useSedeStore } from '../../../../stores/sedeStore';
 import type { SedeListItem, SedeFormData } from '../../../../types/sede.types';
@@ -15,7 +16,9 @@ import { toast } from 'react-toastify';
 interface SedesPageState {
   showCreateModal: boolean;
   showImportModal: boolean;
+  showDetailModal: boolean;
   selectedSede: SedeListItem | null;
+  selectedSedeId: string | null;
   isEditMode: boolean;
 }
 
@@ -42,7 +45,9 @@ const SedesPage = () => {
   const [state, setState] = useState<SedesPageState>({
     showCreateModal: false,
     showImportModal: false,
+    showDetailModal: false,
     selectedSede: null,
+    selectedSedeId: null,
     isEditMode: false,
   });
   const [deleteModal, setDeleteModal] = useState<boolean>(false);
@@ -147,6 +152,51 @@ const SedesPage = () => {
 
   const handleCloseImport = useCallback(() => {
     setState(prev => ({ ...prev, showImportModal: false }));
+  }, []);
+
+  const handleViewSede = useCallback((sede: SedeListItem) => {
+    setState(prev => ({
+      ...prev,
+      showDetailModal: true,
+      selectedSedeId: sede.id,
+    }));
+  }, []);
+
+  const handleCloseDetailModal = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      showDetailModal: false,
+      selectedSedeId: null,
+    }));
+  }, []);
+
+  const handleEditFromDetail = useCallback((sede: any) => {
+    // Convert the detailed sede data to a SedeListItem for consistency
+    const sedeListItem: SedeListItem = {
+      id: sede.id,
+      reps_code: sede.reps_code,
+      name: sede.name,
+      sede_type: sede.sede_type,
+      habilitation_status: sede.habilitation_status,
+      department_name: sede.department_name,
+      municipality_name: sede.municipality_name,
+      address: sede.address,
+      phone_primary: sede.phone_primary,
+      email: sede.email,
+      services_count: sede.services_count,
+      is_active: sede.is_active,
+      organization_name: sede.organization_name,
+      created_at: sede.created_at,
+    };
+    
+    setState(prev => ({
+      ...prev,
+      showDetailModal: false,
+      selectedSedeId: null,
+      showCreateModal: true,
+      selectedSede: sedeListItem,
+      isEditMode: true,
+    }));
   }, []);
 
   // Handle sede operations
@@ -386,7 +436,7 @@ const SedesPage = () => {
             <li className="list-inline-item">
               <button
                 className="btn btn-primary btn-sm btn-icon"
-                onClick={() => console.log('Ver sede:', row)}
+                onClick={() => handleViewSede(row)}
                 title="Ver detalles"
               >
                 <i className="ri-eye-fill"></i>
@@ -484,6 +534,14 @@ const SedesPage = () => {
           isLoading={loading}
         />
       )}
+      
+      {/* Detail Modal */}
+      <SedeDetailModal
+        isOpen={state.showDetailModal}
+        onClose={handleCloseDetailModal}
+        sedeId={state.selectedSedeId}
+        onEdit={handleEditFromDetail}
+      />
       
       {/* Import Modal */}
       {state.showImportModal && hasOrganization && (
