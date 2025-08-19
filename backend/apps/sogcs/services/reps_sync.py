@@ -261,6 +261,39 @@ class REPSSynchronizationService:
                 # Process all sedes in a single transaction for consistency
                 sede_creation_errors = []
                 
+                # Pre-process: Clean up any soft-deleted records that would cause conflicts
+                if not force_recreate:
+                    logger.info("Pre-procesando: eliminando registros soft-deleted que causan conflictos...")
+                    for result in valid_results:
+                        sede_data = result['data']
+                        base_code = str(sede_data.get('codigo_prestador', '')).strip()
+                        sede_number = str(sede_data.get('numero_sede', '1')).strip()
+                        
+                        # Import cleanup service for sanitization
+                        from .reps_cleanup_service import REPSCleanupService
+                        cleanup_service = REPSCleanupService(organization=self.organization)
+                        
+                        # Sanitize inputs
+                        base_code = cleanup_service._sanitize_reps_code(base_code)
+                        import re
+                        sede_number_clean = re.sub(r'[^0-9]', '', sede_number)
+                        if not sede_number_clean or sede_number.lower() == 'nan':
+                            sede_number_clean = '1'
+                        
+                        original_reps_code = f"{base_code}_{sede_number_clean}"
+                        
+                        # Find and delete any soft-deleted records with this REPS code
+                        soft_deleted_records = HeadquarterLocation.objects.all_with_deleted().filter(
+                            organization=self.organization,
+                            reps_code=original_reps_code,
+                            deleted_at__isnull=False
+                        )
+                        
+                        deleted_count = soft_deleted_records.count()
+                        if deleted_count > 0:
+                            logger.info(f"Eliminando {deleted_count} registros soft-deleted con REPS {original_reps_code}")
+                            soft_deleted_records.delete()  # Hard delete
+                
                 # Use a single transaction for all creates when force_recreate is True
                 if force_recreate:
                     try:
@@ -578,27 +611,10 @@ class REPSSynchronizationService:
             # Construct REPS code with sanitized values
             original_reps_code = f"{base_code}_{sede_number_clean}"
             
-            # Validate uniqueness before attempting to create
-            is_unique, error_msg = cleanup_service.validate_reps_code_uniqueness(original_reps_code)
-            
-            if not is_unique and not force_recreate:
-                logger.warning(f"REPS code {original_reps_code} validation failed: {error_msg}")
-                return 0, False
-            
             logger.info(f"Procesando sede: '{sede_name}' - Base: '{base_code}' - Número: '{sede_number_clean}' - REPS: '{original_reps_code}'")
             
-            # Handle soft-deleted records conflict (only if not force recreating)
-            if not force_recreate:
-                existing_deleted = HeadquarterLocation.objects.filter(
-                    organization=self.organization,
-                    reps_code=original_reps_code,
-                    deleted_at__isnull=False  # Only soft-deleted records
-                ).first()
-                
-                if existing_deleted:
-                    # If not force recreating, skip this sede as it conflicts with soft-deleted record
-                    logger.warning(f"Sede con REPS {original_reps_code} existe como eliminada. Use 'Recrear completamente' para importar.")
-                    return 0, False
+            # Note: Soft-deleted records cleanup is handled by pre-processing step
+            # No need to handle it here to avoid transaction state issues
             
             # Skip duplicate check if force_recreate is True (all active sedes were already deleted)
             existing_active = None
