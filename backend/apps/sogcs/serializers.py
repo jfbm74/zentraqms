@@ -414,6 +414,7 @@ class REPSImportSerializer(serializers.Serializer):
     headquarters_file = serializers.FileField(required=False, help_text="Archivo de sedes REPS (.xls)")
     services_file = serializers.FileField(required=False, help_text="Archivo de servicios REPS (.xls)")
     create_backup = serializers.BooleanField(default=True, help_text="Crear backup antes de importar")
+    force_recreate = serializers.BooleanField(default=False, help_text="Eliminar todas las sedes existentes antes de importar (recreación completa)")
     
     def validate(self, attrs):
         """Validate that at least one file is provided"""

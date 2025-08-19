@@ -6,6 +6,7 @@ Servicio para sincronización con el Registro Especial de Prestadores de Servici
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 import logging
+from django.db import transaction, IntegrityError
 
 logger = logging.getLogger(__name__)
 
@@ -181,12 +182,47 @@ class REPSSynchronizationService:
                 'error_message': str(e)
             }
 
-    def synchronize_from_files(self, headquarters_file=None, services_file=None, create_backup=True):
+    def synchronize_from_files(self, headquarters_file=None, services_file=None, create_backup=True, force_recreate=False):
         """
         Sincroniza datos desde archivos de importación
         """
         try:
-            logger.info(f"Iniciando sincronización desde archivos para organización {self.organization}")
+            logger.info(f"Iniciando sincronización desde archivos para organización {self.organization} (force_recreate={force_recreate})")
+            
+            # If force_recreate is True, perform complete cleanup first
+            if force_recreate:
+                logger.info("=== INICIANDO RECREACIÓN COMPLETA ===")
+                
+                # Import cleanup service
+                from .reps_cleanup_service import REPSCleanupService
+                cleanup_service = REPSCleanupService(organization=self.organization)
+                
+                # Step 1: Clean up any corrupted records first
+                logger.info("Paso 1: Limpiando registros corruptos...")
+                cleanup_stats = cleanup_service.cleanup_corrupted_reps_codes()
+                logger.info(f"Limpieza completada: {cleanup_stats}")
+                
+                # Step 2: Perform hard delete of all headquarters
+                logger.info("Paso 2: Eliminación completa de todas las sedes...")
+                deleted_count = cleanup_service.hard_delete_all_headquarters()
+                logger.info(f"Eliminadas {deleted_count} sedes completamente")
+                
+                # Step 3: Verify database is clean
+                remaining = HeadquarterLocation.objects.filter(
+                    organization=self.organization
+                ).count()
+                if remaining > 0:
+                    logger.error(f"ADVERTENCIA: Aún quedan {remaining} sedes después de la limpieza")
+                    # Force another cleanup attempt
+                    from django.db import connection
+                    with connection.cursor() as cursor:
+                        cursor.execute(
+                            "DELETE FROM organization_headquarterlocation WHERE organization_id = %s",
+                            [str(self.organization.id)]
+                        )
+                        logger.info(f"Forzada eliminación adicional de {cursor.rowcount} registros")
+                
+                logger.info("=== LIMPIEZA COMPLETA FINALIZADA ===")
             
             headquarters_processed = 0
             headquarters_created = 0
@@ -203,14 +239,63 @@ class REPSSynchronizationService:
                 valid_results = [r for r in validation_results if r['is_valid']]
                 logger.info(f"Guardando {len(valid_results)} sedes válidas en la base de datos")
                 
-                for result in valid_results:
+                # Determine which sede should be the main headquarters
+                # Priority: 1) First sede in the file, 2) If force_recreate, first valid sede
+                # If not force_recreate, check if main already exists before setting one
+                main_headquarters_set = False
+                if not force_recreate:
+                    # Check if organization already has a main headquarters
+                    existing_main = HeadquarterLocation.objects.filter(
+                        organization=self.organization,
+                        is_main_headquarters=True,
+                        deleted_at__isnull=True
+                    ).exists()
+                    main_headquarters_set = existing_main
+                    logger.info(f"Main headquarters already exists: {existing_main}")
+                
+                # Mark the first valid sede as main headquarters if none exists
+                if valid_results and not main_headquarters_set:
+                    valid_results[0]['data']['tipo_sede'] = 'principal'
+                    logger.info(f"Marcando '{valid_results[0]['data']['nombre_sede']}' como sede principal")
+                
+                # Process all sedes in a single transaction for consistency
+                sede_creation_errors = []
+                
+                # Use a single transaction for all creates when force_recreate is True
+                if force_recreate:
                     try:
-                        headquarters_created += self._create_headquarters_record(result['data'])
+                        with transaction.atomic():
+                            for result in valid_results:
+                                try:
+                                    created_count, is_main = self._create_headquarters_record(result['data'], force_recreate, main_headquarters_set)
+                                    headquarters_created += created_count
+                                    if is_main:
+                                        main_headquarters_set = True
+                                except Exception as e:
+                                    # In force_recreate mode, fail the entire transaction on any error
+                                    logger.error(f"Error crítico en recreación completa, sede fila {result['row_index']}: {str(e)}")
+                                    raise e
                     except Exception as e:
-                        logger.error(f"Error creando sede de fila {result['row_index']}: {str(e)}")
-                        # Mark as invalid
-                        result['is_valid'] = False
-                        result['errors'] = {'general': [f'Error guardando en BD: {str(e)}']}
+                        logger.error(f"Fallo la transacción de recreación completa: {str(e)}")
+                        # Mark all as invalid
+                        for result in valid_results:
+                            result['is_valid'] = False
+                            result['errors'] = {'general': [f'Error en recreación completa: {str(e)}']}
+                        sede_creation_errors.append(str(e))
+                else:
+                    # For non-force_recreate, use individual transactions
+                    for result in valid_results:
+                        try:
+                            with transaction.atomic():
+                                created_count, is_main = self._create_headquarters_record(result['data'], force_recreate, main_headquarters_set)
+                                headquarters_created += created_count
+                                if is_main:
+                                    main_headquarters_set = True
+                        except Exception as e:
+                            logger.error(f"Error creando sede de fila {result['row_index']}: {str(e)}")
+                            result['is_valid'] = False
+                            result['errors'] = {'general': [f'Error guardando en BD: {str(e)}']}
+                            sede_creation_errors.append(str(e))
                 
             if services_file:
                 logger.info(f"Procesando archivo de servicios: {services_file}")
@@ -222,7 +307,7 @@ class REPSSynchronizationService:
             stats = {
                 'status': 'SUCCESS',
                 'success': True,
-                'message': f'Importación completada: {headquarters_created} sedes guardadas exitosamente',
+                'message': f'Importación completada: {headquarters_created} sedes guardadas exitosamente' + (' (recreación forzada)' if force_recreate else ''),
                 'validation_results': validation_results,
                 'total_rows': headquarters_processed,
                 'valid_rows': valid_count,
@@ -358,14 +443,14 @@ class REPSSynchronizationService:
                     sede_data = {
                         'numero_sede': str(row.get(actual_columns.get('numero_sede', ''), f'sede-{idx+1:03d}')).strip(),
                         'nombre_sede': str(row.get(actual_columns.get('nombre_sede', ''), f'Sede {idx+1}')).strip(),
-                        'tipo_sede': 'principal' if idx == 0 else 'sucursal',
+                        'tipo_sede': 'sucursal',  # Default all to sucursal, we'll determine main later
                         'departamento': str(row.get(actual_columns.get('departamento', ''), 'No especificado')).strip(),
                         'municipio': str(row.get(actual_columns.get('municipio', ''), 'No especificado')).strip(),
                         'direccion': str(row.get(actual_columns.get('direccion', ''), 'No especificada')).strip(),
                         'telefono': str(row.get(actual_columns.get('telefono', ''), '')).strip(),
                         'email': str(row.get(actual_columns.get('email', ''), '')).strip(),
                         'estado': 'activa',
-                        'codigo_prestador': str(row.get(actual_columns.get('codigo_prestador', ''), '')).strip(),
+                        'codigo_prestador': str(row.get(actual_columns.get('codigo_prestador', ''), f'PREST-{idx+1:03d}')).strip(),
                         'codigo_habilitacion': str(row.get(actual_columns.get('codigo_habilitacion', ''), '')).strip()
                     }
                     
@@ -456,78 +541,118 @@ class REPSSynchronizationService:
         
         return fixed_text.strip()
 
-    def _create_headquarters_record(self, sede_data: Dict[str, Any]) -> int:
+    def _create_headquarters_record(self, sede_data: Dict[str, Any], force_recreate: bool = False, main_headquarters_already_set: bool = False) -> tuple[int, bool]:
         """
         Create a HeadquarterLocation record from parsed sede data
         
         Args:
             sede_data: Dictionary with sede information
+            force_recreate: Whether this is a force recreation
+            main_headquarters_already_set: Whether a main headquarters has already been set
             
         Returns:
-            int: 1 if created, 0 if skipped/updated
+            tuple[int, bool]: (1 if created/0 if skipped, True if this sede became the main headquarters)
         """
         try:
-            # Check if this specific sede already exists (by name and address)
-            existing = HeadquarterLocation.objects.filter(
-                organization=self.organization,
-                name=sede_data.get('nombre_sede', ''),
-                address=sede_data.get('direccion', '')
-            ).first()
+            # Import cleanup service for sanitization
+            from .reps_cleanup_service import REPSCleanupService
+            cleanup_service = REPSCleanupService(organization=self.organization)
             
-            if existing:
-                logger.info(f"Sede '{sede_data.get('nombre_sede')}' ya existe, omitiendo...")
-                return 0
+            # Sanitize inputs thoroughly
+            base_code = str(sede_data.get('codigo_prestador', '')).strip()
+            sede_number = str(sede_data.get('numero_sede', '1')).strip()
+            sede_name = str(sede_data.get('nombre_sede', '')).strip()
             
-            # Map the parsed data to HeadquarterLocation fields
-            # Create unique REPS code combining prestador code and sede number
-            base_code = sede_data.get('codigo_prestador', '')
-            sede_number = sede_data.get('numero_sede', '1')
-            unique_reps_code = f"{base_code}_{sede_number}"
+            # Remove any whitespace or special characters from base_code
+            base_code = cleanup_service._sanitize_reps_code(base_code)
+            if not base_code:
+                logger.error(f"Invalid base code for sede: {sede_name}")
+                return 0, False
             
-            headquarters_data = {
-                'organization': self.organization,
-                'reps_code': unique_reps_code,
-                'name': sede_data.get('nombre_sede', ''),
-                'sede_type': self._map_sede_type(sede_data.get('tipo_sede', 'principal')),
-                'department_code': '00',  # Default, should be mapped from department name
-                'department_name': sede_data.get('departamento', ''),
-                'municipality_code': '00000',  # Default, should be mapped from municipality name  
-                'municipality_name': sede_data.get('municipio', ''),
-                'address': sede_data.get('direccion', ''),
-                'phone_primary': sede_data.get('telefono', ''),
-                'email': sede_data.get('email', ''),
-                'administrative_contact': sede_data.get('gerente', 'No especificado'),
-                'habilitation_status': 'habilitada' if sede_data.get('estado') == 'activa' else 'en_proceso',
-                'operational_status': sede_data.get('estado', 'activa'),
-                'created_by': self.user,
-                'updated_by': self.user,
+            # Sanitize sede_number - ensure it's numeric
+            import re
+            sede_number_clean = re.sub(r'[^0-9]', '', sede_number)
+            if not sede_number_clean or sede_number.lower() == 'nan':
+                sede_number_clean = '1'
+            
+            # Construct REPS code with sanitized values
+            original_reps_code = f"{base_code}_{sede_number_clean}"
+            
+            # Validate uniqueness before attempting to create
+            is_unique, error_msg = cleanup_service.validate_reps_code_uniqueness(original_reps_code)
+            
+            if not is_unique and not force_recreate:
+                logger.warning(f"REPS code {original_reps_code} validation failed: {error_msg}")
+                return 0, False
+            
+            logger.info(f"Procesando sede: '{sede_name}' - Base: '{base_code}' - Número: '{sede_number_clean}' - REPS: '{original_reps_code}'")
+            
+            # Handle soft-deleted records conflict (only if not force recreating)
+            if not force_recreate:
+                existing_deleted = HeadquarterLocation.objects.filter(
+                    organization=self.organization,
+                    reps_code=original_reps_code,
+                    deleted_at__isnull=False  # Only soft-deleted records
+                ).first()
                 
-                # Missing required fields with defaults - only fields that exist in the model
-                'postal_code': '',
-                'phone_secondary': '',
-                'administrative_contact_phone': '',
-                'administrative_contact_email': sede_data.get('email', ''),
-                'habilitation_resolution': '',
-                'suspension_reason': '',
-                'total_beds': 0,
-                'icu_beds': 0,
-                'emergency_beds': 0,
-                'surgery_rooms': 0,
-                'consultation_rooms': 1,  # At least one consultation room
-                'sync_status': 'imported',
-                'sync_errors': '',
-                'reps_data': '',
-                'is_main_headquarters': sede_data.get('tipo_sede', 'principal') == 'principal',
-                'working_hours': '{}',  # Empty JSON object
-                'has_emergency_service': False,
-                'observations': '',
-            }
+                if existing_deleted:
+                    # If not force recreating, skip this sede as it conflicts with soft-deleted record
+                    logger.warning(f"Sede con REPS {original_reps_code} existe como eliminada. Use 'Recrear completamente' para importar.")
+                    return 0, False
+            
+            # Skip duplicate check if force_recreate is True (all active sedes were already deleted)
+            existing_active = None
+            if not force_recreate:
+                # Check if this specific sede already exists (active only)
+                existing_active = HeadquarterLocation.objects.filter(
+                    organization=self.organization,
+                    reps_code=original_reps_code,
+                    deleted_at__isnull=True  # Only active records
+                ).first()
+            else:
+                # In force_recreate mode, we know all active sedes were deleted
+                logger.debug(f"Forzando recreación: omitiendo verificación de duplicados para {original_reps_code}")
+            
+            if existing_active:
+                # Update existing sede instead of skipping
+                logger.info(f"Sede '{sede_data.get('nombre_sede')}' (REPS: {original_reps_code}) ya existe, actualizando...")
+                
+                # Preserve important existing values, update others
+                old_name = existing_active.name
+                old_type = existing_active.sede_type
+                
+                # Update key fields but preserve sede_type to avoid conflicts
+                existing_active.name = sede_data.get('nombre_sede', existing_active.name)
+                existing_active.address = sede_data.get('direccion', existing_active.address)
+                existing_active.department_name = sede_data.get('departamento', existing_active.department_name)
+                existing_active.municipality_name = sede_data.get('municipio', existing_active.municipality_name)
+                existing_active.phone_primary = sede_data.get('telefono', existing_active.phone_primary)
+                existing_active.email = sede_data.get('email', existing_active.email)
+                existing_active.administrative_contact = sede_data.get('gerente', existing_active.administrative_contact)
+                
+                # Only update sede_type if it was originally 'satelite' (to allow promoting to principal)
+                # Never demote a principal sede to satelite to avoid business rule conflicts
+                new_type = self._map_sede_type(sede_data.get('tipo_sede', 'principal'))
+                if existing_active.sede_type != 'principal' or new_type == 'principal':
+                    existing_active.sede_type = new_type
+                
+                existing_active.updated_by = self.user
+                
+                existing_active.save()
+                logger.info(f"Sede actualizada: '{old_name}' -> '{existing_active.name}', tipo: '{old_type}' -> '{existing_active.sede_type}' (ID: {existing_active.id})")
+                return 1, existing_active.is_main_headquarters  # Count as processed, return if it's main
+            
+            # Determine if this should be the main headquarters
+            # Only set as main if it's a 'principal' type AND no main headquarters has been set yet
+            should_be_main = (sede_data.get('tipo_sede', 'principal') == 'principal' and 
+                            not main_headquarters_already_set)
             
             # Use Django ORM with all fields now properly defined
             try:
-                headquarters = HeadquarterLocation(
+                # CRITICAL FIX: Use objects.create() for proper validation and signal handling
+                headquarters = HeadquarterLocation.objects.create(
                     organization=self.organization,
-                    reps_code=unique_reps_code,
+                    reps_code=original_reps_code,  # Use original REPS code
                     name=sede_data.get('nombre_sede', ''),
                     sede_type=self._map_sede_type(sede_data.get('tipo_sede', 'principal')),
                     department_code='00',
@@ -554,7 +679,7 @@ class REPSSynchronizationService:
                     sync_status='imported',
                     sync_errors='',
                     reps_data='',
-                    is_main_headquarters=(sede_data.get('tipo_sede', 'principal') == 'principal'),
+                    is_main_headquarters=should_be_main,
                     working_hours='{}',
                     has_emergency_service=False,
                     observations='',
@@ -565,17 +690,26 @@ class REPSSynchronizationService:
                     created_by=self.user,
                     updated_by=self.user,
                 )
-                
-                # Save the headquarters record
-                headquarters.save()
                     
-                logger.info(f"Sede creada exitosamente: {sede_data.get('nombre_sede', '')} (ID: {headquarters.id})")
-                return 1
+                logger.info(f"Sede creada exitosamente: {sede_data.get('nombre_sede', '')} (ID: {headquarters.id}) - Main: {should_be_main}")
+                return 1, should_be_main
                 
+            except IntegrityError as e:
+                # Log more detailed error information for UNIQUE constraint violations
+                logger.error(f"IntegrityError al crear sede '{sede_name}' con REPS '{original_reps_code}': {str(e)}")
+                
+                # Check if a record with this REPS code already exists (including soft-deleted)
+                existing = HeadquarterLocation.objects.filter(reps_code=original_reps_code).first()
+                if existing:
+                    logger.error(f"  -> Sede existente encontrada: ID={existing.id}, Name='{existing.name}', Deleted={existing.deleted_at is not None}")
+                    logger.error(f"  -> Organization: {existing.organization_id} vs {self.organization.id}")
+                
+                logger.warning(f"Skipping sede due to IntegrityError: {sede_data.get('nombre_sede', 'Unknown')}")
+                return 0, False
             except Exception as e:
                 logger.error(f"Error creating sede: {str(e)}")
                 logger.warning(f"Skipping sede due to error: {sede_data.get('nombre_sede', 'Unknown')}")
-                return 0
+                return 0, False
             
         except Exception as e:
             logger.error(f"Error creando sede {sede_data.get('nombre_sede', 'Unknown')}: {str(e)}")
@@ -595,3 +729,70 @@ class REPSSynchronizationService:
             'urgencias': 'satelite',
         }
         return type_mapping.get(tipo_sede.lower(), 'satelite')
+    
+    def diagnose_reps_codes(self) -> Dict[str, Any]:
+        """
+        Diagnostic method to identify REPS code issues
+        """
+        from django.db import connection
+        
+        diagnosis = {
+            'organization_id': self.organization.id if self.organization else None,
+            'existing_codes': [],
+            'duplicate_codes': [],
+            'issues': []
+        }
+        
+        try:
+            # Get all existing REPS codes for this organization
+            existing_sedes = HeadquarterLocation.objects.filter(
+                organization=self.organization
+            ).values('id', 'reps_code', 'name', 'deleted_at')
+            
+            diagnosis['existing_codes'] = list(existing_sedes)
+            
+            # Check for duplicates using raw SQL
+            with connection.cursor() as cursor:
+                table_name = HeadquarterLocation._meta.db_table
+                # Convert UUID to string for SQLite compatibility (remove dashes)
+                org_id_str = str(self.organization.id).replace('-', '')
+                
+                cursor.execute(f"""
+                    SELECT reps_code, COUNT(*) as count
+                    FROM {table_name}
+                    WHERE organization_id = %s
+                    GROUP BY reps_code
+                    HAVING COUNT(*) > 1
+                """, [org_id_str])
+                
+                duplicates = cursor.fetchall()
+                if duplicates:
+                    diagnosis['duplicate_codes'] = [
+                        {'reps_code': code, 'count': count} 
+                        for code, count in duplicates
+                    ]
+                    diagnosis['issues'].append('Found duplicate REPS codes in database')
+                
+                # Check for codes with spaces or special characters
+                cursor.execute(f"""
+                    SELECT id, reps_code 
+                    FROM {table_name}
+                    WHERE organization_id = %s
+                    AND (reps_code LIKE '% %' OR reps_code LIKE '%\t%' OR reps_code LIKE '%\n%')
+                """, [org_id_str])
+                
+                problematic = cursor.fetchall()
+                if problematic:
+                    diagnosis['issues'].append(f'Found {len(problematic)} REPS codes with whitespace')
+                    diagnosis['problematic_codes'] = [
+                        {'id': id, 'reps_code': repr(code)}  # Use repr to show hidden chars
+                        for id, code in problematic
+                    ]
+            
+            logger.info(f"Diagnosis completed: {diagnosis}")
+            return diagnosis
+            
+        except Exception as e:
+            logger.error(f"Error during diagnosis: {str(e)}")
+            diagnosis['error'] = str(e)
+            return diagnosis

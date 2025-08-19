@@ -20,6 +20,7 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.exceptions import ValidationError
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
@@ -241,6 +242,279 @@ class HeadquarterLocationViewSet(viewsets.ModelViewSet):
             'expiration_date': headquarters.next_renewal_date,
             'alerts': alerts
         })
+
+    def perform_destroy(self, instance):
+        """
+        Custom delete logic with business validations and audit trail.
+        """
+        user = self.request.user
+        
+        # Business validation: Check if sede has active services
+        active_services_count = instance.enabled_services.filter(
+            habilitation_status='activo'
+        ).count()
+        
+        if active_services_count > 0:
+            raise ValidationError(
+                f'No se puede eliminar la sede. Tiene {active_services_count} servicio(s) activo(s). '
+                'Primero debe suspender o eliminar todos los servicios.'
+            )
+        
+        # Business validation: Check if it's the only principal sede
+        if instance.sede_type == 'principal':
+            other_principal_sedes = HeadquarterLocation.objects.filter(
+                organization=instance.organization,
+                sede_type='principal',
+                habilitation_status='habilitada'
+            ).exclude(id=instance.id).count()
+            
+            if other_principal_sedes == 0:
+                raise ValidationError(
+                    'No se puede eliminar la única sede principal habilitada. '
+                    'Debe tener al menos una sede principal activa.'
+                )
+        
+        # Create audit trail record before deletion
+        try:
+            from apps.organization.models import AuditLog
+            AuditLog.objects.create(
+                table_name='organization_headquarterlocation',
+                record_id=str(instance.id),
+                action=AuditLog.ACTION_DELETE,
+                old_values={
+                    'reps_code': instance.reps_code,
+                    'name': instance.name,
+                    'sede_type': instance.sede_type,
+                    'habilitation_status': instance.habilitation_status,
+                    'department_name': instance.department_name,
+                    'municipality_name': instance.municipality_name,
+                    'organization_id': str(instance.organization.id),
+                },
+                new_values={},
+                reason=f'Sede {instance.name} (Código REPS: {instance.reps_code}) eliminada por {user.username}'
+            )
+        except Exception as e:
+            logger.warning(f"Failed to create audit trail for sede deletion: {str(e)}")
+        
+        # Log the deletion
+        logger.info(
+            f"Sede deleted - ID: {instance.id}, Name: {instance.name}, "
+            f"REPS Code: {instance.reps_code}, User: {user.username}, "
+            f"Organization: {instance.organization.organization.razon_social}"
+        )
+        
+        # Perform the actual deletion
+        super().perform_destroy(instance)
+
+    @action(detail=False, methods=['post'])
+    def bulk_delete(self, request):
+        """
+        Bulk delete multiple headquarters with validation.
+        
+        Expected payload:
+        {
+            "sede_ids": ["uuid1", "uuid2", ...],
+            "reason": "Optional reason for deletion"
+        }
+        """
+        from rest_framework.exceptions import ValidationError
+        
+        sede_ids = request.data.get('sede_ids', [])
+        reason = request.data.get('reason', 'Eliminación masiva')
+        
+        if not sede_ids:
+            return Response({
+                'success': False,
+                'message': 'No se proporcionaron IDs de sedes para eliminar'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if len(sede_ids) > 50:  # Limit bulk operations
+            return Response({
+                'success': False,
+                'message': 'No se pueden eliminar más de 50 sedes a la vez'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get sedes to delete (only from user's organization)
+        queryset = self.get_queryset()
+        sedes_to_delete = queryset.filter(id__in=sede_ids)
+        
+        if not sedes_to_delete.exists():
+            return Response({
+                'success': False,
+                'message': 'No se encontraron sedes válidas para eliminar'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        validation_errors = []
+        deleted_count = 0
+        error_count = 0
+        
+        for sede in sedes_to_delete:
+            try:
+                # Same business validations as single delete
+                active_services_count = sede.enabled_services.filter(
+                    habilitation_status='activo'
+                ).count()
+                
+                if active_services_count > 0:
+                    validation_errors.append({
+                        'sede_id': str(sede.id),
+                        'sede_name': sede.name,
+                        'error': f'Tiene {active_services_count} servicio(s) activo(s)'
+                    })
+                    error_count += 1
+                    continue
+                
+                # Check principal sede constraint
+                if sede.sede_type == 'principal':
+                    other_principal_sedes = HeadquarterLocation.objects.filter(
+                        organization=sede.organization,
+                        sede_type='principal',
+                        habilitation_status='habilitada'
+                    ).exclude(id__in=sede_ids).count()  # Exclude all sedes being deleted
+                    
+                    principal_being_deleted = sedes_to_delete.filter(
+                        sede_type='principal'
+                    ).count()
+                    
+                    if (other_principal_sedes + principal_being_deleted - 1) < 1:
+                        validation_errors.append({
+                            'sede_id': str(sede.id),
+                            'sede_name': sede.name,
+                            'error': 'No se puede eliminar la única sede principal habilitada'
+                        })
+                        error_count += 1
+                        continue
+                
+                # Create audit trail
+                try:
+                    from apps.organization.models import AuditLog
+                    AuditLog.objects.create(
+                        table_name='organization_headquarterlocation',
+                        record_id=str(sede.id),
+                        action=AuditLog.ACTION_DELETE,
+                        old_values={
+                            'reps_code': sede.reps_code,
+                            'name': sede.name,
+                            'sede_type': sede.sede_type,
+                            'habilitation_status': sede.habilitation_status,
+                            'department_name': sede.department_name,
+                            'municipality_name': sede.municipality_name,
+                            'organization_id': str(sede.organization.id),
+                        },
+                        new_values={},
+                        reason=f'Eliminación masiva: {reason}'
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to create audit trail for bulk sede deletion: {str(e)}")
+                
+                # Delete the sede
+                sede.delete()
+                deleted_count += 1
+                
+                logger.info(
+                    f"Sede bulk deleted - ID: {sede.id}, Name: {sede.name}, "
+                    f"User: {request.user.username}"
+                )
+                
+            except Exception as e:
+                error_count += 1
+                validation_errors.append({
+                    'sede_id': str(sede.id),
+                    'sede_name': sede.name,
+                    'error': f'Error inesperado: {str(e)}'
+                })
+        
+        response_data = {
+            'success': deleted_count > 0,
+            'deleted_count': deleted_count,
+            'error_count': error_count,
+            'total_requested': len(sede_ids),
+            'message': f'Se eliminaron {deleted_count} sede(s) correctamente'
+        }
+        
+        if validation_errors:
+            response_data['errors'] = validation_errors
+            if deleted_count == 0:
+                response_data['message'] = 'No se pudo eliminar ninguna sede debido a errores de validación'
+            else:
+                response_data['message'] += f'. {error_count} sede(s) no se pudieron eliminar'
+        
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['post'])
+    def clear_all(self, request):
+        """
+        Clear all headquarters for re-import. 
+        WARNING: This removes ALL sedes including principal ones.
+        Use only before importing new data.
+        
+        Expected payload:
+        {
+            "confirm": true,
+            "reason": "Preparing for data re-import"
+        }
+        """
+        confirm = request.data.get('confirm', False)
+        reason = request.data.get('reason', 'Clear all for re-import')
+        
+        if not confirm:
+            return Response({
+                'success': False,
+                'message': 'Must confirm with confirm=true to clear all sedes'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get all sedes for this organization
+        queryset = self.get_queryset()
+        total_sedes = queryset.count()
+        
+        if total_sedes == 0:
+            return Response({
+                'success': True,
+                'message': 'No hay sedes para eliminar',
+                'deleted_count': 0
+            })
+        
+        deleted_count = 0
+        
+        # Create audit trail for mass deletion
+        try:
+            from apps.organization.models import AuditLog
+            AuditLog.objects.create(
+                table_name='organization_headquarterlocation',
+                record_id='BULK_CLEAR',
+                action=AuditLog.ACTION_DELETE,
+                old_values={
+                    'total_sedes': total_sedes,
+                    'organization_id': str(queryset.first().organization.id) if queryset.exists() else 'unknown',
+                },
+                new_values={},
+                reason=f'Eliminación masiva para re-importación: {reason}'
+            )
+        except Exception as e:
+            logger.warning(f"Failed to create audit trail for clear_all: {str(e)}")
+        
+        # Delete all sedes (bypass business validations for re-import scenario)
+        try:
+            deleted_count = queryset.count()
+            queryset.delete()
+            
+            logger.info(
+                f"All sedes cleared - Count: {deleted_count}, "
+                f"User: {request.user.username}, Reason: {reason}"
+            )
+            
+            return Response({
+                'success': True,
+                'deleted_count': deleted_count,
+                'message': f'Se eliminaron {deleted_count} sede(s) para permitir re-importación'
+            })
+            
+        except Exception as e:
+            logger.error(f"Error clearing all sedes: {str(e)}")
+            return Response({
+                'success': False,
+                'message': f'Error eliminando sedes: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class EnabledHealthServiceViewSet(viewsets.ModelViewSet):
@@ -619,6 +893,43 @@ class SOGCSOverviewViewSet(viewsets.ViewSet):
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=False, methods=['get'])
+    def diagnose_reps(self, request):
+        """
+        Diagnose REPS code issues for debugging.
+        """
+        organization = self._get_user_organization()
+        if not organization:
+            return Response(
+                {'error': 'Usuario no tiene organización asociada'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            from .services.reps_sync import REPSSynchronizationService
+            
+            # Create service instance
+            sync_service = REPSSynchronizationService(
+                organization=organization,
+                user=request.user
+            )
+            
+            # Run diagnosis
+            diagnosis = sync_service.diagnose_reps_codes()
+            
+            return Response({
+                'success': True,
+                'diagnosis': diagnosis,
+                'message': 'Diagnóstico completado'
+            })
+            
+        except Exception as e:
+            logger.error(f"Error running REPS diagnosis: {str(e)}")
+            return Response(
+                {'error': f'Error en diagnóstico: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
     @action(detail=False, methods=['post'])
     def activate(self, request):
         """
@@ -731,13 +1042,15 @@ class REPSImportViewSet(viewsets.ViewSet):
             
             # Initialize synchronization service
             create_backup = serializer.validated_data.get('create_backup', True)
+            force_recreate = serializer.validated_data.get('force_recreate', False)
             sync_service = REPSSynchronizationService(organization, request.user)
             
             # Execute synchronization
             stats = sync_service.synchronize_from_files(
                 headquarters_file=headquarters_file_path,
                 services_file=services_file_path,
-                create_backup=create_backup
+                create_backup=create_backup,
+                force_recreate=force_recreate
             )
             
             # Return the stats directly as expected by frontend
