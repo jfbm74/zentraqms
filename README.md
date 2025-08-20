@@ -75,7 +75,7 @@ cd frontend && npm run dev
 | **Operations** | Audits | 10% | ❌ |
 | **Quality** | Processes | 15% | ❌ |
 | **Quality** | Indicators | 25% | ❌ |
-| **Health** | SUH Module | 60% | ❌ |
+| **Health** | SUH Module - Sedes | 85% | ✅ |
 | **Health** | PAMEC | 45% | ❌ |
 
 ## 🔐 RBAC System
