@@ -30,12 +30,12 @@ from apps.authorization.drf_permissions import (
     CanUpdateOrganization,
     CanDeleteOrganization,
 )
-from .models import (
+from ..models import (
     Organization, Location, SectorTemplate, AuditLog, HealthOrganization, HealthService, 
     SedePrestadora, SedeServicio, HeadquarterLocation, EnabledHealthService, ServiceHabilitationProcess
 )
-from .signals import set_audit_context
-from .serializers import (
+from ..signals import set_audit_context
+from ..serializers import (
     OrganizationSerializer,
     OrganizationCreateSerializer,
     OrganizationListSerializer,
@@ -1572,7 +1572,7 @@ class OrganizationWizardViewSet(viewsets.ModelViewSet):
         """Create organization through simplified wizard."""
         try:
             # Import service
-            from .services.organization_service import OrganizationService
+            from ..services.organization_service import OrganizationService
             
             # Extract logo file if present
             logo_file = request.FILES.get('logo')
@@ -1624,7 +1624,7 @@ class OrganizationWizardViewSet(viewsets.ModelViewSet):
         """Update organization through simplified wizard."""
         try:
             # Import service
-            from .services.organization_service import OrganizationService
+            from ..services.organization_service import OrganizationService
             
             # Get organization instance
             organization = self.get_object()
@@ -1691,7 +1691,7 @@ class OrganizationWizardViewSet(viewsets.ModelViewSet):
                 )
             
             # Import service
-            from .services.organization_service import OrganizationService
+            from ..services.organization_service import OrganizationService
             
             # Validate NIT availability using service
             validation_result = OrganizationService.validate_nit(nit)
@@ -1726,7 +1726,7 @@ class OrganizationWizardViewSet(viewsets.ModelViewSet):
             organization = self.get_object()
             
             # Import service
-            from .services.organization_service import OrganizationService
+            from ..services.organization_service import OrganizationService
             
             # Get summary
             summary_data = OrganizationService.get_organization_summary(organization)
@@ -1765,8 +1765,8 @@ class DivipolaViewSet(viewsets.ViewSet):
     def departments(self, request):
         """Get list of all Colombian departments."""
         try:
-            from .services.divipola_service import DivipolaService
-            from .serializers import DepartmentSerializer
+            from ..services.divipola_service import DivipolaService
+            from ..serializers import DepartmentSerializer
             
             departments = DivipolaService.get_departments()
             serializer = DepartmentSerializer(departments, many=True)
@@ -1794,8 +1794,8 @@ class DivipolaViewSet(viewsets.ViewSet):
     def municipalities_by_department(self, request, department_code=None):
         """Get municipalities for a specific department."""
         try:
-            from .services.divipola_service import DivipolaService
-            from .serializers import MunicipalitySerializer
+            from ..services.divipola_service import DivipolaService
+            from ..serializers import MunicipalitySerializer
             
             municipalities = DivipolaService.get_municipalities(department_code)
             serializer = MunicipalitySerializer(municipalities, many=True)
@@ -1823,8 +1823,8 @@ class DivipolaViewSet(viewsets.ViewSet):
     def search_municipalities(self, request):
         """Search municipalities by name."""
         try:
-            from .services.divipola_service import DivipolaService
-            from .serializers import MunicipalitySerializer
+            from ..services.divipola_service import DivipolaService
+            from ..serializers import MunicipalitySerializer
             
             query = request.query_params.get('q', '')
             department_code = request.query_params.get('department', None)
@@ -1865,8 +1865,8 @@ class DivipolaViewSet(viewsets.ViewSet):
     def major_cities(self, request):
         """Get list of major Colombian cities."""
         try:
-            from .services.divipola_service import DivipolaService
-            from .serializers import MunicipalitySerializer
+            from ..services.divipola_service import DivipolaService
+            from ..serializers import MunicipalitySerializer
             
             cities = DivipolaService.get_major_cities()
             serializer = MunicipalitySerializer(cities, many=True)

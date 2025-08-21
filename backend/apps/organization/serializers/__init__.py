@@ -93,6 +93,18 @@ from .sogcs_sedes_serializers import (
     BulkServicesUpdateSerializer,
 )
 
+# Import Health Services serializers
+from .health_services_serializers import (
+    HealthServiceCatalogSerializer,
+    SedeHealthServiceListSerializer,
+    SedeHealthServiceDetailSerializer,
+    SedeHealthServiceCreateUpdateSerializer,
+    ServiceImportSerializer,
+    ServiceBulkActionSerializer,
+    ServiceImportLogSerializer,
+    ServiceStatisticsSerializer,
+)
+
 __all__ = [
     # Base serializers (existing functionality)
     'LocationSerializer',
@@ -153,4 +165,14 @@ __all__ = [
     'REPSValidationResultSerializer',
     'BulkHeadquartersImportSerializer',
     'BulkServicesUpdateSerializer',
+    
+    # Health Services serializers
+    'HealthServiceCatalogSerializer',
+    'SedeHealthServiceListSerializer',
+    'SedeHealthServiceDetailSerializer',
+    'SedeHealthServiceCreateUpdateSerializer',
+    'ServiceImportSerializer',
+    'ServiceBulkActionSerializer',
+    'ServiceImportLogSerializer',
+    'ServiceStatisticsSerializer',
 ]

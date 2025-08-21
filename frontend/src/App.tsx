@@ -47,6 +47,7 @@ const IndicadoresPage = React.lazy(
 );
 const SOGCSDashboard = React.lazy(() => import("./pages/sogcs/dashboard"));
 const SOGCSSedesPage = React.lazy(() => import("./pages/sogcs/configuracion/sedes"));
+const SOGCSServiciosPage = React.lazy(() => import("./pages/sogcs/configuracion/servicios"));
 const ProfilePage = React.lazy(() => import("./pages/profile/ProfilePage"));
 const NotFoundPage = React.lazy(() => import("./pages/NotFoundPage"));
 
@@ -144,6 +145,12 @@ const AppRouter: React.FC = () => {
         </ProtectedRoute>
       </Route>
 
+      <Route path="/sogcs/configuracion/servicios">
+        <ProtectedRoute>
+          <SOGCSServiciosPage />
+        </ProtectedRoute>
+      </Route>
+
       <Route path="/profile">
         <ProtectedRoute>
           <DashboardLayout>
@@ -187,6 +194,7 @@ const AppRouter: React.FC = () => {
         "/indicadores",
         "/sogcs/dashboard",
         "/sogcs/configuracion/sedes",
+        "/sogcs/configuracion/servicios",
         "/profile",
         "/access-denied",
       ].includes(currentPath) && <NotFoundPage />}

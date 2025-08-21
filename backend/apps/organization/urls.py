@@ -19,6 +19,11 @@ from .views import (
     EnabledHealthServiceViewSet,
     ServiceHabilitationProcessViewSet
 )
+# Import health services views directly from the module file
+from apps.organization.views.health_services_views import (
+    HealthServiceCatalogViewSet,
+    SedeHealthServiceViewSet
+)
 
 # Create a router and register viewsets
 router = DefaultRouter()
@@ -35,6 +40,10 @@ router.register(r"divipola", DivipolaViewSet, basename="divipola")
 router.register(r"headquarters", HeadquarterLocationViewSet, basename="headquarters")
 router.register(r"enabled-services", EnabledHealthServiceViewSet, basename="enabled-services")
 router.register(r"habilitation-processes", ServiceHabilitationProcessViewSet, basename="habilitation-processes")
+
+# Health Services endpoints
+router.register(r"health-service-catalog", HealthServiceCatalogViewSet, basename="health-service-catalog")
+router.register(r"sede-health-services", SedeHealthServiceViewSet, basename="sede-health-services")
 
 app_name = "organization"
 

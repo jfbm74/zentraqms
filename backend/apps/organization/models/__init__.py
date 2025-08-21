@@ -38,6 +38,13 @@ from .sogcs_sedes import (
     ServiceHabilitationProcess,
 )
 
+# Health Services models
+from .health_services import (
+    HealthServiceCatalog,
+    SedeHealthService,
+    ServiceImportLog,
+)
+
 # Export all models and functions for backward compatibility
 __all__ = [
     # Base models
@@ -66,4 +73,9 @@ __all__ = [
     'HeadquarterLocation',
     'EnabledHealthService',
     'ServiceHabilitationProcess',
+    
+    # Health Services models
+    'HealthServiceCatalog',
+    'SedeHealthService',
+    'ServiceImportLog',
 ]
