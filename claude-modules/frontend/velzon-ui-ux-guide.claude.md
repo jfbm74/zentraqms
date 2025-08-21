@@ -1,5 +1,8 @@
 # 🎨 Guía Completa de UI/UX - Velzon 4.4.1 Design System
 
+> **📋 IMPORTANTE**: Para patrones de implementación específicos y arquitectura de componentes, consultar también:
+> **[Frontend Design Patterns](../common/frontend-design-patterns.claude.md)** - Patrones arquitectónicos basados en la interfaz SOGCS sedes.
+
 ## 🎯 Principios Fundamentales de Diseño
 
 ### **Velzon First Policy**
@@ -623,6 +626,11 @@ $transition-collapse: height 0.35s ease;
 ---
 
 ## 🔗 Referencias y Recursos
+
+### **Documentación ZentraQMS**
+- **[Frontend Design Patterns](../common/frontend-design-patterns.claude.md)** - Patrones arquitectónicos y de implementación
+- **[Common Patterns](../common/patterns.claude.md)** - Patrones generales del sistema
+- **[Frontend README](./README.claude.md)** - Guía principal de frontend
 
 ### **Documentación Velzon**
 - Path local: `/Users/juan.bustamante/personal/Velzon_4.4.1/React-TS/Master/`
