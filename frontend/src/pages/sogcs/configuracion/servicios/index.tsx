@@ -241,7 +241,7 @@ const ServiciosPage = () => {
     } else {
       console.log('⏳ ServiciosPage: Not loading data, hasOrganization is false');
     }
-  }, [hasOrganization, fetchServicios, fetchStatistics]);
+  }, [hasOrganization, fetchServicios, fetchStatistics, state.filters]);
 
   // Clear any errors when component unmounts
   useEffect(() => {

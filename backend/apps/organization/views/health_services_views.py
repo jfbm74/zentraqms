@@ -140,6 +140,7 @@ class SedeHealthServiceViewSet(viewsets.ModelViewSet):
         'ambulatory', 'hospital', 'mobile_unit', 'domiciliary',
         'complexity_level', 'is_reference_center'
     ]
+    # Note: 'sede' parameter is handled manually in get_queryset() for frontend compatibility
     search_fields = [
         'service_code', 'service_name', 'distinctive_number',
         'service_group_name', 'observations', 'manager_name'
@@ -175,8 +176,12 @@ class SedeHealthServiceViewSet(viewsets.ModelViewSet):
         
         # Additional filters from query params
         headquarters_id = self.request.query_params.get('headquarters_id')
-        if headquarters_id:
-            queryset = queryset.filter(headquarters_id=headquarters_id)
+        # Support 'sede' as alias for 'headquarters_id' (for frontend compatibility)
+        sede_id = self.request.query_params.get('sede')
+        
+        filter_id = headquarters_id or sede_id
+        if filter_id:
+            queryset = queryset.filter(headquarters_id=filter_id)
         
         enabled_only = self.request.query_params.get('enabled_only', 'false').lower() == 'true'
         if enabled_only:
