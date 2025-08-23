@@ -7,6 +7,8 @@
 import React from "react";
 import Step3bHealthOrganization from "./steps/Step3bHealthOrganization";
 import Step3cHealthServices from "./steps/Step3cHealthServices";
+import Step3dSedesManagement from "./steps/Step3dSedesManagement";
+// Step3eCapacityManagement removed - capacity is now managed from SOGCS sedes page
 
 // Types
 interface HealthOrganizationData {
@@ -38,11 +40,26 @@ interface SelectedService {
   observaciones?: string;
 }
 
+interface SedeData {
+  id?: string;
+  numero_sede: string;
+  nombre_sede: string;
+  tipo_sede: string;
+  estado: string;
+}
+
+interface CapacityData {
+  total_imported?: number;
+  last_import_date?: string;
+  sync_status?: 'synchronized' | 'needs_update' | 'never_synced';
+}
+
 interface HealthWizardIntegrationProps {
   // Current wizard state
   currentStep: number;
   selectedSector?: string;
   organizationName?: string;
+  organizationId?: string;
   
   // Health organization data
   healthData: Partial<HealthOrganizationData>;
@@ -53,6 +70,14 @@ interface HealthWizardIntegrationProps {
   selectedServices: SelectedService[];
   onServicesChange: (services: SelectedService[]) => void;
   
+  // Sedes data
+  sedesData: SedeData[];
+  onSedesChange: (sedes: SedeData[]) => void;
+  
+  // Capacity data
+  capacityData: Partial<CapacityData>;
+  onCapacityChange: (data: Partial<CapacityData>) => void;
+  
   // Navigation functions
   onNext: () => void;
   onPrevious: () => void;
@@ -62,18 +87,24 @@ interface HealthWizardIntegrationProps {
 // Health step mapping
 const HEALTH_STEPS = {
   ORGANIZATION_INFO: 'health-org-info',
-  SERVICES_SELECTION: 'health-services'
+  SERVICES_SELECTION: 'health-services',
+  SEDES_MANAGEMENT: 'sedes-management'
 };
 
 const HealthWizardIntegration: React.FC<HealthWizardIntegrationProps> = ({
   currentStep,
   selectedSector,
   organizationName,
+  organizationId,
   healthData,
   healthErrors,
   onHealthDataChange,
   selectedServices,
   onServicesChange,
+  sedesData,
+  onSedesChange,
+  capacityData,
+  onCapacityChange,
   onNext,
   onPrevious,
   onSkip
@@ -89,11 +120,24 @@ const HealthWizardIntegration: React.FC<HealthWizardIntegrationProps> = ({
                                healthData.naturaleza_juridica && 
                                healthData.nivel_complejidad;
     
+    const hasServicesSelected = selectedServices && selectedServices.length > 0;
+    
+    const hasSedesConfigured = sedesData && sedesData.length > 0;
+    
     if (!hasBasicHealthInfo) {
       return HEALTH_STEPS.ORGANIZATION_INFO;
     }
     
-    return HEALTH_STEPS.SERVICES_SELECTION;
+    if (!hasServicesSelected) {
+      return HEALTH_STEPS.SERVICES_SELECTION;
+    }
+    
+    if (!hasSedesConfigured) {
+      return HEALTH_STEPS.SEDES_MANAGEMENT;
+    }
+    
+    // All health steps completed, proceed to next wizard step
+    return HEALTH_STEPS.SEDES_MANAGEMENT;
   };
   
   // Don't render anything if not health sector
@@ -140,15 +184,20 @@ const HealthWizardIntegration: React.FC<HealthWizardIntegrationProps> = ({
       [];
   };
   
+  // Validation functions for new steps
+  const validateSedes = () => {
+    return sedesData.length === 0 ? 
+      ['Debe configurar al menos una sede'] : 
+      [];
+  };
+
   // Handle navigation
   const handleNext = () => {
     if (currentHealthStep === HEALTH_STEPS.ORGANIZATION_INFO) {
       const errors = validateHealthOrganization();
       if (Object.keys(errors).length === 0) {
-        // Move to services step (this would be handled by parent wizard)
         onNext();
       } else {
-        // Show validation errors
         console.warn('Health organization validation errors:', errors);
       }
     } else if (currentHealthStep === HEALTH_STEPS.SERVICES_SELECTION) {
@@ -157,6 +206,13 @@ const HealthWizardIntegration: React.FC<HealthWizardIntegrationProps> = ({
         onNext();
       } else {
         console.warn('Health services validation errors:', errors);
+      }
+    } else if (currentHealthStep === HEALTH_STEPS.SEDES_MANAGEMENT) {
+      const errors = validateSedes();
+      if (errors.length === 0) {
+        onNext();
+      } else {
+        console.warn('Sedes validation errors:', errors);
       }
     }
   };
@@ -273,34 +329,113 @@ const HealthWizardIntegration: React.FC<HealthWizardIntegrationProps> = ({
         </div>
       )}
       
+      {/* Sedes Management Step */}
+      {currentHealthStep === HEALTH_STEPS.SEDES_MANAGEMENT && organizationId && (
+        <div>
+          <Step3dSedesManagement
+            organizationId={organizationId}
+            onSedeCreate={(sede) => {
+              // Add sede to the list
+              onSedesChange([...sedesData, {
+                id: sede.id,
+                numero_sede: sede.numero_sede,
+                nombre_sede: sede.nombre_sede,
+                tipo_sede: sede.tipo_sede,
+                estado: sede.estado
+              }]);
+            }}
+            onSedeUpdate={(sede) => {
+              // Update sede in the list
+              const updatedSedes = sedesData.map(s => 
+                s.id === sede.id ? {
+                  id: sede.id,
+                  numero_sede: sede.numero_sede,
+                  nombre_sede: sede.nombre_sede,
+                  tipo_sede: sede.tipo_sede,
+                  estado: sede.estado
+                } : s
+              );
+              onSedesChange(updatedSedes);
+            }}
+            onSedeDelete={(sedeId) => {
+              // Remove sede from the list
+              const updatedSedes = sedesData.filter(s => s.id !== sedeId);
+              onSedesChange(updatedSedes);
+            }}
+          />
+          
+          {/* Navigation for Sedes Management Step */}
+          <div className="wizard-navigation mt-4">
+            <div className="d-flex justify-content-between align-items-center">
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={onPrevious}
+              >
+                <i className="ri-arrow-left-line me-1"></i>
+                Anterior
+              </button>
+              
+              <div className="d-flex gap-2">
+                <button
+                  type="button"
+                  className="btn btn-outline-warning"
+                  onClick={handleSkip}
+                  data-bs-toggle="tooltip"
+                  title="Puede agregar sedes más tarde desde el panel de administración"
+                >
+                  <i className="ri-skip-forward-line me-1"></i>
+                  Configurar Después
+                </button>
+                
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleNext}
+                  disabled={validateSedes().length > 0}
+                >
+                  Continuar
+                  <i className="ri-arrow-right-line ms-1"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Progress Indicator for Health Steps */}
       <div className="health-progress-indicator mt-3">
-        <div className="card border-0 bg-light">
-          <div className="card-body p-2">
-            <div className="row align-items-center">
-              <div className="col-md-8">
-                <small className="text-muted">
-                  <strong>Configuración de Salud:</strong> {' '}
-                  {currentHealthStep === HEALTH_STEPS.ORGANIZATION_INFO ? 
-                    'Información Institucional' : 
-                    'Selección de Servicios'
-                  }
-                </small>
-              </div>
-              <div className="col-md-4">
-                <div className="progress" style={{ height: '4px' }}>
-                  <div 
-                    className="progress-bar bg-success" 
-                    style={{ 
-                      width: currentHealthStep === HEALTH_STEPS.ORGANIZATION_INFO ? '50%' : '100%' 
-                    }}
-                  ></div>
+          <div className="card border-0 bg-light">
+            <div className="card-body p-2">
+              <div className="row align-items-center">
+                <div className="col-md-8">
+                  <small className="text-muted">
+                    <strong>Configuración de Salud:</strong> {' '}
+                    {currentHealthStep === HEALTH_STEPS.ORGANIZATION_INFO ? 
+                      'Información Institucional' : 
+                      currentHealthStep === HEALTH_STEPS.SERVICES_SELECTION ?
+                      'Selección de Servicios' :
+                      'Gestión de Sedes'
+                    }
+                  </small>
+                </div>
+                <div className="col-md-4">
+                  <div className="progress" style={{ height: '4px' }}>
+                    <div 
+                      className="progress-bar bg-success" 
+                      style={{ 
+                        width: currentHealthStep === HEALTH_STEPS.ORGANIZATION_INFO ? '33%' : 
+                               currentHealthStep === HEALTH_STEPS.SERVICES_SELECTION ? '66%' :
+                               '100%'
+                      }}
+                    ></div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

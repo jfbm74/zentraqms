@@ -45,6 +45,13 @@ from .health_services import (
     ServiceImportLog,
 )
 
+# Capacity models
+from .capacity import (
+    CapacidadInstalada,
+    CapacidadHistorial,
+    CapacidadImportLog,
+)
+
 # Export all models and functions for backward compatibility
 __all__ = [
     # Base models
@@ -78,4 +85,9 @@ __all__ = [
     'HealthServiceCatalog',
     'SedeHealthService',
     'ServiceImportLog',
+    
+    # Capacity models
+    'CapacidadInstalada',
+    'CapacidadHistorial',
+    'CapacidadImportLog',
 ]

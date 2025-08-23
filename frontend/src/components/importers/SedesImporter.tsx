@@ -7,12 +7,14 @@
 import React, { useState, useRef } from "react";
 import { sedeService } from "../../services/sedeService";
 import { useBootstrapTooltips } from "../../hooks/useBootstrapTooltips";
+import CapacityImportModal from "../modals/CapacityImportModal";
 import type {
   SedesImporterProps,
   SedeImportConfig,
   SedeImportResponse,
   SedeImportValidationResult,
 } from "../../types/sede.types";
+import type { CapacidadImportResponse } from "../../types/capacity.types";
 
 interface ImportStep {
   id: string;
@@ -47,6 +49,9 @@ const SedesImporter: React.FC<SedesImporterProps> = ({
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [forceRecreate, setForceRecreate] = useState(false);
+  
+  // Capacity import modal state
+  const [showCapacityModal, setShowCapacityModal] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -630,7 +635,7 @@ const SedesImporter: React.FC<SedesImporterProps> = ({
       <div className="mb-3">
         <i className="ri-check-circle-line display-4 text-success" aria-hidden="true"></i>
       </div>
-      <h5 className="text-success mb-3">¡Importación Completada!</h5>
+      <h5 className="text-success mb-3">¡Importación de Sedes Completada!</h5>
       
       {importResponse && (
         <div className="row justify-content-center">
@@ -657,22 +662,66 @@ const SedesImporter: React.FC<SedesImporterProps> = ({
         </div>
       )}
 
+      {/* Capacity Import Offer */}
+      {importResponse?.success && (
+        <div className="row justify-content-center mt-4">
+          <div className="col-lg-10">
+            <div className="card border-primary">
+              <div className="card-header bg-primary-subtle">
+                <h6 className="mb-0 text-primary">
+                  <i className="ri-database-2-line me-2" aria-hidden="true"></i>
+                  ¿Desea importar la capacidad instalada?
+                </h6>
+              </div>
+              <div className="card-body">
+                <p className="text-muted mb-3">
+                  Ahora que las sedes están importadas, puede proceder a importar 
+                  los datos de capacidad instalada desde el portal REPS para 
+                  completar la información de sus instalaciones.
+                </p>
+                <div className="d-flex gap-2 justify-content-center">
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={() => setShowCapacityModal(true)}
+                  >
+                    <i className="ri-upload-cloud-2-line me-1" aria-hidden="true"></i>
+                    Importar Capacidad
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={onCancel}
+                  >
+                    <i className="ri-skip-forward-line me-1" aria-hidden="true"></i>
+                    Omitir por ahora
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Standard Actions */}
       <div className="d-flex gap-2 justify-content-center mt-4">
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={onCancel}
-        >
-          <i className="ri-check-line me-1" aria-hidden="true"></i>
-          Finalizar
-        </button>
+        {!importResponse?.success && (
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={onCancel}
+          >
+            <i className="ri-check-line me-1" aria-hidden="true"></i>
+            Finalizar
+          </button>
+        )}
         <button
           type="button"
           className="btn btn-outline-secondary"
           onClick={handleReset}
         >
           <i className="ri-upload-2-line me-1" aria-hidden="true"></i>
-          Importar Más
+          Importar Más Sedes
         </button>
       </div>
     </div>
@@ -792,6 +841,21 @@ const SedesImporter: React.FC<SedesImporterProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Capacity Import Modal */}
+      <CapacityImportModal
+        isOpen={showCapacityModal}
+        onClose={() => setShowCapacityModal(false)}
+        onSuccess={(response: CapacidadImportResponse) => {
+          console.log('Capacity import completed:', response);
+          setShowCapacityModal(false);
+          // Optionally refresh parent component or show notification
+          if (onImportComplete) {
+            // We can extend the SedeImportResponse to include capacity info if needed
+            onImportComplete(importResponse!);
+          }
+        }}
+      />
     </div>
   );
 };

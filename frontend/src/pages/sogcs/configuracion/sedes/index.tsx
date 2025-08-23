@@ -8,6 +8,7 @@ import DeleteModal from '../../../../components/common/DeleteModal';
 import SedeFormModal from '../../../../components/forms/SedeFormModal';
 import SedeDetailModal from '../../../../components/modals/SedeDetailModal';
 import SedesImporter from '../../../../components/importers/SedesImporter';
+import CapacityImportModal from '../../../../components/modals/CapacityImportModal';
 import { useSedeStore } from '../../../../stores/sedeStore';
 import type { SedeListItem, SedeFormData } from '../../../../types/sede.types';
 import { toast } from 'react-toastify';
@@ -16,6 +17,7 @@ import { toast } from 'react-toastify';
 interface SedesPageState {
   showCreateModal: boolean;
   showImportModal: boolean;
+  showCapacityImportModal: boolean;
   showDetailModal: boolean;
   selectedSede: SedeListItem | null;
   selectedSedeId: string | null;
@@ -45,6 +47,7 @@ const SedesPage = () => {
   const [state, setState] = useState<SedesPageState>({
     showCreateModal: false,
     showImportModal: false,
+    showCapacityImportModal: false,
     showDetailModal: false,
     selectedSede: null,
     selectedSedeId: null,
@@ -152,6 +155,14 @@ const SedesPage = () => {
 
   const handleCloseImport = useCallback(() => {
     setState(prev => ({ ...prev, showImportModal: false }));
+  }, []);
+
+  const handleShowCapacityImport = useCallback(() => {
+    setState(prev => ({ ...prev, showCapacityImportModal: true }));
+  }, []);
+
+  const handleCloseCapacityImport = useCallback(() => {
+    setState(prev => ({ ...prev, showCapacityImportModal: false }));
   }, []);
 
   const handleViewSede = useCallback((sede: SedeListItem) => {
@@ -305,6 +316,16 @@ const SedesPage = () => {
     }
     handleCloseImport();
   }, [hasOrganization, fetchSedes, handleCloseImport]);
+
+  // Handle capacity import completion
+  const handleCapacityImportComplete = useCallback((result: any) => {
+    if (result.success) {
+      toast.success(`Importación de capacidad completada: ${result.summary?.successfully_imported || 0} registros importados`);
+    } else {
+      toast.error(result.message || 'Error durante la importación de capacidad');
+    }
+    handleCloseCapacityImport();
+  }, [handleCloseCapacityImport]);
 
   // Table columns
   const columns = useMemo(
@@ -574,6 +595,13 @@ const SedesPage = () => {
         </div>
       )}
 
+      {/* Capacity Import Modal */}
+      <CapacityImportModal
+        isOpen={state.showCapacityImportModal}
+        onClose={handleCloseCapacityImport}
+        onSuccess={handleCapacityImportComplete}
+      />
+
       <div className="row">
         <div className="col-12">
           <div className="card" id="sedesList">
@@ -599,7 +627,16 @@ const SedesPage = () => {
                       disabled={!hasOrganization}
                     >
                       <i className="ri-upload-cloud-line align-bottom me-1"></i>
-                      Importar
+                      Importar Sedes
+                    </button>
+                    <button 
+                      className="btn btn-warning"
+                      onClick={handleShowCapacityImport}
+                      disabled={!hasOrganization || !sedes || sedes.length === 0}
+                      title={!sedes || sedes.length === 0 ? "Debe crear al menos una sede antes de importar capacidad" : "Importar capacidad instalada desde REPS"}
+                    >
+                      <i className="ri-database-2-line align-bottom me-1"></i>
+                      Importar Capacidad
                     </button>
                     {isMultiDeleteButton && (
                       <button 

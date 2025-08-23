@@ -11,6 +11,10 @@ from .models import (
     ServiceHabilitationProcess
 )
 from .models.health_services import SedeHealthService, HealthServiceCatalog
+from .models.capacity import CapacidadInstalada, CapacidadHistorial, CapacidadImportLog
+
+# Import capacity admin configurations
+from . import admin_capacity
 
 
 @admin.register(Organization)
@@ -391,8 +395,7 @@ class SedePrestadoraAdmin(admin.ModelAdmin):
         "direccion",
         "departamento",
         "municipio",
-        "health_organization__nombre_organizacion",
-        "codigo_prestador",
+        "health_organization__organization__razon_social",
     ]
 
     readonly_fields = [

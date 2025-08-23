@@ -24,6 +24,12 @@ from apps.organization.views.health_services_views import (
     HealthServiceCatalogViewSet,
     SedeHealthServiceViewSet
 )
+# Import capacity views
+from apps.organization.views.capacity_views import (
+    CapacidadInstaladaViewSet,
+    CapacidadHistorialViewSet,
+    CapacidadImportLogViewSet
+)
 
 # Create a router and register viewsets
 router = DefaultRouter()
@@ -44,6 +50,11 @@ router.register(r"habilitation-processes", ServiceHabilitationProcessViewSet, ba
 # Health Services endpoints
 router.register(r"health-service-catalog", HealthServiceCatalogViewSet, basename="health-service-catalog")
 router.register(r"sede-health-services", SedeHealthServiceViewSet, basename="sede-health-services")
+
+# Capacity endpoints
+router.register(r"capacidad", CapacidadInstaladaViewSet, basename="capacidad")
+router.register(r"capacidad-historial", CapacidadHistorialViewSet, basename="capacidad-historial")
+router.register(r"capacidad-import-logs", CapacidadImportLogViewSet, basename="capacidad-import-logs")
 
 app_name = "organization"
 

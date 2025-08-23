@@ -8,7 +8,9 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useSedeStore } from "../../stores/sedeStore";
 import { useBootstrapTooltips } from "../../hooks/useBootstrapTooltips";
 import InfoTooltip from "../common/InfoTooltip";
+import { capacityService } from "../../services/capacityService";
 import type { SedePrestadora } from "../../types/sede.types";
+import type { SedeCapacityOverview } from "../../types/capacity.types";
 
 // ====================================
 // INTERFACES
@@ -224,6 +226,9 @@ const SedeDetailModal: React.FC<SedeDetailModalProps> = ({
   // Store and state
   const { currentSede, loading, error, fetchSedeDetail } = useSedeStore();
   const [sede, setSede] = useState<SedePrestadora | null>(null);
+  const [capacityData, setCapacityData] = useState<SedeCapacityOverview | null>(null);
+  const [capacityLoading, setCapacityLoading] = useState(false);
+  const [capacityError, setCapacityError] = useState<string | null>(null);
 
   // Handler for viewing sede services
   const handleViewServices = useCallback(() => {
@@ -246,6 +251,31 @@ const SedeDetailModal: React.FC<SedeDetailModalProps> = ({
       });
     }
   }, [isOpen, sedeId, fetchSedeDetail, sede?.id]);
+
+  // Fetch capacity data when modal opens
+  useEffect(() => {
+    if (isOpen && sedeId) {
+      setCapacityLoading(true);
+      setCapacityError(null);
+      
+      capacityService.getSedeCapacityOverview(sedeId)
+        .then((data) => {
+          setCapacityData(data);
+          setCapacityError(null);
+        })
+        .catch((error) => {
+          console.error('Error fetching capacity data:', error);
+          setCapacityError(error.message || 'Error al cargar los datos de capacidad');
+          setCapacityData(null);
+        })
+        .finally(() => {
+          setCapacityLoading(false);
+        });
+    } else {
+      setCapacityData(null);
+      setCapacityError(null);
+    }
+  }, [isOpen, sedeId]);
 
   // Update local state when store data changes
   useEffect(() => {
@@ -795,49 +825,114 @@ const SedeDetailModal: React.FC<SedeDetailModalProps> = ({
   const renderInstalledCapacity = () => {
     if (!sede) return null;
 
+    // Show loading state while fetching capacity data
+    if (capacityLoading) {
+      return renderInfoCard(
+        "Capacidad Instalada",
+        "ri-hospital-line",
+        <div className="text-center py-4">
+          <div className="spinner-border text-secondary mb-2" role="status">
+            <span className="visually-hidden">Cargando capacidad...</span>
+          </div>
+          <div className="text-muted small">Cargando datos de capacidad...</div>
+        </div>,
+        "secondary"
+      );
+    }
+
+    // Show error state if capacity data failed to load
+    if (capacityError) {
+      return renderInfoCard(
+        "Capacidad Instalada",
+        "ri-hospital-line",
+        <div className="alert alert-warning text-center" role="alert">
+          <i className="ri-alert-line me-2" aria-hidden="true"></i>
+          <small>No se pudieron cargar los datos de capacidad real</small>
+          <div className="mt-2 small text-muted">{capacityError}</div>
+        </div>,
+        "secondary"
+      );
+    }
+
+    // Get capacity data or fallback to empty state
+    const capacityGroups = capacityData?.capacity_by_group || [];
+    const getCapacityByGroup = (groupName: string) => {
+      const group = capacityGroups.find(g => g.grupo_capacidad === groupName);
+      return group?.totales || { total_funcionando: 0, total_cantidad: 0 };
+    };
+    
+    const camas = getCapacityByGroup('CAMAS');
+    const camillas = getCapacityByGroup('CAMILLAS');
+    const consultorios = getCapacityByGroup('CONSULTORIOS');
+    const salas = getCapacityByGroup('SALAS');
+
     return renderInfoCard(
-      "Capacidad Instalada",
+      "Capacidad Instalada (REPS)",
       "ri-hospital-line",
       <div className="row g-2">
         <div className="col-6">
           <div className="text-center p-2 rounded-3 bg-info-subtle d-flex flex-column justify-content-center" style={{ minHeight: '70px' }}>
             <i className="ri-hotel-bed-fill text-info fs-18 mb-1" aria-hidden="true"></i>
-            <div className="fw-bold text-dark fs-16">{sede.total_beds || 0}</div>
+            <div className="fw-bold text-dark fs-16">
+              {camas.total_funcionando}
+              <span className="text-muted fs-13">/{camas.total_cantidad}</span>
+            </div>
             <div className="text-muted small">Camas</div>
           </div>
         </div>
         
         <div className="col-6">
           <div className="text-center p-2 rounded-3 bg-warning-subtle d-flex flex-column justify-content-center" style={{ minHeight: '70px' }}>
-            <i className="ri-heart-pulse-fill text-warning fs-18 mb-1" aria-hidden="true"></i>
-            <div className="fw-bold text-dark fs-16">{sede.icu_beds || 0}</div>
-            <div className="text-muted small">UCI</div>
+            <i className="ri-wheelchair-line text-warning fs-18 mb-1" aria-hidden="true"></i>
+            <div className="fw-bold text-dark fs-16">
+              {camillas.total_funcionando}
+              <span className="text-muted fs-13">/{camillas.total_cantidad}</span>
+            </div>
+            <div className="text-muted small">Camillas</div>
           </div>
         </div>
         
         <div className="col-6">
-          <div className="text-center p-2 rounded-3 bg-danger-subtle d-flex flex-column justify-content-center" style={{ minHeight: '70px' }}>
-            <i className="ri-emergency-line text-danger fs-18 mb-1" aria-hidden="true"></i>
-            <div className="fw-bold text-dark fs-16">{sede.emergency_beds || 0}</div>
-            <div className="text-muted small">Urgencias</div>
+          <div className="text-center p-2 rounded-3 bg-primary-subtle d-flex flex-column justify-content-center" style={{ minHeight: '70px' }}>
+            <i className="ri-stethoscope-line text-primary fs-18 mb-1" aria-hidden="true"></i>
+            <div className="fw-bold text-dark fs-16">
+              {consultorios.total_funcionando}
+              <span className="text-muted fs-13">/{consultorios.total_cantidad}</span>
+            </div>
+            <div className="text-muted small">Consultorios</div>
           </div>
         </div>
         
         <div className="col-6">
           <div className="text-center p-2 rounded-3 bg-success-subtle d-flex flex-column justify-content-center" style={{ minHeight: '70px' }}>
-            <i className="ri-surgical-mask-fill text-success fs-18 mb-1" aria-hidden="true"></i>
-            <div className="fw-bold text-dark fs-16">{sede.surgery_rooms || 0}</div>
-            <div className="text-muted small">Quirófanos</div>
+            <i className="ri-home-office-line text-success fs-18 mb-1" aria-hidden="true"></i>
+            <div className="fw-bold text-dark fs-16">
+              {salas.total_funcionando}
+              <span className="text-muted fs-13">/{salas.total_cantidad}</span>
+            </div>
+            <div className="text-muted small">Salas</div>
           </div>
         </div>
         
-        <div className="col-12">
-          <div className="text-center p-2 rounded-3 bg-primary-subtle d-flex flex-column justify-content-center" style={{ minHeight: '70px' }}>
-            <i className="ri-stethoscope-line text-primary fs-18 mb-1" aria-hidden="true"></i>
-            <div className="fw-bold text-dark fs-16">{sede.consultation_rooms || 0}</div>
-            <div className="text-muted small">Consultorios</div>
+        {!capacityData && (
+          <div className="col-12">
+            <div className="alert alert-info text-center" role="alert" style={{ borderRadius: '8px' }}>
+              <i className="ri-information-line me-2" aria-hidden="true"></i>
+              <small>No hay datos de capacidad registrados para esta sede</small>
+            </div>
           </div>
-        </div>
+        )}
+        
+        {capacityData && capacityData.summary?.last_update && (
+          <div className="col-12">
+            <div className="text-center mt-2">
+              <small className="text-muted">
+                <i className="ri-time-line me-1" aria-hidden="true"></i>
+                Última actualización: {formatDateTime(capacityData.summary.last_update)}
+              </small>
+            </div>
+          </div>
+        )}
       </div>,
       "secondary"
     );
