@@ -9,6 +9,7 @@ import pandas as pd
 import logging
 import json
 import numpy as np
+import difflib
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 from decimal import Decimal
@@ -148,6 +149,106 @@ class REPSServiceImporter:
         
         return safe_dict
     
+    def _find_existing_headquarters_by_similarity(self, sede_name: str) -> Optional[HeadquarterLocation]:
+        """
+        Find existing headquarters using intelligent matching:
+        1. Exact name match (case insensitive)
+        2. Fuzzy name match (>85% similarity)
+        3. Same organization
+        
+        Returns existing headquarters if found, None otherwise.
+        """
+        if not sede_name or not sede_name.strip():
+            return None
+        
+        cleaned_sede_name = sede_name.strip()
+        
+        # 1. Try exact match first (case insensitive)
+        exact_match = HeadquarterLocation.objects.filter(
+            organization=self.organization,
+            name__iexact=cleaned_sede_name
+        ).first()
+        
+        if exact_match:
+            logger.debug(f"Found exact match for sede: {cleaned_sede_name} -> {exact_match.reps_code}")
+            return exact_match
+        
+        # 2. Try fuzzy matching for similar names
+        all_headquarters = HeadquarterLocation.objects.filter(
+            organization=self.organization,
+            deleted_at__isnull=True  # Only active headquarters
+        )
+        
+        best_match = None
+        best_similarity = 0.85  # Minimum 85% similarity threshold
+        
+        for hq in all_headquarters:
+            # Compare normalized names (uppercase, no extra spaces)
+            name1 = cleaned_sede_name.upper().replace('Á', 'A').replace('É', 'E').replace('Í', 'I').replace('Ó', 'O').replace('Ú', 'U').replace('Ñ', 'N')
+            name2 = hq.name.upper().replace('Á', 'A').replace('É', 'E').replace('Í', 'I').replace('Ó', 'O').replace('Ú', 'U').replace('Ñ', 'N')
+            
+            similarity = difflib.SequenceMatcher(None, name1, name2).ratio()
+            
+            if similarity > best_similarity:
+                best_similarity = similarity
+                best_match = hq
+        
+        if best_match:
+            logger.info(f"Found fuzzy match for sede: {cleaned_sede_name} -> {best_match.name} "
+                       f"(similarity: {best_similarity:.2%}, code: {best_match.reps_code})")
+            return best_match
+        
+        logger.debug(f"No existing sede found for: {cleaned_sede_name}")
+        return None
+    
+    def _merge_headquarters_data(self, existing_hq: HeadquarterLocation, row: pd.Series, sede_name: str) -> HeadquarterLocation:
+        """
+        Merge REPS data into existing headquarters while preserving critical local data.
+        
+        Strategy:
+        - Keep existing reps_code (preserve referential integrity)
+        - Update contact and location data from REPS
+        - Preserve habilitation status (don't downgrade from 'habilitada' to 'en_proceso')
+        - Add tracking of REPS update
+        """
+        # Update fields from REPS data while preserving key local data
+        existing_hq.name = sede_name or existing_hq.name
+        existing_hq.department_name = self._clean_value(row.get('depa_nombre', '')) or existing_hq.department_name
+        existing_hq.municipality_name = self._clean_value(row.get('muni_nombre', '')) or existing_hq.municipality_name
+        existing_hq.address = self._clean_value(row.get('direccion', '')) or existing_hq.address
+        existing_hq.phone_primary = self._clean_value(row.get('telefono', '')) or existing_hq.phone_primary
+        existing_hq.email = self._clean_value(row.get('email', '')) or existing_hq.email
+        existing_hq.administrative_contact = self._clean_value(row.get('gerente', '')) or existing_hq.administrative_contact
+        
+        # Update department and municipality codes if available
+        dept_code = self._extract_department_code(row)
+        if dept_code:
+            existing_hq.department_code = dept_code
+            
+        muni_code = self._extract_municipality_code(row)
+        if muni_code:
+            existing_hq.municipality_code = muni_code
+        
+        # Preserve habilitation status - don't downgrade
+        if existing_hq.habilitation_status == 'habilitada':
+            # Keep as 'habilitada', don't change to 'en_proceso'
+            pass
+        else:
+            # If not already habilitada, update from REPS (could be improvement)
+            existing_hq.habilitation_status = 'en_proceso'
+        
+        # Add REPS tracking
+        existing_hq.last_reps_sync = timezone.now()
+        existing_hq.sync_status = 'updated'
+        
+        # Preserve updated_by for audit trail
+        existing_hq.updated_by = self.user
+        
+        existing_hq.save()
+        
+        logger.info(f"Merged REPS data into existing sede: {existing_hq.reps_code} - {existing_hq.name}")
+        return existing_hq
+    
     def import_from_file(self, file_path: str, file_name: str = None, file_size: int = 0) -> ServiceImportLog:
         """
         Main import method for REPS Excel files.
@@ -260,41 +361,50 @@ class REPSServiceImporter:
     
     def _get_or_create_headquarters(self, row: pd.Series, sede_number: str, sede_name: str) -> HeadquarterLocation:
         """
-        Get existing headquarters or create basic one for service association.
+        Get existing headquarters using intelligent matching or create new one.
+        
+        Uses merge strategy:
+        1. Try to find existing headquarters by name similarity
+        2. If found, merge REPS data while preserving local data
+        3. If not found, create new headquarters with REPS data
         """
         try:
-            # Try to find existing headquarters
-            headquarters = HeadquarterLocation.objects.filter(
+            # Step 1: Try intelligent matching by name similarity
+            existing_headquarters = self._find_existing_headquarters_by_similarity(sede_name)
+            
+            if existing_headquarters:
+                # Step 2: Merge REPS data into existing headquarters
+                merged_headquarters = self._merge_headquarters_data(existing_headquarters, row, sede_name)
+                logger.info(f"Using existing headquarters (merged): {merged_headquarters.reps_code} - {merged_headquarters.name}")
+                return merged_headquarters
+            
+            # Step 3: No match found, create new headquarters with REPS data
+            reps_code = f"{self.organization.organization.nit}-{sede_number}"
+            
+            new_headquarters = HeadquarterLocation.objects.create(
                 organization=self.organization,
-                reps_code__endswith=sede_number
-            ).first()
+                reps_code=reps_code,
+                name=sede_name or f"Sede {sede_number}",
+                sede_type='principal' if sede_number == '01' else 'satelite',
+                department_code=self._extract_department_code(row),
+                department_name=self._clean_value(row.get('depa_nombre', '')),
+                municipality_code=self._extract_municipality_code(row),
+                municipality_name=self._clean_value(row.get('muni_nombre', '')),
+                address=self._clean_value(row.get('direccion', 'Por definir')),
+                phone_primary=self._clean_value(row.get('telefono', '')),
+                email=self._clean_value(row.get('email', 'info@example.com')),
+                administrative_contact=self._clean_value(row.get('gerente', '')),
+                habilitation_status='en_proceso',
+                operational_status='activa',
+                last_reps_sync=timezone.now(),
+                sync_status='imported',
+                created_by=self.user
+            )
             
-            if not headquarters:
-                # Create minimal headquarters entry
-                reps_code = f"{self.organization.organization.nit}-{sede_number}"
-                
-                headquarters = HeadquarterLocation.objects.create(
-                    organization=self.organization,
-                    reps_code=reps_code,
-                    name=sede_name or f"Sede {sede_number}",
-                    sede_type='principal' if sede_number == '01' else 'satelite',
-                    department_code=self._extract_department_code(row),
-                    department_name=self._clean_value(row.get('depa_nombre', '')),
-                    municipality_code=self._extract_municipality_code(row),
-                    municipality_name=self._clean_value(row.get('muni_nombre', '')),
-                    address=self._clean_value(row.get('direccion', 'Por definir')),
-                    phone_primary=self._clean_value(row.get('telefono', '')),
-                    email=self._clean_value(row.get('email', 'info@example.com')),
-                    administrative_contact=self._clean_value(row.get('gerente', '')),
-                    habilitation_status='en_proceso',
-                    operational_status='activa',
-                    created_by=self.user
-                )
-                
-                self.stats['headquarters_created'] += 1
-                logger.info(f"Created headquarters: {reps_code}")
+            self.stats['headquarters_created'] += 1
+            logger.info(f"Created new headquarters from REPS: {reps_code} - {sede_name}")
             
-            return headquarters
+            return new_headquarters
             
         except Exception as e:
             raise ValueError(f"Cannot get/create headquarters: {str(e)}")
