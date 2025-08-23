@@ -820,6 +820,13 @@ class ServiceImportLog(FullBaseModel):
         help_text=_('Detalles adicionales del procesamiento')
     )
     
+    # Summary message
+    message = models.TextField(
+        _('mensaje'),
+        blank=True,
+        help_text=_('Mensaje de resumen de la importación')
+    )
+    
     class Meta:
         verbose_name = _('log de importación de servicios')
         verbose_name_plural = _('logs de importación de servicios')

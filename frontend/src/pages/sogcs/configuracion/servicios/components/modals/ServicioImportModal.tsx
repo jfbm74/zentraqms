@@ -143,7 +143,7 @@ const ServicioImportModal: React.FC<ServiciosImporterProps> = ({
         updateProgress({ progress: Math.min(progress.progress + 10, 90) });
       }, 300);
 
-      const results = await servicioService.validateImport(validationConfig);
+      const results = await servicioService.validateImportFile(file, config.sede_id);
       
       clearInterval(progressInterval);
       setCompleted('Validación completada');

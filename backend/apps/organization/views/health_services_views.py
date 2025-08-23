@@ -165,9 +165,9 @@ class SedeHealthServiceViewSet(viewsets.ModelViewSet):
             pass
         elif hasattr(user, 'organization_users'):
             org_user = user.organization_users.first()
-            if org_user and hasattr(org_user.organization, 'healthorganization'):
+            if org_user and hasattr(org_user.organization, 'health_profile'):
                 queryset = queryset.filter(
-                    headquarters__organization=org_user.organization.healthorganization
+                    headquarters__organization=org_user.organization.health_profile
                 )
         else:
             # If no organization relationship exists, return empty queryset for non-superusers
@@ -256,20 +256,56 @@ class SedeHealthServiceViewSet(viewsets.ModelViewSet):
         update_existing = serializer.validated_data.get('update_existing', True)
         
         # Get user's organization
-        org_user = request.user.organization_users.first()
+        org_user = None
+        try:
+            org_user = request.user.organization_users.first()
+        except AttributeError:
+            # Handle case where superuser doesn't have organization_users relationship
+            pass
+            
         if not org_user:
-            return Response(
-                {'error': 'Usuario no asociado a ninguna organización'},
-                status=status.HTTP_403_FORBIDDEN
-            )
+            # Allow superusers to import by getting the first available organization
+            if request.user.is_superuser:
+                try:
+                    from apps.organization.models import Organization
+                    base_org = Organization.objects.filter(is_active=True).first()
+                    if base_org and hasattr(base_org, 'health_profile'):
+                        health_org = base_org.health_profile
+                        # Create a mock org_user object for superuser access
+                        class MockOrgUser:
+                            def __init__(self, organization):
+                                self.organization = organization
+                        org_user = MockOrgUser(health_org)
+                    else:
+                        return Response(
+                            {'error': 'No hay organizaciones disponibles'},
+                            status=status.HTTP_404_NOT_FOUND
+                        )
+                except Exception as e:
+                    return Response(
+                        {'error': f'Error obteniendo organización: {str(e)}'},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
+            else:
+                return Response(
+                    {'error': 'Usuario no asociado a ninguna organización'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
         
         # If headquarters specified, verify access
         headquarters = None
         if headquarters_id:
             try:
+                # Handle both regular org_user and MockOrgUser for superusers
+                if hasattr(org_user.organization, 'health_profile'):
+                    health_org = org_user.organization.health_profile
+                else:
+                    # For MockOrgUser, organization is already the HealthOrganization
+                    health_org = org_user.organization
+                
                 headquarters = HeadquarterLocation.objects.get(
                     pk=headquarters_id,
-                    organization=org_user.organization.healthorganization
+                    organization=health_org
                 )
             except HeadquarterLocation.DoesNotExist:
                 return Response(
@@ -285,8 +321,15 @@ class SedeHealthServiceViewSet(viewsets.ModelViewSet):
                 tmp_file_path = tmp_file.name
             
             # Initialize REPS importer
+            # Handle both regular org_user and MockOrgUser for superusers
+            if hasattr(org_user.organization, 'health_profile'):
+                health_org = org_user.organization.health_profile
+            else:
+                # For MockOrgUser, organization is already the HealthOrganization
+                health_org = org_user.organization
+                
             importer = REPSServiceImporter(
-                organization=org_user.organization.healthorganization,
+                organization=health_org,
                 user=request.user,
                 headquarters=headquarters,
                 update_existing=update_existing
@@ -485,7 +528,7 @@ class SedeHealthServiceViewSet(viewsets.ModelViewSet):
             return Response([], status=status.HTTP_200_OK)
         
         logs = ServiceImportLog.objects.filter(
-            organization=org_user.organization.healthorganization
+            organization=org_user.organization.health_profile
         ).order_by('-created_at')
         
         # Pagination

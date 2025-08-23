@@ -7,6 +7,8 @@ Handles the 93-column REPS export format according to Resolution 3100/2019.
 
 import pandas as pd
 import logging
+import json
+import numpy as np
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime
 from decimal import Decimal
@@ -112,6 +114,40 @@ class REPSServiceImporter:
             'headquarters_created': 0,
         }
     
+    def _pandas_row_to_json_safe_dict(self, row: pd.Series) -> dict:
+        """
+        Convert pandas Series to JSON-safe dictionary.
+        Handles NaN values, numpy types, and other pandas-specific data types.
+        """
+        safe_dict = {}
+        for key, value in row.items():
+            # Handle NaN and None values
+            if pd.isna(value) or value is None:
+                safe_dict[str(key)] = None
+            # Handle numpy types
+            elif isinstance(value, (np.integer, np.int64, np.int32)):
+                safe_dict[str(key)] = int(value)
+            elif isinstance(value, (np.floating, np.float64, np.float32)):
+                safe_dict[str(key)] = float(value) if not np.isnan(value) else None
+            elif isinstance(value, np.bool_):
+                safe_dict[str(key)] = bool(value)
+            elif isinstance(value, (np.ndarray,)):
+                safe_dict[str(key)] = value.tolist()
+            # Handle datetime types
+            elif pd.api.types.is_datetime64_any_dtype(type(value)):
+                safe_dict[str(key)] = value.isoformat() if pd.notna(value) else None
+            # Handle strings and other types
+            else:
+                try:
+                    # Test if the value is JSON serializable
+                    json.dumps(value)
+                    safe_dict[str(key)] = value
+                except (TypeError, ValueError):
+                    # Convert to string if not JSON serializable
+                    safe_dict[str(key)] = str(value)
+        
+        return safe_dict
+    
     def import_from_file(self, file_path: str, file_name: str = None, file_size: int = 0) -> ServiceImportLog:
         """
         Main import method for REPS Excel files.
@@ -133,18 +169,19 @@ class REPSServiceImporter:
             
             logger.info(f"Starting import of {self.stats['total_rows']} rows")
             
-            # Process each row
-            with transaction.atomic():
-                for index, row in df.iterrows():
-                    # Skip header row if present
-                    if index == 0 and str(row.get('depa_nombre', '')).lower() == 'depa_nombre':
-                        continue
-                    
-                    try:
+            # Process each row individually to avoid rollback cascade
+            for index, row in df.iterrows():
+                # Skip header row if present
+                if index == 0 and str(row.get('depa_nombre', '')).lower() == 'depa_nombre':
+                    continue
+                
+                try:
+                    # Use savepoint for each row to allow recovery from errors
+                    with transaction.atomic():
                         self._process_service_row(row, index + 1)
                         self.stats['processed_rows'] += 1
-                    except Exception as e:
-                        self._handle_row_error(index + 1, str(e))
+                except Exception as e:
+                    self._handle_row_error(index + 1, str(e))
             
             # Update import log
             self._finalize_import()
@@ -234,7 +271,7 @@ class REPSServiceImporter:
             
             if not headquarters:
                 # Create minimal headquarters entry
-                reps_code = f"{self.organization.nit}-{sede_number}"
+                reps_code = f"{self.organization.organization.nit}-{sede_number}"
                 
                 headquarters = HeadquarterLocation.objects.create(
                     organization=self.organization,
@@ -369,7 +406,7 @@ class REPSServiceImporter:
                     headquarters=headquarters,
                     **service_data,
                     reps_import_date=timezone.now(),
-                    reps_raw_data=raw_row.to_dict(),
+                    reps_raw_data=self._pandas_row_to_json_safe_dict(raw_row),
                     created_by=self.user
                 )
                 self.stats['services_created'] += 1
