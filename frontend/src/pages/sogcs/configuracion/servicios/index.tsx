@@ -24,7 +24,6 @@ interface ServiciosPageState {
   showDetailModal: boolean;
   showDuplicateModal: boolean;
   showDeleteModal: boolean;
-  showStatsModal: boolean;
   showDashboardModal: boolean;
   showImportHistoryModal: boolean;
   selectedServicio: ServicioListItem | null;
@@ -67,7 +66,6 @@ const ServiciosPage = () => {
     showDetailModal: false,
     showDuplicateModal: false,
     showDeleteModal: false,
-    showStatsModal: false,
     showDashboardModal: false,
     showImportHistoryModal: false,
     selectedServicio: null,
@@ -355,13 +353,6 @@ const ServiciosPage = () => {
     setState(prev => ({ ...prev, showDuplicateModal: false }));
   }, []);
 
-  const handleShowStats = useCallback(() => {
-    setState(prev => ({ ...prev, showStatsModal: true }));
-  }, []);
-
-  const handleCloseStats = useCallback(() => {
-    setState(prev => ({ ...prev, showStatsModal: false }));
-  }, []);
 
   const handleShowDashboard = useCallback(() => {
     setState(prev => ({ ...prev, showDashboardModal: true }));
@@ -944,14 +935,6 @@ const ServiciosPage = () => {
                     >
                       <i className="ri-file-copy-line align-bottom me-1"></i>
                       Duplicar
-                    </button>
-                    <button 
-                      className="btn btn-primary"
-                      onClick={handleShowStats}
-                      disabled={!hasOrganization}
-                    >
-                      <i className="ri-bar-chart-line align-bottom me-1"></i>
-                      Estadísticas
                     </button>
                     <button 
                       className="btn btn-info"
