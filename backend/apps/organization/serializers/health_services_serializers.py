@@ -57,24 +57,106 @@ class HealthServiceCatalogSerializer(serializers.ModelSerializer):
 
 class SedeHealthServiceListSerializer(serializers.ModelSerializer):
     """
-    Light serializer for service lists with computed fields.
+    List serializer for services with all fields required by frontend.
+    
+    Maps database fields to frontend ServicioListItem interface.
     """
-    active_modalities = serializers.ReadOnlyField()
-    complexity_display = serializers.ReadOnlyField()
-    headquarters_name = serializers.CharField(source='headquarters.name', read_only=True)
-    has_telemedicine = serializers.ReadOnlyField()
-    is_specialized = serializers.ReadOnlyField()
-    requires_renewal = serializers.ReadOnlyField()
+    # Required frontend fields with proper mapping
+    service_category = serializers.SerializerMethodField()
+    sede_name = serializers.CharField(source='headquarters.name', read_only=True)
+    sede_reps_code = serializers.CharField(source='headquarters.reps_code', read_only=True, default='N/A')
+    modality = serializers.SerializerMethodField()
+    complexity = serializers.SerializerMethodField()
+    capacity = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    authorization_date = serializers.DateField(source='opening_date', read_only=True)
+    is_active = serializers.BooleanField(source='is_enabled', read_only=True)
     
     class Meta:
         model = SedeHealthService
         fields = [
-            'id', 'service_code', 'service_name',
-            'service_group_name', 'distinctive_number',
-            'active_modalities', 'complexity_display',
-            'is_enabled', 'opening_date', 'headquarters_name',
-            'has_telemedicine', 'is_specialized', 'requires_renewal'
+            'id', 'service_code', 'service_name', 'service_category',
+            'sede_name', 'sede_reps_code', 'modality', 'complexity', 
+            'capacity', 'status', 'authorization_date', 'is_active', 'created_at'
         ]
+    
+    def get_service_category(self, obj):
+        """Map service category for frontend display."""
+        # Map from service_group_name or determine from service_code
+        group_name = obj.service_group_name or ""
+        if "consulta" in group_name.lower():
+            return "consulta_externa"
+        elif "urgencia" in group_name.lower():
+            return "urgencias" 
+        elif "hospitalizacion" in group_name.lower() or "internacion" in group_name.lower():
+            return "hospitalizacion"
+        elif "quirurgico" in group_name.lower() or "cirugia" in group_name.lower():
+            return "quirurgicos"
+        elif "apoyo" in group_name.lower() or "diagnostico" in group_name.lower():
+            return "apoyo_diagnostico"
+        else:
+            return "medicina_general"  # Default
+    
+    def get_modality(self, obj):
+        """Map modality from boolean flags to frontend enum."""
+        try:
+            # Check for domiciliary care
+            if hasattr(obj, 'domiciliary') and obj.domiciliary:
+                return "atencion_domiciliaria"
+            
+            # Check for telemedicine
+            if hasattr(obj, 'telemedicine_modality') and obj.telemedicine_modality:
+                return "telemedicina"
+            
+            # Check ambulatory vs hospital
+            ambulatory = getattr(obj, 'ambulatory', True)  # Default to True
+            hospital = getattr(obj, 'hospital', False)     # Default to False
+            
+            if not ambulatory and hospital:
+                return "intramural"
+            elif ambulatory:
+                return "extramural"
+            else:
+                return "intramural"  # Default
+        except (AttributeError, TypeError):
+            return "intramural"  # Safe fallback
+    
+    def get_complexity(self, obj):
+        """Map complexity level to frontend enum."""
+        try:
+            # Handle both string and int values
+            if hasattr(obj, 'complexity_level') and obj.complexity_level is not None:
+                level = int(obj.complexity_level) if isinstance(obj.complexity_level, str) else obj.complexity_level
+            else:
+                level = 1  # Default
+                
+            if level <= 1:
+                return "baja"
+            elif level == 2:
+                return "media"
+            elif level >= 3:
+                return "alta"
+            else:
+                return "baja"  # Default
+        except (ValueError, TypeError):
+            return "baja"  # Safe fallback
+    
+    def get_capacity(self, obj):
+        """Get capacity safely."""
+        try:
+            return getattr(obj, 'installed_capacity', 0) or 0
+        except (AttributeError, TypeError):
+            return 0
+
+    def get_status(self, obj):
+        """Map status to frontend enum."""
+        try:
+            if hasattr(obj, 'is_enabled') and obj.is_enabled:
+                return "activo"
+            else:
+                return "inactivo"
+        except (AttributeError, TypeError):
+            return "inactivo"  # Safe fallback
 
 
 class SedeHealthServiceDetailSerializer(serializers.ModelSerializer):

@@ -213,11 +213,65 @@ class HeadquarterLocationViewSet(viewsets.ModelViewSet):
     def services(self, request, pk=None):
         """
         Get all services for a specific headquarters.
+        Includes both REPS-imported services and manually created services.
         """
         headquarters = self.get_object()
-        services = headquarters.enabled_services.all()
-        serializer = EnabledHealthServiceSummarySerializer(services, many=True)
-        return Response(serializer.data)
+        
+        # Get REPS-imported services (EnabledHealthService)
+        enabled_services = headquarters.enabled_services.all()
+        enabled_data = EnabledHealthServiceSummarySerializer(enabled_services, many=True).data
+        
+        # Get manually created services (SedeHealthService) 
+        from apps.organization.serializers.health_services_serializers import SedeHealthServiceListSerializer
+        manual_services = headquarters.health_services.all()
+        manual_data = []
+        
+        # Convert SedeHealthService to compatible format
+        for service in manual_services:
+            try:
+                manual_data.append({
+                    'id': str(service.id),
+                    'service_code': service.service_code,
+                    'service_name': service.service_name,
+                    'service_group': service.service_group_name or 'otros_servicios',
+                    'complexity_level': self._map_complexity_level(service.complexity_level),
+                    'habilitation_status': 'activo' if service.is_enabled else 'inactivo',
+                    'habilitation_date': service.opening_date,
+                    'habilitation_expiry': None,  # Manual services don't have expiry by default
+                    'distinctive_code': service.distinctive_number,
+                    'source': 'manual'  # Flag to identify source
+                })
+            except Exception as e:
+                logger.warning(f"Error converting manual service {service.id}: {str(e)}")
+                continue
+        
+        # Add source flag to REPS services
+        for service_data in enabled_data:
+            service_data['source'] = 'reps'
+        
+        # Combine and return all services
+        all_services = enabled_data + manual_data
+        
+        return Response({
+            'total_services': len(all_services),
+            'reps_services': len(enabled_data),
+            'manual_services': len(manual_data),
+            'services': all_services
+        })
+    
+    def _map_complexity_level(self, complexity_str):
+        """Map SedeHealthService complexity to EnabledHealthService complexity."""
+        if not complexity_str:
+            return 1
+        
+        complexity_map = {
+            'BAJA': 1,
+            'MEDIANA': 2, 
+            'ALTA': 3,
+            'MAXIMA': 4
+        }
+        
+        return complexity_map.get(complexity_str, 1)
 
     @action(detail=True, methods=['post'])
     def check_expiration(self, request, pk=None):

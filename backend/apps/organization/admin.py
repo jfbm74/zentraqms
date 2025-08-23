@@ -10,6 +10,7 @@ from .models import (
     HealthOrganization, HealthService, HeadquarterLocation, EnabledHealthService, 
     ServiceHabilitationProcess
 )
+from .models.health_services import SedeHealthService, HealthServiceCatalog
 
 
 @admin.register(Organization)
@@ -862,3 +863,116 @@ class ServiceHabilitationProcessAdmin(admin.ModelAdmin):
             obj.created_by = request.user
         obj.updated_by = request.user
         super().save_model(request, obj, form, change)
+
+
+
+@admin.register(SedeHealthService)
+class SedeHealthServiceAdmin(admin.ModelAdmin):
+    """
+    Admin interface for SedeHealthService model - Manual health services.
+    """
+
+    list_display = [
+        "service_name",
+        "service_code", 
+        "headquarters",
+        "service_group_name",
+        "complexity_level",
+        "distinctive_number",
+        "is_enabled",
+        "opening_date",
+        "created_at",
+    ]
+
+    list_filter = [
+        "service_group_code",
+        "complexity_level",
+        "is_enabled",
+        "ambulatory",
+        "hospital", 
+        "mobile_unit",
+        "domiciliary",
+        "headquarters__department_name",
+        "created_at",
+        "opening_date",
+    ]
+
+    search_fields = [
+        "service_name",
+        "service_code",
+        "distinctive_number",
+        "service_group_name",
+        "headquarters__name",
+        "headquarters__organization__organization__razon_social",
+        "observations",
+        "manager_name",
+    ]
+
+    readonly_fields = [
+        "id",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by",
+        "deleted_at",
+        "deleted_by",
+    ]
+
+    def save_model(self, request, obj, form, change):
+        """Override save to set audit fields."""
+        if not change:  # Creating new object
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(HealthServiceCatalog)
+class HealthServiceCatalogAdmin(admin.ModelAdmin):
+    """
+    Admin interface for HealthServiceCatalog model - Service reference catalog.
+    """
+
+    list_display = [
+        "service_code",
+        "service_name",
+        "service_group_name",
+        "min_complexity",
+        "max_complexity",
+        "is_active",
+        "created_at",
+    ]
+
+    list_filter = [
+        "service_group_code",
+        "min_complexity",
+        "max_complexity", 
+        "allows_ambulatory",
+        "allows_hospital",
+        "allows_telemedicine",
+        "is_active",
+        "created_at",
+    ]
+
+    search_fields = [
+        "service_code",
+        "service_name",
+        "service_group_name",
+        "resolution_reference",
+        "notes",
+    ]
+
+    readonly_fields = [
+        "id",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by",
+    ]
+
+    def save_model(self, request, obj, form, change):
+        """Override save to set audit fields."""
+        if not change:  # Creating new object
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+

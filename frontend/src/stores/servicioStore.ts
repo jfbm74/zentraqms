@@ -59,6 +59,7 @@ export const useServicioStore = create<ServicioStore>()(
       // ====================================
 
       fetchServicios: async (filters: ServicioFilters = {}) => {
+        console.log('🔍 ServicioStore: fetchServicios called with filters:', filters);
         set((state) => {
           state.loading = true;
           state.error = null;
@@ -66,7 +67,15 @@ export const useServicioStore = create<ServicioStore>()(
         });
 
         try {
+          console.log('📡 ServicioStore: Making API call to servicioService.getServicios');
           const response = await servicioService.getServicios(filters);
+          console.log('✅ ServicioStore: API response received:', {
+            resultsCount: response.results?.length,
+            totalCount: response.count,
+            hasResults: !!response.results,
+            firstResult: response.results?.[0],
+            fullResponse: response
+          });
           
           set((state) => {
             state.servicios = response.results;
@@ -78,8 +87,10 @@ export const useServicioStore = create<ServicioStore>()(
               hasPrevious: !!response.previous,
             };
             state.loading = false;
+            console.log('📊 ServicioStore: State updated, servicios length:', state.servicios?.length);
           });
         } catch (error) {
+          console.error('❌ ServicioStore: Error fetching servicios:', error);
           set((state) => {
             state.error = error instanceof Error ? error.message : 'Error fetching servicios';
             state.loading = false;
@@ -153,21 +164,27 @@ export const useServicioStore = create<ServicioStore>()(
           
           set((state) => {
             // Add to the list if it matches current filters
+            // Map backend response to frontend format
             const servicioListItem: ServicioListItem = {
               id: newServicio.id,
               service_code: newServicio.service_code,
               service_name: newServicio.service_name,
-              service_category: newServicio.service_category,
-              sede_name: newServicio.sede_name,
-              sede_reps_code: newServicio.sede_reps_code,
-              modality: newServicio.modality,
-              complexity: newServicio.complexity,
-              capacity: newServicio.capacity,
-              status: newServicio.status,
-              authorization_date: newServicio.authorization_date,
-              is_active: newServicio.is_active,
-              created_at: newServicio.created_at,
+              service_category: 'medicina_general', // Default category
+              sede_name: 'Sede Principal', // Default sede name
+              sede_reps_code: '001', // Default reps code
+              modality: 'intramural', // Default modality
+              complexity: 'baja', // Default complexity
+              capacity: newServicio.installed_capacity || 1,
+              status: newServicio.is_enabled ? 'activo' : 'inactivo',
+              authorization_date: newServicio.opening_date || new Date().toISOString().slice(0, 10),
+              is_active: newServicio.is_enabled || true,
+              created_at: new Date().toISOString(),
             };
+            
+            // Ensure servicios array exists
+            if (!state.servicios) {
+              state.servicios = [];
+            }
             
             state.servicios.unshift(servicioListItem);
             state.pagination.total += 1;

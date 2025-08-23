@@ -81,8 +81,10 @@ class HeadquarterLocationSerializer(serializers.ModelSerializer):
         return obj.needs_renewal_alert(days_threshold=30)
 
     def get_services_count(self, obj):
-        """Get count of enabled services in this headquarters"""
-        return obj.enabled_services.count()
+        """Get count of all services in this headquarters (REPS + manual)"""
+        reps_count = obj.enabled_services.count()
+        manual_count = obj.health_services.count()
+        return reps_count + manual_count
 
     def validate_reps_code(self, value):
         """Validate that reps_code is unique within organization"""
@@ -216,7 +218,10 @@ class HeadquarterLocationSummarySerializer(serializers.ModelSerializer):
         ]
 
     def get_services_count(self, obj):
-        return obj.enabled_services.count()
+        """Get count of all services in this headquarters (REPS + manual)"""
+        reps_count = obj.enabled_services.count()
+        manual_count = obj.health_services.count()
+        return reps_count + manual_count
 
 
 class EnabledHealthServiceSummarySerializer(serializers.ModelSerializer):

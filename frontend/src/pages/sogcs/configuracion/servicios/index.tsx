@@ -108,20 +108,44 @@ const ServiciosPage = () => {
 
   // Computed filtered servicios based on active tab
   const filteredServicios = useMemo(() => {
-    if (!servicios) return [];
+    console.log('🎯 ServiciosPage: filteredServicios computed with:', {
+      serviciosExists: !!servicios,
+      serviciosLength: servicios?.length,
+      serviciosType: typeof servicios,
+      activeTab,
+      servicios: servicios
+    });
     
+    if (!servicios) {
+      console.log('⚠️ ServiciosPage: servicios is falsy, returning empty array');
+      return [];
+    }
+    
+    let filtered;
     switch (activeTab) {
       case "2": // Activos
-        return servicios.filter(servicio => servicio.status === 'activo');
+        filtered = servicios.filter(servicio => servicio.status === 'activo');
+        break;
       case "3": // Inactivos
-        return servicios.filter(servicio => servicio.status === 'inactivo');
+        filtered = servicios.filter(servicio => servicio.status === 'inactivo');
+        break;
       case "4": // Suspendidos
-        return servicios.filter(servicio => servicio.status === 'suspendido');
+        filtered = servicios.filter(servicio => servicio.status === 'suspendido');
+        break;
       case "5": // En proceso
-        return servicios.filter(servicio => servicio.status === 'en_proceso');
+        filtered = servicios.filter(servicio => servicio.status === 'en_proceso');
+        break;
       default: // Todos los servicios
-        return servicios;
+        filtered = servicios;
     }
+    
+    console.log('📋 ServiciosPage: filtered result:', {
+      filteredLength: filtered.length,
+      firstFiltered: filtered[0],
+      filtered: filtered
+    });
+    
+    return filtered;
   }, [servicios, activeTab]);
 
   // Tab toggle handler with optional filtering
@@ -165,6 +189,12 @@ const ServiciosPage = () => {
 
   // Load servicios on component mount
   useEffect(() => {
+    console.log('🔄 ServiciosPage: useEffect triggered with:', {
+      hasOrganization,
+      organizationLoading,
+      organization: organization?.id
+    });
+    
     if (hasOrganization) {
       const filters = {
         page: 1,
@@ -172,19 +202,25 @@ const ServiciosPage = () => {
         ...state.filters,
       };
       
+      console.log('📥 ServiciosPage: Starting data load with filters:', filters);
+      
       const loadData = async () => {
         try {
+          console.log('🚀 ServiciosPage: Calling fetchServicios and fetchStatistics');
           await Promise.all([
             fetchServicios(filters),
             fetchStatistics(filters)
           ]);
+          console.log('✅ ServiciosPage: Data loading completed successfully');
         } catch (error) {
-          console.error('Error loading servicios data:', error);
+          console.error('❌ ServiciosPage: Error loading servicios data:', error);
           toast.error('Error al cargar los datos de servicios');
         }
       };
       
       loadData();
+    } else {
+      console.log('⏳ ServiciosPage: Not loading data, hasOrganization is false');
     }
   }, [hasOrganization, fetchServicios, fetchStatistics]);
 
@@ -695,16 +731,9 @@ const ServiciosPage = () => {
           };
           
           return (
-            <div>
-              <span className={`badge ${getEstadoBadge(value)}`}>
-                {displayEstado(value)}
-              </span>
-              {row.is_active && (
-                <div className="mt-1">
-                  <span className="badge bg-info-subtle text-info small">Activo</span>
-                </div>
-              )}
-            </div>
+            <span className={`badge ${getEstadoBadge(value)}`}>
+              {displayEstado(value)}
+            </span>
           );
         }
       },

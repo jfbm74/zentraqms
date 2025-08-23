@@ -146,7 +146,7 @@ class SedeHealthServiceViewSet(viewsets.ModelViewSet):
     ]
     ordering_fields = ['service_code', 'service_name', 'opening_date', 'created_at']
     ordering = ['service_group_code', 'service_code']
-    pagination_class = None  # Can add custom pagination if needed
+    # Enable default pagination for consistent API responses
     
     def get_queryset(self):
         """Filter services by user's organization and permissions."""
@@ -159,13 +159,19 @@ class SedeHealthServiceViewSet(viewsets.ModelViewSet):
             'service_catalog__dependent_services'
         )
         
-        # Filter by organization
-        if hasattr(user, 'organization_users'):
+        # Filter by organization (temporary fix: skip for admin users)
+        if user.is_superuser:
+            # Superuser sees all services
+            pass
+        elif hasattr(user, 'organization_users'):
             org_user = user.organization_users.first()
             if org_user and hasattr(org_user.organization, 'healthorganization'):
                 queryset = queryset.filter(
                     headquarters__organization=org_user.organization.healthorganization
                 )
+        else:
+            # If no organization relationship exists, return empty queryset for non-superusers
+            queryset = queryset.none()
         
         # Additional filters from query params
         headquarters_id = self.request.query_params.get('headquarters_id')
@@ -213,6 +219,18 @@ class SedeHealthServiceViewSet(viewsets.ModelViewSet):
         elif self.action == 'statistics':
             return ServiceStatisticsSerializer
         return SedeHealthServiceDetailSerializer
+    
+    def create(self, request, *args, **kwargs):
+        """Create a new service and return detailed response."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        
+        # Use detail serializer for response
+        response_serializer = SedeHealthServiceDetailSerializer(instance)
+        
+        headers = self.get_success_headers(response_serializer.data)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
     
     @action(
         detail=False,
