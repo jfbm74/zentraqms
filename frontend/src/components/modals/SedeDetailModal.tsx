@@ -4,7 +4,7 @@
  * Modal for displaying comprehensive sede prestadora information in a read-only,
  * organized layout using Velzon design patterns and Bootstrap components.
  */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useSedeStore } from "../../stores/sedeStore";
 import { useBootstrapTooltips } from "../../hooks/useBootstrapTooltips";
 import InfoTooltip from "../common/InfoTooltip";
@@ -224,6 +224,19 @@ const SedeDetailModal: React.FC<SedeDetailModalProps> = ({
   // Store and state
   const { currentSede, loading, error, fetchSedeDetail } = useSedeStore();
   const [sede, setSede] = useState<SedePrestadora | null>(null);
+
+  // Handler for viewing sede services
+  const handleViewServices = useCallback(() => {
+    if (!sede) return;
+    
+    // Close the modal first
+    onClose();
+    
+    // Navigate to services page with sede filter using window.location
+    // This avoids the Router context issue that can occur with modals
+    const url = `/sogcs/configuracion/servicios?sede=${sede.id}`;
+    window.location.href = url;
+  }, [sede, onClose]);
 
   // Fetch sede detail when modal opens
   useEffect(() => {
@@ -1129,7 +1142,8 @@ const SedeDetailModal: React.FC<SedeDetailModalProps> = ({
                   <button
                     type="button"
                     className="btn btn-info fw-semibold"
-                    title="Ver servicios habilitados"
+                    title="Ver servicios habilitados de esta sede"
+                    onClick={handleViewServices}
                     style={{ borderRadius: '10px', padding: '0.75rem 1.5rem' }}
                   >
                     <i className="ri-service-line me-2 fs-16" aria-hidden="true"></i>

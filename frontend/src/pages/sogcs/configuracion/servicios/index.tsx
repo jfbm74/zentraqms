@@ -185,6 +185,27 @@ const ServiciosPage = () => {
     }
   };
 
+  // Apply URL parameters to filters on component mount
+  useEffect(() => {
+    const urlFilters: Partial<ServicioFilters> = {};
+    
+    // Extract filters from URL search params using native URLSearchParams
+    const urlParams = new URLSearchParams(window.location.search);
+    const sedeParam = urlParams.get('sede');
+    if (sedeParam) {
+      urlFilters.sede = sedeParam;
+    }
+    
+    // Apply URL filters if any exist
+    if (Object.keys(urlFilters).length > 0) {
+      console.log('🔗 ServiciosPage: Applying URL filters:', urlFilters);
+      setState(prev => ({ 
+        ...prev, 
+        filters: { ...prev.filters, ...urlFilters } 
+      }));
+    }
+  }, []);
+
   // Load servicios on component mount
   useEffect(() => {
     console.log('🔄 ServiciosPage: useEffect triggered with:', {
