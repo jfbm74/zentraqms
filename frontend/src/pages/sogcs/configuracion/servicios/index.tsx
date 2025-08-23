@@ -1121,53 +1121,6 @@ const ServiciosPage = () => {
               </div>
             )}
 
-            {/* Backend Integration Status */}
-            <div className="card-footer">
-              <div className="alert alert-success mb-0" role="alert">
-                <div className="d-flex">
-                  <div className="flex-shrink-0">
-                    <i className="ri-check-double-line fs-4"></i>
-                  </div>
-                  <div className="flex-grow-1 ms-3">
-                    <h6 className="alert-heading">Integración Backend Completada</h6>
-                    <p className="mb-2">
-                      La interfaz de servicios de salud está ahora completamente integrada con el backend. 
-                      Los datos mostrados provienen directamente de la API y las operaciones de eliminación funcionan con datos reales.
-                    </p>
-                    <div className="d-flex gap-2 flex-wrap">
-                      <span className="badge bg-success-subtle text-success">
-                        <i className="ri-database-2-line me-1"></i>
-                        Datos reales del backend
-                      </span>
-                      <span className="badge bg-info-subtle text-info">
-                        <i className="ri-delete-bin-line me-1"></i>
-                        Eliminación funcional
-                      </span>
-                      <span className="badge bg-warning-subtle text-warning">
-                        <i className="ri-file-add-line me-1"></i>
-                        Creación/Edición próximamente
-                      </span>
-                      {loading && (
-                        <span className="badge bg-primary-subtle text-primary">
-                          <span className="spinner-border spinner-border-sm me-1"></span>
-                          Cargando...
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-2">
-                      <button
-                        className="btn btn-sm btn-outline-success"
-                        onClick={refreshData}
-                        disabled={loading}
-                      >
-                        <i className="ri-refresh-line me-1"></i>
-                        Actualizar Datos
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
