@@ -277,72 +277,80 @@ const InteractiveOrgChart: React.FC<InteractiveOrgChartProps> = ({
             font-family: 'Inter', sans-serif;
             position: relative;
             cursor: ${editable ? 'pointer' : 'default'};
-            transition: all 0.3s ease;
+            width: 280px;
+            height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
           " 
-          onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.15)';"
-          onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)';"
           >
             ${sogcsIndicator}
             
-            <div style="display: flex; align-items: center; margin-bottom: 12px;">
-              <img src="${avatar}" 
-                   style="width: 48px; height: 48px; border-radius: 50%; margin-right: 12px; border: 2px solid ${nodeColor};" 
-                   alt="${node.name}" />
-              <div style="flex: 1;">
-                <div style="font-weight: 600; font-size: 14px; color: #1f2937; margin-bottom: 4px;">
-                  ${node.name}
-                </div>
-                <div style="font-size: 12px; color: ${nodeColor}; font-weight: 500;">
-                  ${node.title}
+            <div style="flex: 1; display: flex; flex-direction: column;">
+              <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <img src="${avatar}" 
+                     style="width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; border: 2px solid ${nodeColor}; flex-shrink: 0;" 
+                     alt="${node.name}" />
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-weight: 600; font-size: 13px; color: #1f2937; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    ${node.name}
+                  </div>
+                  <div style="font-size: 11px; color: ${nodeColor}; font-weight: 500; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    ${node.title}
+                  </div>
                 </div>
               </div>
+              
+              <div style="display: flex; align-items: center; margin-bottom: 6px;">
+                <i class="ri-building-line" style="color: #6b7280; margin-right: 6px; font-size: 11px; flex-shrink: 0;"></i>
+                <span style="font-size: 10px; color: #6b7280; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${node.department}</span>
+              </div>
+              
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                ${node.email ? `
+                <div style="display: flex; align-items: center;">
+                  <i class="ri-mail-line" style="color: #6b7280; margin-right: 6px; font-size: 10px; flex-shrink: 0;"></i>
+                  <span style="font-size: 9px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${node.email}</span>
+                </div>
+                ` : ''}
+                
+                ${node.phone ? `
+                <div style="display: flex; align-items: center;">
+                  <i class="ri-phone-line" style="color: #6b7280; margin-right: 6px; font-size: 10px; flex-shrink: 0;"></i>
+                  <span style="font-size: 9px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${node.phone}</span>
+                </div>
+                ` : ''}
+              </div>
             </div>
-            
-            <div style="display: flex; align-items: center; margin-bottom: 8px;">
-              <i class="ri-building-line" style="color: #6b7280; margin-right: 8px; font-size: 12px;"></i>
-              <span style="font-size: 11px; color: #6b7280; font-weight: 500;">${node.department}</span>
-            </div>
-            
-            ${node.email ? `
-            <div style="display: flex; align-items: center; margin-bottom: 4px;">
-              <i class="ri-mail-line" style="color: #6b7280; margin-right: 8px; font-size: 12px;"></i>
-              <span style="font-size: 10px; color: #6b7280;">${node.email}</span>
-            </div>
-            ` : ''}
-            
-            ${node.phone ? `
-            <div style="display: flex; align-items: center;">
-              <i class="ri-phone-line" style="color: #6b7280; margin-right: 8px; font-size: 12px;"></i>
-              <span style="font-size: 10px; color: #6b7280;">${node.phone}</span>
-            </div>
-            ` : ''}
             
             ${editable ? `
             <div class="node-action-buttons" style="
               position: absolute; 
-              top: 8px; 
-              left: 8px; 
+              top: 6px; 
+              right: 6px; 
               display: flex; 
-              gap: 4px; 
+              gap: 3px; 
               opacity: 0;
-              transition: opacity 0.3s ease;
+              transition: opacity 0.2s ease;
               z-index: 10;
+              pointer-events: none;
             ">
               <button onclick="event.stopPropagation(); window.orgChartAddNode('${node.id}')" 
                       style="
-                        width: 24px; 
-                        height: 24px; 
+                        width: 22px; 
+                        height: 22px; 
                         border: none; 
-                        border-radius: 6px; 
+                        border-radius: 4px; 
                         background: #198754; 
                         color: white; 
                         cursor: pointer; 
-                        font-size: 12px;
+                        font-size: 11px;
                         display: flex;
                         align-items: center;
                         justify-content: center;
                         font-weight: bold;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+                        pointer-events: auto;
                       " 
                       title="Agregar subordinado">
                 +
@@ -350,19 +358,20 @@ const InteractiveOrgChart: React.FC<InteractiveOrgChartProps> = ({
               ${node.parentId !== null ? `
               <button onclick="event.stopPropagation(); window.orgChartDeleteNode('${node.id}')" 
                       style="
-                        width: 24px; 
-                        height: 24px; 
+                        width: 22px; 
+                        height: 22px; 
                         border: none; 
-                        border-radius: 6px; 
+                        border-radius: 4px; 
                         background: #dc3545; 
                         color: white; 
                         cursor: pointer; 
-                        font-size: 14px;
+                        font-size: 12px;
                         display: flex;
                         align-items: center;
                         justify-content: center;
                         font-weight: bold;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+                        pointer-events: auto;
                       " 
                       title="Eliminar cargo">
                 ×

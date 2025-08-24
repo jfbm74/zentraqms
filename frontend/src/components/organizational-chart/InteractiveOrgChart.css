@@ -15,13 +15,13 @@
 
 /* Estilos para los nodos del organigrama */
 .org-chart-container .node {
-  transition: all 0.3s ease;
   cursor: pointer;
+  transition: filter 0.2s ease, box-shadow 0.2s ease;
 }
 
 .org-chart-container .node:hover {
-  filter: brightness(1.05);
-  transform: translateY(-2px);
+  filter: brightness(1.03);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
 /* Mostrar botones de acción en hover */
@@ -37,13 +37,18 @@
 }
 
 /* Botones de acción en los nodos */
-.node-action-button {
-  opacity: 0;
-  transition: opacity 0.3s ease;
+.node-action-buttons {
+  transition: opacity 0.2s ease;
 }
 
-.org-chart-container .node:hover .node-action-button {
-  opacity: 1;
+.org-chart-container .node:hover .node-action-buttons {
+  opacity: 1 !important;
+}
+
+/* Mejorar interacción de botones */
+.node-action-buttons button:hover {
+  transform: scale(1.1);
+  transition: transform 0.1s ease;
 }
 
 /* Indicadores SOGCS */
