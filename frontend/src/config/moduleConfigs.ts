@@ -36,6 +36,15 @@ export const moduleConfigs: Record<string, ModuleConfig> = {
     pageContentClass: 'page-content'
   },
 
+  // Módulo de Organigramas
+  organizational_chart: {
+    breadcrumb: {
+      title: 'Organigrama',
+      pageTitle: 'Estructura Organizacional'
+    },
+    pageContentClass: 'page-content organizational-chart-content'
+  },
+
   // Módulo de Procesos
   processes: {
     breadcrumb: {

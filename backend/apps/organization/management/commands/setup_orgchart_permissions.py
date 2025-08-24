@@ -54,43 +54,43 @@ class Command(BaseCommand):
                 'code': 'organization.read_orgchart',
                 'name': 'Ver Organigramas',
                 'description': 'Permite ver organigramas organizacionales',
-                'module': 'organization',
-                'category': 'orgchart'
+                'resource': 'organization',
+                'action': 'read_orgchart'
             },
             {
                 'code': 'organization.create_orgchart',
                 'name': 'Crear Organigramas',
                 'description': 'Permite crear nuevos organigramas organizacionales',
-                'module': 'organization',
-                'category': 'orgchart'
+                'resource': 'organization',
+                'action': 'create_orgchart'
             },
             {
                 'code': 'organization.update_orgchart',
                 'name': 'Actualizar Organigramas',
                 'description': 'Permite actualizar organigramas existentes',
-                'module': 'organization',
-                'category': 'orgchart'
+                'resource': 'organization',
+                'action': 'update_orgchart'
             },
             {
                 'code': 'organization.delete_orgchart',
                 'name': 'Eliminar Organigramas',
                 'description': 'Permite eliminar organigramas organizacionales',
-                'module': 'organization',
-                'category': 'orgchart'
+                'resource': 'organization',
+                'action': 'delete_orgchart'
             },
             {
                 'code': 'organization.approve_orgchart',
                 'name': 'Aprobar Organigramas',
                 'description': 'Permite aprobar organigramas organizacionales',
-                'module': 'organization',
-                'category': 'orgchart'
+                'resource': 'organization',
+                'action': 'approve_orgchart'
             },
             {
                 'code': 'organization.validate_orgchart',
                 'name': 'Validar Organigramas',
                 'description': 'Permite ejecutar validaciones de cumplimiento en organigramas',
-                'module': 'organization',
-                'category': 'orgchart'
+                'resource': 'organization',
+                'action': 'validate_orgchart'
             },
             
             # Template permissions
@@ -98,15 +98,15 @@ class Command(BaseCommand):
                 'code': 'organization.manage_templates',
                 'name': 'Gestionar Plantillas',
                 'description': 'Permite crear, modificar y eliminar plantillas de organigramas',
-                'module': 'organization',
-                'category': 'templates'
+                'resource': 'organization',
+                'action': 'manage_templates'
             },
             {
                 'code': 'organization.apply_templates',
                 'name': 'Aplicar Plantillas',
                 'description': 'Permite aplicar plantillas para crear organigramas',
-                'module': 'organization',
-                'category': 'templates'
+                'resource': 'organization',
+                'action': 'apply_templates'
             },
             
             # Sector permissions
@@ -114,8 +114,8 @@ class Command(BaseCommand):
                 'code': 'organization.manage_sectors',
                 'name': 'Gestionar Sectores',
                 'description': 'Permite gestionar sectores y sus requisitos normativos',
-                'module': 'organization',
-                'category': 'sectors'
+                'resource': 'organization',
+                'action': 'manage_sectors'
             },
             
             # Area and position permissions
@@ -123,15 +123,15 @@ class Command(BaseCommand):
                 'code': 'organization.manage_areas',
                 'name': 'Gestionar Áreas',
                 'description': 'Permite crear, modificar y eliminar áreas organizacionales',
-                'module': 'organization',
-                'category': 'structure'
+                'resource': 'organization',
+                'action': 'manage_areas'
             },
             {
                 'code': 'organization.manage_positions',
                 'name': 'Gestionar Cargos',
                 'description': 'Permite crear, modificar y eliminar cargos organizacionales',
-                'module': 'organization',
-                'category': 'structure'
+                'resource': 'organization',
+                'action': 'manage_positions'
             },
             
             # Bulk operations permissions
@@ -139,8 +139,8 @@ class Command(BaseCommand):
                 'code': 'organization.bulk_operations',
                 'name': 'Operaciones Masivas',
                 'description': 'Permite ejecutar operaciones masivas en organigramas',
-                'module': 'organization',
-                'category': 'bulk'
+                'resource': 'organization',
+                'action': 'bulk_operations'
             },
             
             # Validation permissions
@@ -148,8 +148,8 @@ class Command(BaseCommand):
                 'code': 'organization.realtime_validation',
                 'name': 'Validación en Tiempo Real',
                 'description': 'Permite acceder a endpoints de validación en tiempo real',
-                'module': 'organization',
-                'category': 'validation'
+                'resource': 'organization',
+                'action': 'realtime_validation'
             }
         ]
         
@@ -160,8 +160,8 @@ class Command(BaseCommand):
                 defaults={
                     'name': perm_data['name'],
                     'description': perm_data['description'],
-                    'module': perm_data['module'],
-                    'category': perm_data.get('category', 'general')
+                    'resource': perm_data['resource'],
+                    'action': perm_data['action']
                 }
             )
             if created:
@@ -249,8 +249,7 @@ class Command(BaseCommand):
                             role=role,
                             permission=permission,
                             defaults={
-                                'granted_by': None,  # System assignment
-                                'is_active': True
+                                'granted_by': None  # System assignment
                             }
                         )
                         

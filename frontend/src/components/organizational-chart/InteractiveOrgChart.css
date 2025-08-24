@@ -1,0 +1,225 @@
+/**
+ * Estilos para el componente InteractiveOrgChart
+ * ZentraQMS - Sistema de Gestión de Calidad
+ */
+
+/* Contenedor principal */
+.interactive-org-chart {
+  font-family: 'Inter', sans-serif;
+}
+
+/* Modo preview - altura reducida */
+.interactive-org-chart.preview-mode .org-chart-container {
+  height: 300px !important;
+}
+
+/* Estilos para los nodos del organigrama */
+.org-chart-container .node {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.org-chart-container .node:hover {
+  filter: brightness(1.05);
+  transform: translateY(-2px);
+}
+
+/* Mostrar botones de acción en hover */
+.org-chart-container .node:hover .node-action-buttons {
+  opacity: 1 !important;
+}
+
+/* Estilos para los enlaces entre nodos */
+.org-chart-container .link {
+  stroke: #6b7280;
+  stroke-width: 2;
+  fill: none;
+}
+
+/* Botones de acción en los nodos */
+.node-action-button {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.org-chart-container .node:hover .node-action-button {
+  opacity: 1;
+}
+
+/* Indicadores SOGCS */
+.sogcs-indicator {
+  animation: pulse-sogcs 2s infinite;
+}
+
+.sogcs-indicator.warning {
+  animation: pulse-warning 1.5s infinite;
+}
+
+@keyframes pulse-sogcs {
+  0%, 100% { 
+    transform: scale(1); 
+    opacity: 1; 
+  }
+  50% { 
+    transform: scale(1.1); 
+    opacity: 0.8; 
+  }
+}
+
+@keyframes pulse-warning {
+  0%, 100% { 
+    background-color: #dc3545; 
+  }
+  50% { 
+    background-color: #fd7e14; 
+  }
+}
+
+/* Leyenda SOGCS */
+.sogcs-legend {
+  border-left: 4px solid #198754;
+  background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%);
+}
+
+/* Controles del chart */
+.chart-controls {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-left: 4px solid #0d6efd;
+}
+
+/* Panel de información del nodo seleccionado */
+.selected-node-info {
+  border-left: 4px solid #198754;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Badge de cumplimiento SOGCS */
+.sogcs-compliance-info .badge {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .interactive-org-chart .chart-controls {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .interactive-org-chart .chart-controls h5 {
+    font-size: 16px;
+  }
+  
+  .interactive-org-chart .btn-group {
+    justify-content: center;
+  }
+  
+  .org-chart-container {
+    height: 400px !important;
+  }
+  
+  .interactive-org-chart.preview-mode .org-chart-container {
+    height: 250px !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .sogcs-legend {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 8px;
+  }
+  
+  .sogcs-legend > div {
+    justify-content: center;
+  }
+}
+
+/* Estilos para el modo de pantalla completa */
+.org-chart-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: white;
+  z-index: 9999;
+  padding: 20px;
+}
+
+.org-chart-fullscreen .org-chart-container {
+  height: calc(100vh - 120px) !important;
+}
+
+/* Overlay de carga */
+.org-chart-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.org-chart-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e9ecef;
+  border-top: 4px solid #0d6efd;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Tooltips personalizados para d3-org-chart */
+.d3-org-chart-tooltip {
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  max-width: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Efectos de arrastre */
+.org-chart-container .node.dragging {
+  opacity: 0.7;
+  transform: scale(1.05);
+  z-index: 1000;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+}
+
+.org-chart-container .node.drag-over {
+  border-color: #198754 !important;
+  border-width: 3px !important;
+  background: rgba(25, 135, 84, 0.1) !important;
+}

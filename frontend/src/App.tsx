@@ -35,6 +35,16 @@ const Dashboard = React.lazy(() => import("./pages/dashboard/Dashboard"));
 const OrganizationWizard = React.lazy(
   () => import("./pages/organization/wizard/OrganizationWizard"),
 );
+// Organizational Chart pages
+const OrganizationalChartMainPage = React.lazy(
+  () => import("./pages/OrganizationalChart").then(module => ({ default: module.OrganizationalChartMainPage })),
+);
+const OrganizationalChartCreatePage = React.lazy(
+  () => import("./pages/OrganizationalChart").then(module => ({ default: module.OrganizationalChartCreatePage })),
+);
+const OrganizationalChartEditPage = React.lazy(
+  () => import("./pages/OrganizationalChart").then(module => ({ default: module.OrganizationalChartEditPage })),
+);
 const ProcesosPage = React.lazy(() => import("./pages/procesos/ProcesosPage"));
 const AuditoriasPage = React.lazy(
   () => import("./pages/auditorias/AuditoriasPage"),
@@ -97,6 +107,63 @@ const AppRouter: React.FC = () => {
         <ProtectedRoute permissions={["organization.create"]}>
           <DashboardLayout>
             <OrganizationWizard />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </Route>
+
+      {/* Organizational Chart Routes */}
+      <Route path="/organization/chart">
+        <ProtectedRoute permissions={["organization.read_orgchart"]}>
+          <OrganizationalChartMainPage />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/organigramas">
+        <ProtectedRoute permissions={["organization.read_orgchart"]}>
+          <DashboardLayout>
+            <OrganizationalChartMainPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/organization/charts/new">
+        <ProtectedRoute permissions={["organization.create_orgchart"]}>
+          <OrganizationalChartCreatePage />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/organigramas/nuevo">
+        <ProtectedRoute permissions={["organization.create_orgchart"]}>
+          <DashboardLayout>
+            <OrganizationalChartCreatePage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/organization/charts/:chartId/edit">
+        <ProtectedRoute permissions={["organization.update_orgchart"]}>
+          <OrganizationalChartEditPage />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/organigramas/:chartId/editar">
+        <ProtectedRoute permissions={["organization.update_orgchart"]}>
+          <DashboardLayout>
+            <OrganizationalChartEditPage />
+          </DashboardLayout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/organization/charts/:chartId">
+        <ProtectedRoute permissions={["organization.read_orgchart"]}>
+          <OrganizationalChartMainPage />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/organigramas/:chartId">
+        <ProtectedRoute permissions={["organization.read_orgchart"]}>
+          <DashboardLayout>
+            <OrganizationalChartMainPage />
           </DashboardLayout>
         </ProtectedRoute>
       </Route>
@@ -183,11 +250,15 @@ const AppRouter: React.FC = () => {
       </Route>
 
       {/* Default fallback - 404 */}
-      {![
+      {!currentPath.startsWith("/organization/chart") &&
+       !currentPath.startsWith("/organization/charts/") &&
+       !currentPath.startsWith("/organigramas") &&
+       ![
         "/",
         "/login",
         "/dashboard",
         "/organization/wizard",
+        "/organigramas",
         "/procesos",
         "/auditorias",
         "/normograma",
@@ -197,7 +268,7 @@ const AppRouter: React.FC = () => {
         "/sogcs/configuracion/servicios",
         "/profile",
         "/access-denied",
-      ].includes(currentPath) && <NotFoundPage />}
+       ].includes(currentPath) && <NotFoundPage />}
     </Suspense>
   );
 };

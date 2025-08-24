@@ -138,6 +138,12 @@ const VerticalLayout: React.FC<VerticalLayoutProps> = ({ layoutType }) => {
       },
       subItems: [
         {
+          id: "organigrama",
+          label: "Organigrama",
+          link: "/organigramas",
+          permissions: ["organization.read_orgchart", "organization.*"],
+        },
+        {
           id: "analisis-dofa",
           label: "Análisis DOFA",
           link: "/qms/analisis-dofa",
