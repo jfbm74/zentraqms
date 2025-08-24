@@ -105,6 +105,21 @@ from .health_services_serializers import (
     ServiceStatisticsSerializer,
 )
 
+# Import Organizational Template serializers
+from .organizational_template_serializers import (
+    ServicioHabilitadoSerializer,
+    TipoComiteSerializer,
+    TipoCargoSerializer,
+    AreaFuncionalSerializer,
+    AreaFuncionalCargoSerializer,
+    ValidacionSOGCSSerializer,
+    TemplateOrganizacionalListSerializer,
+    TemplateOrganizacionalDetailSerializer,
+    AplicacionTemplateSerializer,
+    AplicarTemplateSerializer,
+    HistorialCambiosTemplateSerializer,
+)
+
 # Import Organizational Chart serializers
 from .organizational_chart_serializers import (
     # Sector serializers
@@ -214,6 +229,19 @@ __all__ = [
     'ServiceBulkActionSerializer',
     'ServiceImportLogSerializer',
     'ServiceStatisticsSerializer',
+    
+    # Organizational Template serializers
+    'ServicioHabilitadoSerializer',
+    'TipoComiteSerializer',
+    'TipoCargoSerializer',
+    'AreaFuncionalSerializer',
+    'AreaFuncionalCargoSerializer',
+    'ValidacionSOGCSSerializer',
+    'TemplateOrganizacionalListSerializer',
+    'TemplateOrganizacionalDetailSerializer',
+    'AplicacionTemplateSerializer',
+    'AplicarTemplateSerializer',
+    'HistorialCambiosTemplateSerializer',
     
     # Organizational Chart serializers
     'SectorNormativaSerializer',

@@ -1969,3 +1969,17 @@ class ServiceHabilitationProcessViewSet(viewsets.ModelViewSet):
         queryset = queryset.filter(deleted_at__isnull=True)
         return queryset
 
+
+# Import organizational template views
+from .organizational_template_views import (
+    ServicioHabilitadoViewSet,
+    TipoComiteViewSet,
+    TipoCargoViewSet,
+    AreaFuncionalViewSet,
+    AreaFuncionalCargoViewSet,
+    ValidacionSOGCSViewSet,
+    TemplateOrganizacionalViewSet,
+    AplicacionTemplateViewSet,
+    HistorialCambiosTemplateViewSet,
+)
+

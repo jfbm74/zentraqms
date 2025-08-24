@@ -60,6 +60,20 @@ from .organizational_chart import (
     OrganizationalChart,
 )
 
+# Organizational Template models
+from .organizational_template import (
+    ComplejidadIPS,
+    ServicioHabilitado,
+    TipoComite,
+    TipoCargo,
+    AreaFuncional,
+    AreaFuncionalCargo,
+    TemplateOrganizacional,
+    AplicacionTemplate,
+    ValidacionSOGCS,
+    HistorialCambiosTemplate,
+)
+
 # Organizational Structure models
 from .organizational_structure import (
     Area,
@@ -128,6 +142,18 @@ __all__ = [
     'SectorNormativa',
     'PlantillaOrganigrama',
     'OrganizationalChart',
+    
+    # Organizational Template models
+    'ComplejidadIPS',
+    'ServicioHabilitado',
+    'TipoComite',
+    'TipoCargo',
+    'AreaFuncional',
+    'AreaFuncionalCargo',
+    'TemplateOrganizacional',
+    'AplicacionTemplate',
+    'ValidacionSOGCS',
+    'HistorialCambiosTemplate',
     
     # Organizational Structure models
     'Area',

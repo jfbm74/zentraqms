@@ -94,6 +94,9 @@ urlpatterns = [
     # Include router URLs
     path("", include(router.urls)),
     
+    # Include Organizational Template URLs
+    path("templates/", include("apps.organization.urls.organizational_template_urls")),
+    
     # URLs específicas para sedes por organización
     path("organizations/<uuid:org_id>/sedes/", 
          SedeViewSet.as_view({'get': 'list', 'post': 'create'}), 
