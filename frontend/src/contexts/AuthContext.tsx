@@ -207,10 +207,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Refresh permissions and roles from backend (internal)
    */
   const internalRefreshPermissions = useCallback(async (): Promise<void> => {
-    console.log(
-      "[AuthProvider] internalRefreshPermissions called, isAuthenticated:",
-      state.isAuthenticated,
-    );
+    console.log("[AuthProvider] internalRefreshPermissions called");
 
     try {
       dispatch({ type: "SET_RBAC_LOADING", payload: true });
@@ -280,7 +277,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         error instanceof Error ? error.message : "Failed to load permissions";
       dispatch({ type: "SET_RBAC_ERROR", payload: errorMessage });
     }
-  }, [state.isAuthenticated]);
+  }, []);
 
   /**
    * Load cached RBAC data from sessionStorage
@@ -634,7 +631,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (
       state.isAuthenticated &&
       !state.rbacLoading &&
-      state.permissions.length === 0
+      state.permissions.length === 0 &&
+      !state.rbacLastUpdated // Only load if never loaded before
     ) {
       console.log("[AuthProvider] User authenticated, loading RBAC data...");
       internalRefreshPermissions().catch((error) => {
@@ -644,7 +642,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         );
       });
     }
-  }, [state.isAuthenticated, state.rbacLoading, state.permissions.length, internalRefreshPermissions]);
+  }, [state.isAuthenticated, state.rbacLoading, state.rbacLastUpdated]);
 
   /**
    * Auto-refresh token when it's about to expire

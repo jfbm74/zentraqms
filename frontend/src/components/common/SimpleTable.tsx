@@ -48,7 +48,7 @@ const SimpleTable: React.FC<SimpleTableProps> = ({
 
   // Sort data
   const sortedData = useMemo(() => {
-    if (!sortConfig) return filteredData;
+    if (!sortConfig || !sortConfig.direction) return filteredData;
 
     return [...filteredData].sort((a, b) => {
       const aVal = a[sortConfig.key];
@@ -70,7 +70,7 @@ const SimpleTable: React.FC<SimpleTableProps> = ({
 
   const handleSort = (key: string) => {
     setSortConfig(current => {
-      if (current?.key === key) {
+      if (current?.key === key && current.direction) {
         return current.direction === 'asc' 
           ? { key, direction: 'desc' }
           : null;
@@ -151,7 +151,7 @@ const SimpleTable: React.FC<SimpleTableProps> = ({
                 >
                   <div className="d-flex align-items-center">
                     {typeof column.header === 'string' ? column.header : column.header}
-                    {sortConfig?.key === column.accessorKey && (
+                    {sortConfig?.key === column.accessorKey && sortConfig.direction && (
                       <i className={`ms-1 ri-arrow-${sortConfig.direction === 'asc' ? 'up' : 'down'}-line`}></i>
                     )}
                   </div>

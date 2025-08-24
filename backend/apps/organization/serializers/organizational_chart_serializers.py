@@ -26,6 +26,9 @@ from ..models.organizational_chart import (
 from ..models.organizational_structure import (
     Area, ServiceAreaAssignment, Cargo, Responsabilidad, Autoridad
 )
+from ..models.committees import (
+    Comite, MiembroComite, CommitteeMeeting, MeetingAttendance
+)
 from ..models import Organization
 
 User = get_user_model()
@@ -665,7 +668,7 @@ class CargoListSerializer(serializers.ModelSerializer):
         model = Cargo
         fields = [
             'id', 'area', 'area_name', 'code', 'name', 'hierarchy_level',
-            'reports_to_name', 'is_critical', 'authorized_positions',
+            'reports_to', 'reports_to_name', 'is_critical', 'authorized_positions',
             'basic_stats', 'is_active'
         ]
 
@@ -808,3 +811,306 @@ class TemplateApplicationSerializer(serializers.Serializer):
                 _("Organización no encontrada")
             )
         return value
+
+
+# =============================================================================
+# COMMITTEE SERIALIZERS
+# =============================================================================
+
+class ComiteSerializer(serializers.ModelSerializer):
+    """Detailed serializer for Comite model."""
+    
+    # Read-only computed fields
+    chairperson_name = serializers.CharField(source='chairperson.name', read_only=True)
+    secretary_name = serializers.CharField(source='secretary.name', read_only=True)
+    active_members_count = serializers.SerializerMethodField()
+    voting_members_count = serializers.SerializerMethodField()
+    has_quorum = serializers.SerializerMethodField()
+    next_meeting_date = serializers.SerializerMethodField()
+    is_currently_active = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Comite
+        fields = [
+            'id', 'code', 'name', 'committee_type', 'normative_requirement',
+            'sector_specific', 'chairperson', 'chairperson_name', 'secretary', 
+            'secretary_name', 'meeting_frequency', 'minimum_quorum',
+            'functions', 'decision_powers', 'generates_minutes', 'reports_to_board',
+            'has_decision_authority', 'usual_meeting_location', 'usual_meeting_time',
+            'meeting_duration_hours', 'start_date', 'end_date',
+            'active_members_count', 'voting_members_count', 'has_quorum',
+            'next_meeting_date', 'is_currently_active',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_active_members_count(self, obj):
+        """Get count of active members."""
+        return obj.get_active_members().count()
+    
+    def get_voting_members_count(self, obj):
+        """Get count of voting members."""
+        return obj.get_voting_members().count()
+    
+    def get_has_quorum(self, obj):
+        """Check if committee has quorum."""
+        return obj.has_quorum()
+    
+    def get_next_meeting_date(self, obj):
+        """Get next meeting date."""
+        return obj.get_next_meeting_date()
+    
+    def get_is_currently_active(self, obj):
+        """Check if committee is currently active."""
+        return obj.is_currently_active()
+
+
+class ComiteListSerializer(serializers.ModelSerializer):
+    """List serializer for Comite model."""
+    
+    chairperson_name = serializers.CharField(source='chairperson.name', read_only=True)
+    active_members_count = serializers.SerializerMethodField()
+    committee_type_display = serializers.CharField(source='get_committee_type_display', read_only=True)
+    
+    class Meta:
+        model = Comite
+        fields = [
+            'id', 'code', 'name', 'committee_type', 'committee_type_display',
+            'normative_requirement', 'chairperson_name', 'meeting_frequency',
+            'minimum_quorum', 'active_members_count', 'has_decision_authority',
+            'created_at'
+        ]
+    
+    def get_active_members_count(self, obj):
+        return obj.get_active_members().count()
+
+
+class ComiteCreateSerializer(serializers.ModelSerializer):
+    """Create serializer for Comite model."""
+    
+    class Meta:
+        model = Comite
+        fields = [
+            'organizational_chart', 'code', 'name', 'committee_type',
+            'normative_requirement', 'sector_specific', 'chairperson', 'secretary',
+            'meeting_frequency', 'minimum_quorum', 'functions', 'decision_powers',
+            'generates_minutes', 'reports_to_board', 'has_decision_authority',
+            'usual_meeting_location', 'usual_meeting_time', 'meeting_duration_hours',
+            'start_date', 'end_date'
+        ]
+    
+    def validate(self, data):
+        """Validate committee data."""
+        # Validate chairperson and secretary belong to same organizational chart
+        org_chart = data.get('organizational_chart')
+        chairperson = data.get('chairperson')
+        secretary = data.get('secretary')
+        
+        if chairperson and chairperson.area.organizational_chart != org_chart:
+            raise serializers.ValidationError({
+                'chairperson': _('El presidente debe pertenecer al mismo organigrama')
+            })
+        
+        if secretary and secretary.area.organizational_chart != org_chart:
+            raise serializers.ValidationError({
+                'secretary': _('El secretario debe pertenecer al mismo organigrama')
+            })
+        
+        # Validate temporary committee dates
+        if data.get('committee_type') == 'TEMPORARY':
+            if not data.get('start_date') or not data.get('end_date'):
+                raise serializers.ValidationError({
+                    'end_date': _('Los comités temporales requieren fechas de inicio y fin')
+                })
+        
+        return data
+
+
+class MiembroComiteSerializer(serializers.ModelSerializer):
+    """Detailed serializer for MiembroComite model."""
+    
+    # Read-only computed fields
+    committee_name = serializers.CharField(source='committee.name', read_only=True)
+    position_name = serializers.CharField(source='position.name', read_only=True)
+    position_area = serializers.CharField(source='position.area.name', read_only=True)
+    participation_type_display = serializers.CharField(source='get_participation_type_display', read_only=True)
+    appointed_by_name = serializers.CharField(source='appointed_by.get_full_name', read_only=True)
+    attendance_rate = serializers.SerializerMethodField()
+    membership_duration_days = serializers.SerializerMethodField()
+    is_currently_active = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = MiembroComite
+        fields = [
+            'id', 'committee', 'committee_name', 'position', 'position_name', 
+            'position_area', 'participation_type', 'participation_type_display',
+            'start_date', 'end_date', 'has_voting_rights', 'can_convene_meetings',
+            'is_substitute_for', 'committee_role', 'areas_of_expertise',
+            'appointed_by', 'appointed_by_name', 'appointment_document',
+            'meetings_attended', 'meetings_missed', 'last_attendance_date',
+            'attendance_rate', 'membership_duration_days', 'is_currently_active',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_attendance_rate(self, obj):
+        """Get attendance rate as percentage."""
+        return obj.get_attendance_rate()
+    
+    def get_membership_duration_days(self, obj):
+        """Get membership duration in days."""
+        return obj.get_membership_duration_days()
+    
+    def get_is_currently_active(self, obj):
+        """Check if membership is currently active."""
+        return obj.is_currently_active()
+
+
+class MiembroComiteListSerializer(serializers.ModelSerializer):
+    """List serializer for MiembroComite model."""
+    
+    committee_name = serializers.CharField(source='committee.name', read_only=True)
+    position_name = serializers.CharField(source='position.name', read_only=True)
+    participation_type_display = serializers.CharField(source='get_participation_type_display', read_only=True)
+    attendance_rate = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = MiembroComite
+        fields = [
+            'id', 'committee_name', 'position_name', 'participation_type_display',
+            'start_date', 'end_date', 'has_voting_rights', 'committee_role',
+            'meetings_attended', 'meetings_missed', 'attendance_rate'
+        ]
+    
+    def get_attendance_rate(self, obj):
+        return obj.get_attendance_rate()
+
+
+class MiembroComiteCreateSerializer(serializers.ModelSerializer):
+    """Create serializer for MiembroComite model."""
+    
+    class Meta:
+        model = MiembroComite
+        fields = [
+            'committee', 'position', 'participation_type', 'start_date', 'end_date',
+            'has_voting_rights', 'can_convene_meetings', 'is_substitute_for',
+            'committee_role', 'areas_of_expertise', 'appointed_by', 'appointment_document'
+        ]
+    
+    def validate(self, data):
+        """Validate member data."""
+        committee = data.get('committee')
+        position = data.get('position')
+        
+        # Validate position belongs to same organizational chart as committee
+        if position and position.area.organizational_chart != committee.organizational_chart:
+            raise serializers.ValidationError({
+                'position': _('El cargo debe pertenecer al mismo organigrama del comité')
+            })
+        
+        # Validate no duplicate active membership
+        if MiembroComite.objects.filter(
+            committee=committee,
+            position=position,
+            end_date__isnull=True,
+            is_active=True
+        ).exists():
+            raise serializers.ValidationError({
+                'position': _('Esta persona ya es miembro activo del comité')
+            })
+        
+        # Validate substitute relationship
+        substitute_for = data.get('is_substitute_for')
+        if substitute_for:
+            if substitute_for.committee != committee:
+                raise serializers.ValidationError({
+                    'is_substitute_for': _('El suplente debe pertenecer al mismo comité')
+                })
+        
+        return data
+
+
+class CommitteeMeetingSerializer(serializers.ModelSerializer):
+    """Detailed serializer for CommitteeMeeting model."""
+    
+    committee_name = serializers.CharField(source='committee.name', read_only=True)
+    meeting_type_display = serializers.CharField(source='get_meeting_type_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    attendees_count = serializers.SerializerMethodField()
+    duration_minutes = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = CommitteeMeeting
+        fields = [
+            'id', 'committee', 'committee_name', 'meeting_number', 'meeting_type',
+            'meeting_type_display', 'meeting_date', 'start_time', 'end_time',
+            'location', 'status', 'status_display', 'quorum_achieved',
+            'agenda', 'minutes', 'decisions_made', 'action_items',
+            'supporting_documents', 'signed_minutes', 'attendees_count',
+            'duration_minutes', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_attendees_count(self, obj):
+        """Get count of attendees."""
+        return obj.attendees.count()
+    
+    def get_duration_minutes(self, obj):
+        """Get meeting duration in minutes."""
+        if obj.start_time and obj.end_time:
+            start = timezone.datetime.combine(timezone.now().date(), obj.start_time)
+            end = timezone.datetime.combine(timezone.now().date(), obj.end_time)
+            duration = end - start
+            return int(duration.total_seconds() / 60)
+        return None
+
+
+class CommitteeMeetingListSerializer(serializers.ModelSerializer):
+    """List serializer for CommitteeMeeting model."""
+    
+    committee_name = serializers.CharField(source='committee.name', read_only=True)
+    meeting_type_display = serializers.CharField(source='get_meeting_type_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    attendees_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = CommitteeMeeting
+        fields = [
+            'id', 'committee_name', 'meeting_number', 'meeting_type_display',
+            'meeting_date', 'start_time', 'status_display', 'quorum_achieved',
+            'location', 'attendees_count'
+        ]
+    
+    def get_attendees_count(self, obj):
+        return obj.attendees.count()
+
+
+class CommitteeMeetingCreateSerializer(serializers.ModelSerializer):
+    """Create serializer for CommitteeMeeting model."""
+    
+    class Meta:
+        model = CommitteeMeeting
+        fields = [
+            'committee', 'meeting_number', 'meeting_type', 'meeting_date',
+            'start_time', 'end_time', 'location', 'agenda'
+        ]
+    
+    def validate(self, data):
+        """Validate meeting data."""
+        # Validate end_time is after start_time
+        start_time = data.get('start_time')
+        end_time = data.get('end_time')
+        
+        if start_time and end_time and end_time <= start_time:
+            raise serializers.ValidationError({
+                'end_time': _('La hora de fin debe ser posterior a la de inicio')
+            })
+        
+        # Validate meeting_date is not in the past (for new meetings)
+        meeting_date = data.get('meeting_date')
+        if meeting_date and meeting_date < timezone.now().date():
+            raise serializers.ValidationError({
+                'meeting_date': _('La fecha de reunión no puede ser en el pasado')
+            })
+        
+        return data

@@ -104,8 +104,9 @@ class ValidacionSOGCSSerializer(serializers.ModelSerializer):
         model = ValidacionSOGCS
         fields = [
             'id', 'codigo', 'nombre', 'descripcion', 'categoria',
-            'nivel_aplicacion', 'parametros_validacion', 'es_obligatoria',
-            'activo', 'created_at', 'updated_at'
+            'regla_validacion', 'complejidad_aplicable', 'severidad',
+            'base_normativa', 'articulo_norma', 'activo', 
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
 
@@ -121,15 +122,14 @@ class TemplateOrganizacionalListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'nombre', 'descripcion', 'complejidad_ips',
             'servicios_incluidos_count', 'areas_incluidas_count',
-            'validaciones_count', 'es_template_base', 'activo',
+            'validaciones_count', 'es_base', 'activo',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
     
     def get_servicios_incluidos_count(self, obj):
         """Cuenta servicios incluidos en el template"""
-        servicios = obj.servicios_incluidos.get('servicios', [])
-        return len(servicios) if servicios else 0
+        return obj.servicios_incluidos.count()
     
     def get_areas_incluidas_count(self, obj):
         """Cuenta áreas incluidas en el template"""
@@ -153,21 +153,14 @@ class TemplateOrganizacionalDetailSerializer(serializers.ModelSerializer):
             'id', 'nombre', 'descripcion', 'complejidad_ips',
             'servicios_incluidos', 'servicios_incluidos_detail',
             'estructura_organizacional', 'validaciones_sogcs',
-            'validaciones_detail', 'configuracion_base',
-            'es_template_base', 'activo', 'created_at', 'updated_at'
+            'validaciones_detail', 'es_base', 'activo', 
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
     
     def get_servicios_incluidos_detail(self, obj):
         """Obtiene detalle de servicios incluidos"""
-        servicios_codes = obj.servicios_incluidos.get('servicios', [])
-        if not servicios_codes:
-            return []
-        
-        servicios = ServicioHabilitado.objects.filter(
-            codigo__in=servicios_codes,
-            activo=True
-        )
+        servicios = obj.servicios_incluidos.filter(activo=True)
         return ServicioHabilitadoSerializer(servicios, many=True).data
     
     def get_validaciones_detail(self, obj):
@@ -194,13 +187,12 @@ class AplicacionTemplateSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'template', 'template_nombre', 'organizacion',
             'organizacion_nombre', 'aplicado_por', 'aplicado_por_nombre',
-            'fecha_aplicacion', 'configuracion_personalizada',
-            'resultado_aplicacion', 'errores_aplicacion',
-            'estado', 'activo', 'created_at', 'updated_at'
+            'fecha_aplicacion', 'servicios_seleccionados', 'customizaciones',
+            'estado', 'estructura_generada', 'porcentaje_cumplimiento',
+            'gaps_identificados', 'rating', 'comentarios', 'fecha_completado'
         ]
         read_only_fields = [
-            'id', 'fecha_aplicacion', 'resultado_aplicacion',
-            'errores_aplicacion', 'created_at', 'updated_at',
+            'id', 'fecha_aplicacion', 'fecha_completado',
             'template_nombre', 'organizacion_nombre', 'aplicado_por_nombre'
         ]
 
@@ -237,8 +229,7 @@ class AplicarTemplateSerializer(serializers.Serializer):
         aplicacion_existente = AplicacionTemplate.objects.filter(
             template_id=template_id,
             organizacion_id=organizacion_id,
-            estado__in=['aplicado', 'en_progreso'],
-            activo=True
+            estado__in=['completada', 'en_proceso']
         ).exists()
         
         if aplicacion_existente:

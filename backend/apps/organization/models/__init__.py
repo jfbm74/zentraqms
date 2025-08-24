@@ -74,6 +74,20 @@ from .organizational_template import (
     HistorialCambiosTemplate,
 )
 
+# Organizational Customization models
+from .organizational_customization import (
+    CustomizacionOrganizacional,
+    ModificacionOrganizacional,
+    ValidacionSOGCSCustomizacion,
+    ReglaValidacionSOGCS,
+    HistorialCumplimiento,
+    TipoModificacion,
+    EntidadOrganizacional,
+    NivelAprobacion,
+    EstadoModificacion,
+    SeveridadValidacion,
+)
+
 # Organizational Structure models
 from .organizational_structure import (
     Area,
@@ -154,6 +168,18 @@ __all__ = [
     'AplicacionTemplate',
     'ValidacionSOGCS',
     'HistorialCambiosTemplate',
+    
+    # Organizational Customization models
+    'CustomizacionOrganizacional',
+    'ModificacionOrganizacional',
+    'ValidacionSOGCSCustomizacion',
+    'ReglaValidacionSOGCS',
+    'HistorialCumplimiento',
+    'TipoModificacion',
+    'EntidadOrganizacional',
+    'NivelAprobacion',
+    'EstadoModificacion',
+    'SeveridadValidacion',
     
     # Organizational Structure models
     'Area',

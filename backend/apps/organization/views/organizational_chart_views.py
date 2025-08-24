@@ -47,6 +47,9 @@ from ..models.organizational_chart import (
 from ..models.organizational_structure import (
     Area, ServiceAreaAssignment, Cargo, Responsabilidad, Autoridad
 )
+from ..models.committees import (
+    Comite, MiembroComite, CommitteeMeeting, MeetingAttendance
+)
 from ..models import Organization
 
 from ..serializers.organizational_chart_serializers import (
@@ -85,6 +88,17 @@ from ..serializers.organizational_chart_serializers import (
     # Validation serializers
     ChartValidationSerializer,
     TemplateApplicationSerializer,
+    
+    # Committee serializers
+    ComiteSerializer,
+    ComiteListSerializer,
+    ComiteCreateSerializer,
+    MiembroComiteSerializer,
+    MiembroComiteListSerializer,
+    MiembroComiteCreateSerializer,
+    CommitteeMeetingSerializer,
+    CommitteeMeetingListSerializer,
+    CommitteeMeetingCreateSerializer,
 )
 
 from ..services.organizational_chart_service import (
@@ -1072,6 +1086,835 @@ class CargoViewSet(viewsets.ModelViewSet):
             'span_of_control': position.get_span_of_control(),
             'total_subordinates': len(subordinates)
         })
+
+
+# =============================================================================
+# COMMITTEE VIEWSETS
+# =============================================================================
+
+class ComiteViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing institutional committees.
+    
+    Provides CRUD operations for committees, member management,
+    and meeting scheduling functionality.
+    """
+    
+    queryset = Comite.objects.all().select_related(
+        'organizational_chart', 'chairperson', 'secretary'
+    ).prefetch_related('members', 'scope_areas')
+    
+    filter_backends = [SearchFilter, OrderingFilter, DjangoFilterBackend]
+    search_fields = ['name', 'code', 'normative_requirement']
+    ordering_fields = ['name', 'code', 'committee_type', 'created_at']
+    ordering = ['committee_type', 'code']
+    filterset_fields = [
+        'organizational_chart', 'committee_type', 'sector_specific',
+        'meeting_frequency', 'reports_to_board', 'has_decision_authority'
+    ]
+    
+    def get_serializer_class(self):
+        """Return appropriate serializer based on action."""
+        if self.action == 'list':
+            return ComiteListSerializer
+        elif self.action == 'create':
+            return ComiteCreateSerializer
+        elif self.action == 'add_member':
+            return MiembroComiteCreateSerializer
+        return ComiteSerializer
+    
+    def get_permissions(self):
+        """Return appropriate permissions based on action."""
+        permission_classes = [
+            permissions.IsAuthenticated,
+            HasPermission
+        ]
+        
+        if self.action in ['list', 'retrieve']:
+            self.required_permission = 'organization.read'
+        else:
+            self.required_permission = 'organization.create_orgchart'
+        
+        return [permission() for permission in permission_classes]
+    
+    def get_queryset(self):
+        """Filter queryset based on organizational chart."""
+        queryset = super().get_queryset().filter(is_active=True)
+        
+        chart_id = self.request.query_params.get('chart')
+        if chart_id:
+            queryset = queryset.filter(organizational_chart_id=chart_id)
+        
+        # Filter by committee type if specified
+        committee_type = self.request.query_params.get('type')
+        if committee_type:
+            queryset = queryset.filter(committee_type=committee_type)
+        
+        return queryset
+    
+    @action(detail=True, methods=['get'])
+    def members(self, request, pk=None):
+        """Get all members of a committee."""
+        committee = self.get_object()
+        members = committee.get_active_members()
+        serializer = MiembroComiteSerializer(members, many=True)
+        
+        return Response({
+            'committee': committee.name,
+            'members': serializer.data,
+            'total_members': members.count(),
+            'voting_members': committee.get_voting_members().count(),
+            'has_quorum': committee.has_quorum()
+        })
+    
+    @action(detail=True, methods=['post'])
+    def add_member(self, request, pk=None):
+        """Add a new member to the committee."""
+        committee = self.get_object()
+        data = request.data.copy()
+        data['committee'] = committee.id
+        
+        serializer = MiembroComiteCreateSerializer(data=data)
+        if serializer.is_valid():
+            member = serializer.save(
+                created_by=request.user,
+                updated_by=request.user
+            )
+            
+            response_serializer = MiembroComiteSerializer(member)
+            return Response({
+                'success': True,
+                'message': _('Miembro añadido exitosamente'),
+                'member': response_serializer.data
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True, methods=['post'])
+    def remove_member(self, request, pk=None):
+        """Remove a member from the committee."""
+        committee = self.get_object()
+        position_id = request.data.get('position_id')
+        end_date = request.data.get('end_date')
+        reason = request.data.get('reason', '')
+        
+        if not position_id:
+            return Response({
+                'success': False,
+                'message': _('position_id es requerido')
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            member = committee.members.get(
+                position_id=position_id,
+                end_date__isnull=True,
+                is_active=True
+            )
+            
+            member.terminate_membership(
+                end_date=end_date,
+                reason=reason,
+                user=request.user
+            )
+            
+            return Response({
+                'success': True,
+                'message': _('Miembro removido exitosamente')
+            })
+        
+        except MiembroComite.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': _('Miembro no encontrado')
+            }, status=status.HTTP_404_NOT_FOUND)
+    
+    @action(detail=True, methods=['get'])
+    def meetings(self, request, pk=None):
+        """Get all meetings for a committee."""
+        committee = self.get_object()
+        meetings = committee.meetings.filter(is_active=True).order_by('-meeting_date')
+        
+        # Apply date filters if provided
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        
+        if start_date:
+            meetings = meetings.filter(meeting_date__gte=start_date)
+        if end_date:
+            meetings = meetings.filter(meeting_date__lte=end_date)
+        
+        serializer = CommitteeMeetingListSerializer(meetings, many=True)
+        
+        return Response({
+            'committee': committee.name,
+            'meetings': serializer.data,
+            'count': meetings.count(),
+            'next_meeting_date': committee.get_next_meeting_date()
+        })
+    
+    @action(detail=True, methods=['post'])
+    def schedule_meeting(self, request, pk=None):
+        """Schedule a new meeting for the committee."""
+        committee = self.get_object()
+        data = request.data.copy()
+        data['committee'] = committee.id
+        
+        # Auto-assign meeting number
+        last_meeting = committee.meetings.order_by('-meeting_number').first()
+        next_number = (last_meeting.meeting_number + 1) if last_meeting else 1
+        data['meeting_number'] = next_number
+        
+        serializer = CommitteeMeetingCreateSerializer(data=data)
+        if serializer.is_valid():
+            meeting = serializer.save(
+                created_by=request.user,
+                updated_by=request.user
+            )
+            
+            response_serializer = CommitteeMeetingSerializer(meeting)
+            return Response({
+                'success': True,
+                'message': _('Reunión programada exitosamente'),
+                'meeting': response_serializer.data
+            }, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True, methods=['get'])
+    def compliance_status(self, request, pk=None):
+        """Get compliance status for the committee."""
+        committee = self.get_object()
+        
+        # Basic compliance checks
+        compliance_data = {
+            'committee_name': committee.name,
+            'is_mandatory': committee.committee_type == 'MANDATORY',
+            'has_sufficient_members': committee.get_active_members().count() >= committee.minimum_quorum,
+            'has_chairperson': bool(committee.chairperson),
+            'has_secretary': bool(committee.secretary),
+            'meeting_frequency_set': bool(committee.meeting_frequency),
+            'scope_areas_defined': committee.scope_areas.exists(),
+            'functions_defined': len(committee.functions) > 0,
+            'recent_meetings': committee.meetings.filter(
+                meeting_date__gte=timezone.now().date() - timedelta(days=90)
+            ).count()
+        }
+        
+        # Calculate overall compliance score
+        checks = [
+            compliance_data['has_sufficient_members'],
+            compliance_data['has_chairperson'],
+            compliance_data['has_secretary'],
+            compliance_data['meeting_frequency_set'],
+            compliance_data['functions_defined'],
+            compliance_data['recent_meetings'] > 0
+        ]
+        
+        compliance_data['compliance_score'] = (sum(checks) / len(checks)) * 100
+        compliance_data['is_compliant'] = compliance_data['compliance_score'] >= 80
+        
+        return Response(compliance_data)
+
+
+class MiembroComiteViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing committee members.
+    
+    Provides CRUD operations for committee memberships and
+    participation tracking.
+    """
+    
+    queryset = MiembroComite.objects.all().select_related(
+        'committee', 'position', 'position__area', 'appointed_by'
+    )
+    
+    filter_backends = [SearchFilter, OrderingFilter, DjangoFilterBackend]
+    search_fields = ['committee__name', 'position__name', 'committee_role']
+    ordering_fields = ['start_date', 'participation_type', 'meetings_attended']
+    ordering = ['committee__name', 'participation_type', 'start_date']
+    filterset_fields = [
+        'committee', 'participation_type', 'has_voting_rights',
+        'can_convene_meetings', 'is_substitute_for'
+    ]
+    
+    def get_serializer_class(self):
+        """Return appropriate serializer based on action."""
+        if self.action == 'list':
+            return MiembroComiteListSerializer
+        elif self.action == 'create':
+            return MiembroComiteCreateSerializer
+        return MiembroComiteSerializer
+    
+    def get_permissions(self):
+        """Return appropriate permissions based on action."""
+        permission_classes = [
+            permissions.IsAuthenticated,
+            HasPermission
+        ]
+        
+        if self.action in ['list', 'retrieve']:
+            self.required_permission = 'organization.read'
+        else:
+            self.required_permission = 'organization.create_orgchart'
+        
+        return [permission() for permission in permission_classes]
+    
+    def get_queryset(self):
+        """Filter queryset based on committee and active status."""
+        queryset = super().get_queryset().filter(is_active=True)
+        
+        committee_id = self.request.query_params.get('committee')
+        if committee_id:
+            queryset = queryset.filter(committee_id=committee_id)
+        
+        # Show only currently active members by default
+        current_only = self.request.query_params.get('current_only', 'true')
+        if current_only.lower() == 'true':
+            queryset = queryset.filter(end_date__isnull=True)
+        
+        return queryset
+    
+    @action(detail=True, methods=['post'])
+    def extend_membership(self, request, pk=None):
+        """Extend or make membership permanent."""
+        member = self.get_object()
+        new_end_date = request.data.get('new_end_date')  # None for permanent
+        
+        try:
+            member.extend_membership(
+                new_end_date=new_end_date,
+                user=request.user
+            )
+            
+            serializer = MiembroComiteSerializer(member)
+            return Response({
+                'success': True,
+                'message': _('Membresía extendida exitosamente'),
+                'member': serializer.data
+            })
+        
+        except Exception as e:
+            logger.error(f"Error extending membership {member.id}: {str(e)}")
+            return Response({
+                'success': False,
+                'message': _('Error extendiendo la membresía'),
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=True, methods=['post'])
+    def record_attendance(self, request, pk=None):
+        """Record attendance for a specific meeting."""
+        member = self.get_object()
+        meeting_date = request.data.get('meeting_date')
+        attended = request.data.get('attended', True)
+        
+        if not meeting_date:
+            return Response({
+                'success': False,
+                'message': _('meeting_date es requerido')
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            from datetime import datetime
+            meeting_date_obj = datetime.strptime(meeting_date, '%Y-%m-%d').date()
+            
+            member.record_attendance(meeting_date_obj, attended)
+            
+            return Response({
+                'success': True,
+                'message': _('Asistencia registrada exitosamente'),
+                'attendance_rate': member.get_attendance_rate()
+            })
+        
+        except ValueError:
+            return Response({
+                'success': False,
+                'message': _('Formato de fecha inválido (use YYYY-MM-DD)')
+            }, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(detail=True, methods=['get'])
+    def performance_stats(self, request, pk=None):
+        """Get performance statistics for the member."""
+        member = self.get_object()
+        
+        stats = {
+            'member': f"{member.committee.name} - {member.position.name}",
+            'membership_duration_days': member.get_membership_duration_days(),
+            'meetings_attended': member.meetings_attended,
+            'meetings_missed': member.meetings_missed,
+            'attendance_rate': member.get_attendance_rate(),
+            'last_attendance_date': member.last_attendance_date,
+            'participation_type': member.get_participation_type_display(),
+            'has_voting_rights': member.has_voting_rights,
+            'can_convene_meetings': member.can_convene_meetings,
+            'committee_role': member.committee_role,
+            'is_currently_active': member.is_currently_active()
+        }
+        
+        return Response(stats)
+
+
+# =============================================================================
+# SOGCS VALIDATION ENDPOINTS
+# =============================================================================
+
+class SOGCSValidationViewSet(viewsets.ViewSet):
+    """
+    ViewSet for SOGCS compliance validation.
+    
+    Provides real-time validation endpoints for health sector
+    organizational charts against SOGCS requirements.
+    """
+    
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    required_permission = 'organization.read'
+    
+    @action(detail=False, methods=['post'])
+    def validate_chart(self, request):
+        """Validate an organizational chart against SOGCS requirements."""
+        chart_id = request.data.get('chart_id')
+        validation_type = request.data.get('validation_type', 'full')
+        
+        if not chart_id:
+            return Response({
+                'success': False,
+                'message': _('chart_id es requerido')
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            chart = OrganizationalChart.objects.get(id=chart_id)
+            
+            # Use the validation service
+            from ..services.sogcs_validation_service import SOGCSValidationService
+            validator = SOGCSValidationService()
+            
+            if validation_type == 'quick':
+                results = validator.quick_validate(chart)
+            elif validation_type == 'detailed':
+                results = validator.detailed_validate(chart)
+            else:
+                results = validator.full_validate(chart)
+            
+            return Response({
+                'success': True,
+                'chart_id': chart_id,
+                'validation_type': validation_type,
+                'results': results,
+                'timestamp': timezone.now()
+            })
+        
+        except OrganizationalChart.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': _('Organigrama no encontrado')
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        except Exception as e:
+            logger.error(f"Error in SOGCS validation: {str(e)}")
+            return Response({
+                'success': False,
+                'message': _('Error en la validación SOGCS'),
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'])
+    def validate_mandatory_committees(self, request):
+        """Validate mandatory committees for a specific IPS level."""
+        chart_id = request.data.get('chart_id')
+        ips_level = request.data.get('ips_level')
+        
+        if not chart_id or not ips_level:
+            return Response({
+                'success': False,
+                'message': _('chart_id y ips_level son requeridos')
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            chart = OrganizationalChart.objects.get(id=chart_id)
+            
+            from ..services.sogcs_validation_service import SOGCSValidationService
+            validator = SOGCSValidationService()
+            
+            results = validator.validate_mandatory_committees(chart, ips_level)
+            
+            return Response({
+                'success': True,
+                'chart_id': chart_id,
+                'ips_level': ips_level,
+                'committees_validation': results,
+                'timestamp': timezone.now()
+            })
+        
+        except OrganizationalChart.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': _('Organigrama no encontrado')
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        except Exception as e:
+            logger.error(f"Error validating mandatory committees: {str(e)}")
+            return Response({
+                'success': False,
+                'message': _('Error validando comités obligatorios'),
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'])
+    def validate_critical_positions(self, request):
+        """Validate critical positions for health institutions."""
+        chart_id = request.data.get('chart_id')
+        services_enabled = request.data.get('services_enabled', [])
+        
+        if not chart_id:
+            return Response({
+                'success': False,
+                'message': _('chart_id es requerido')
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            chart = OrganizationalChart.objects.get(id=chart_id)
+            
+            from ..services.sogcs_validation_service import SOGCSValidationService
+            validator = SOGCSValidationService()
+            
+            results = validator.validate_critical_positions(chart, services_enabled)
+            
+            return Response({
+                'success': True,
+                'chart_id': chart_id,
+                'critical_positions_validation': results,
+                'timestamp': timezone.now()
+            })
+        
+        except OrganizationalChart.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': _('Organigrama no encontrado')
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        except Exception as e:
+            logger.error(f"Error validating critical positions: {str(e)}")
+            return Response({
+                'success': False,
+                'message': _('Error validando cargos críticos'),
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get'])
+    def get_validation_rules(self, request):
+        """Get available SOGCS validation rules."""
+        ips_level = request.query_params.get('ips_level')
+        service_type = request.query_params.get('service_type')
+        
+        try:
+            from ..services.sogcs_validation_service import SOGCSValidationService
+            validator = SOGCSValidationService()
+            
+            rules = validator.get_validation_rules(ips_level, service_type)
+            
+            return Response({
+                'success': True,
+                'ips_level': ips_level,
+                'service_type': service_type,
+                'validation_rules': rules,
+                'total_rules': len(rules)
+            })
+        
+        except Exception as e:
+            logger.error(f"Error getting validation rules: {str(e)}")
+            return Response({
+                'success': False,
+                'message': _('Error obteniendo reglas de validación'),
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# =============================================================================
+# RACI MATRIX ENDPOINTS  
+# =============================================================================
+
+class RACIMatrixViewSet(viewsets.ViewSet):
+    """
+    ViewSet for RACI Matrix management.
+    
+    Provides endpoints for creating and managing RACI 
+    (Responsible, Accountable, Consulted, Informed) matrices
+    for organizational processes.
+    """
+    
+    permission_classes = [permissions.IsAuthenticated, HasPermission]
+    required_permission = 'organization.create_orgchart'
+    
+    @action(detail=False, methods=['get'])
+    def get_matrix(self, request):
+        """Get RACI matrix for a specific organizational chart."""
+        chart_id = request.query_params.get('chart_id')
+        process_id = request.query_params.get('process_id')
+        
+        if not chart_id:
+            return Response({
+                'success': False,
+                'message': _('chart_id es requerido')
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            chart = OrganizationalChart.objects.get(id=chart_id)
+            
+            # Get all positions with their responsibilities
+            positions = Cargo.objects.filter(
+                area__organizational_chart=chart,
+                is_active=True
+            ).prefetch_related('responsibilities')
+            
+            # Build RACI matrix structure
+            matrix_data = {
+                'chart_id': chart_id,
+                'chart_name': f"{chart.organization.nombre_comercial} v{chart.version}",
+                'positions': [],
+                'processes': [],
+                'matrix': {}
+            }
+            
+            # Add positions
+            for position in positions:
+                matrix_data['positions'].append({
+                    'id': position.id,
+                    'code': position.code,
+                    'name': position.name,
+                    'area': position.area.name
+                })
+            
+            # If process_id is provided, filter by specific process
+            if process_id:
+                # TODO: Implement when processes module is available
+                matrix_data['processes'].append({
+                    'id': process_id,
+                    'name': 'Proceso Específico',
+                    'note': 'Integración con módulo de procesos pendiente'
+                })
+            else:
+                # Use generic process categories for now
+                generic_processes = [
+                    {'id': 'strategic', 'name': 'Procesos Estratégicos'},
+                    {'id': 'operational', 'name': 'Procesos Operativos'},
+                    {'id': 'support', 'name': 'Procesos de Apoyo'},
+                    {'id': 'quality', 'name': 'Procesos de Calidad'}
+                ]
+                matrix_data['processes'] = generic_processes
+            
+            # Build matrix relationships from responsibilities
+            for position in positions:
+                position_raci = {}
+                for responsibility in position.responsibilities.filter(is_active=True):
+                    raci_role = responsibility.raci_role
+                    if raci_role:
+                        # Map to process category based on responsibility type
+                        process_key = self._map_responsibility_to_process(responsibility.responsibility_type)
+                        position_raci[process_key] = raci_role
+                
+                matrix_data['matrix'][str(position.id)] = position_raci
+            
+            return Response({
+                'success': True,
+                'raci_matrix': matrix_data,
+                'timestamp': timezone.now()
+            })
+        
+        except OrganizationalChart.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': _('Organigrama no encontrado')
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        except Exception as e:
+            logger.error(f"Error getting RACI matrix: {str(e)}")
+            return Response({
+                'success': False,
+                'message': _('Error obteniendo matriz RACI'),
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['post'])
+    def update_matrix(self, request):
+        """Update RACI matrix assignments."""
+        chart_id = request.data.get('chart_id')
+        matrix_updates = request.data.get('matrix_updates', {})
+        
+        if not chart_id or not matrix_updates:
+            return Response({
+                'success': False,
+                'message': _('chart_id y matrix_updates son requeridos')
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            with transaction.atomic():
+                updated_count = 0
+                
+                for position_id, raci_assignments in matrix_updates.items():
+                    try:
+                        position = Cargo.objects.get(
+                            id=position_id,
+                            area__organizational_chart_id=chart_id,
+                            is_active=True
+                        )
+                        
+                        # Update responsibilities with RACI roles
+                        for process_key, raci_role in raci_assignments.items():
+                            # Find or create responsibility for this process
+                            responsibility, created = Responsabilidad.objects.get_or_create(
+                                position=position,
+                                responsibility_type=self._map_process_to_responsibility(process_key),
+                                defaults={
+                                    'description': f'Responsabilidad en {process_key}',
+                                    'raci_role': raci_role,
+                                    'created_by': request.user,
+                                    'updated_by': request.user
+                                }
+                            )
+                            
+                            if not created and responsibility.raci_role != raci_role:
+                                responsibility.raci_role = raci_role
+                                responsibility.updated_by = request.user
+                                responsibility.save()
+                            
+                            updated_count += 1
+                    
+                    except Cargo.DoesNotExist:
+                        continue  # Skip invalid position IDs
+                
+                return Response({
+                    'success': True,
+                    'message': _('Matriz RACI actualizada exitosamente'),
+                    'updates_applied': updated_count
+                })
+        
+        except Exception as e:
+            logger.error(f"Error updating RACI matrix: {str(e)}")
+            return Response({
+                'success': False,
+                'message': _('Error actualizando matriz RACI'),
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    @action(detail=False, methods=['get'])
+    def validate_matrix(self, request):
+        """Validate RACI matrix for completeness and conflicts."""
+        chart_id = request.query_params.get('chart_id')
+        
+        if not chart_id:
+            return Response({
+                'success': False,
+                'message': _('chart_id es requerido')
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            chart = OrganizationalChart.objects.get(id=chart_id)
+            
+            validation_results = {
+                'chart_id': chart_id,
+                'validation_passed': True,
+                'issues': [],
+                'warnings': [],
+                'recommendations': []
+            }
+            
+            # Get all responsibilities with RACI roles
+            responsibilities = Responsabilidad.objects.filter(
+                position__area__organizational_chart=chart,
+                raci_role__isnull=False,
+                is_active=True
+            ).select_related('position')
+            
+            # Group by responsibility type (process)
+            process_assignments = {}
+            for resp in responsibilities:
+                process_key = resp.responsibility_type
+                if process_key not in process_assignments:
+                    process_assignments[process_key] = {
+                        'R': [], 'A': [], 'C': [], 'I': []
+                    }
+                
+                raci_role = resp.raci_role
+                if raci_role in ['R', 'A', 'C', 'I']:
+                    process_assignments[process_key][raci_role].append(resp.position)
+            
+            # Validate each process
+            for process_key, assignments in process_assignments.items():
+                # Check for missing Accountable (A)
+                if not assignments['A']:
+                    validation_results['issues'].append({
+                        'type': 'missing_accountable',
+                        'process': process_key,
+                        'message': f'Proceso {process_key} no tiene responsable (A) asignado'
+                    })
+                    validation_results['validation_passed'] = False
+                
+                # Check for multiple Accountable (A) - should be only one
+                elif len(assignments['A']) > 1:
+                    validation_results['warnings'].append({
+                        'type': 'multiple_accountable',
+                        'process': process_key,
+                        'message': f'Proceso {process_key} tiene múltiples responsables (A)',
+                        'positions': [pos.name for pos in assignments['A']]
+                    })
+                
+                # Check for missing Responsible (R)
+                if not assignments['R']:
+                    validation_results['warnings'].append({
+                        'type': 'missing_responsible',
+                        'process': process_key,
+                        'message': f'Proceso {process_key} no tiene ejecutor (R) asignado'
+                    })
+                
+                # Recommendations for process optimization
+                if len(assignments['C']) > 5:
+                    validation_results['recommendations'].append({
+                        'type': 'too_many_consulted',
+                        'process': process_key,
+                        'message': f'Proceso {process_key} tiene muchos consultados (C), considere reducir'
+                    })
+            
+            return Response({
+                'success': True,
+                'validation_results': validation_results,
+                'timestamp': timezone.now()
+            })
+        
+        except OrganizationalChart.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': _('Organigrama no encontrado')
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        except Exception as e:
+            logger.error(f"Error validating RACI matrix: {str(e)}")
+            return Response({
+                'success': False,
+                'message': _('Error validando matriz RACI'),
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _map_responsibility_to_process(self, responsibility_type):
+        """Map responsibility type to process category."""
+        mapping = {
+            'STRATEGIC': 'strategic',
+            'OPERATIONAL': 'operational',
+            'ADMINISTRATIVE': 'support',
+            'QUALITY': 'quality',
+            'SUPERVISORY': 'operational',
+            'COMPLIANCE': 'quality'
+        }
+        return mapping.get(responsibility_type, 'operational')
+    
+    def _map_process_to_responsibility(self, process_key):
+        """Map process category back to responsibility type."""
+        mapping = {
+            'strategic': 'STRATEGIC',
+            'operational': 'OPERATIONAL', 
+            'support': 'ADMINISTRATIVE',
+            'quality': 'QUALITY'
+        }
+        return mapping.get(process_key, 'OPERATIONAL')
 
 
 # =============================================================================

@@ -10,6 +10,7 @@ import { useLocation } from '../../utils/SimpleRouter';
 // Layout y componentes
 import LayoutWithBreadcrumb from '../../components/layout/LayoutWithBreadcrumb';
 import SimpleOrganizationalChart from './SimpleOrganizationalChart';
+import OrganizationalChartView from './OrganizationalChartView';
 import { getModuleConfig } from '../../config/moduleConfigs';
 
 // Tipos
@@ -39,11 +40,11 @@ const OrganizationalChartPage: React.FC<OrganizationalChartPageProps> = ({
           ...baseConfig,
           breadcrumb: {
             ...baseConfig.breadcrumb,
-            pageTitle: 'Crear Organigrama',
+            pageTitle: 'Aplicar Template Organizacional',
             items: [
               { label: 'Organización', path: '/organization' },
               { label: 'Organigramas', path: '/organization/charts' },
-              { label: 'Crear', path: '/organization/charts/new', active: true }
+              { label: 'Aplicar Template', path: '/organization/charts/new', active: true }
             ]
           }
         };
@@ -85,22 +86,23 @@ const OrganizationalChartPage: React.FC<OrganizationalChartPageProps> = ({
   const renderContent = () => {
     switch (mode) {
       case 'create':
-        // TODO: Implementar wizard de creación
         return (
-          <div className="alert alert-info">
-            <h5 className="alert-heading">Funcionalidad en desarrollo</h5>
-            <p>El wizard de creación de organigramas estará disponible próximamente.</p>
+          <div className="alert alert-info" role="alert">
+            <h4>Funcionalidad de Creación</h4>
+            <p>La funcionalidad de creación de organigramas estará disponible próximamente.</p>
           </div>
         );
       
       case 'edit':
-        // TODO: Implementar vista de edición
         return (
-          <div className="alert alert-info">
-            <h5 className="alert-heading">Funcionalidad en desarrollo</h5>
-            <p>El editor de organigramas estará disponible próximamente.</p>
+          <div className="alert alert-info" role="alert">
+            <h4>Funcionalidad de Edición</h4>
+            <p>La funcionalidad de edición de organigramas estará disponible próximamente.</p>
           </div>
         );
+      
+      case 'view':
+        return <SimpleOrganizationalChart />;
       
       default:
         return <OrganizationalChartView chartId={chartId} />;
@@ -113,46 +115,8 @@ const OrganizationalChartPage: React.FC<OrganizationalChartPageProps> = ({
 
   return (
     <LayoutWithBreadcrumb moduleConfig={pageConfig}>
-      <div className="organizational-chart-page">
+      <div className="organizational-chart-page" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         {renderContent()}
-        
-        {/* Estilos específicos del módulo */}
-        <style jsx>{`
-          .organizational-chart-page {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-          }
-
-          .organizational-chart-page :global(.page-content) {
-            padding: 0;
-            height: calc(100vh - var(--header-height, 70px) - var(--breadcrumb-height, 60px));
-          }
-
-          .organizational-chart-page :global(.organizational-chart-content) {
-            background: #f8f9fa;
-          }
-
-          /* Ajustes para el layout del organigrama */
-          .organizational-chart-page :global(.organizational-chart-view) {
-            height: 100%;
-          }
-
-          .organizational-chart-page :global(.chart-header) {
-            border-top: none;
-          }
-
-          .organizational-chart-page :global(.chart-layout) {
-            height: calc(100% - 140px); /* Ajustar según altura del header */
-          }
-
-          /* Responsive adjustments */
-          @media (max-width: 992px) {
-            .organizational-chart-page :global(.page-content) {
-              height: calc(100vh - var(--header-height, 70px) - var(--breadcrumb-height, 60px) - var(--mobile-padding, 20px));
-            }
-          }
-        `}</style>
       </div>
     </LayoutWithBreadcrumb>
   );
@@ -166,7 +130,7 @@ const OrganizationalChartPage: React.FC<OrganizationalChartPageProps> = ({
  * Página principal de visualización de organigrama
  */
 export const OrganizationalChartMainPage: React.FC = () => {
-  return <SimpleOrganizationalChart />;
+  return <OrganizationalChartPage mode="view" />;
 };
 
 /**

@@ -28,7 +28,7 @@ import {
 } from '../../types/organizationalChart';
 
 // Base URL de la API
-const API_BASE_URL = '/api/organization';
+const API_BASE_URL = '/api/v1';
 
 // ============================================================================
 // CONFIGURACIÓN DE AXIOS
@@ -159,10 +159,35 @@ export const organizationalChartService = {
    * Obtener organigrama actual de una organización
    */
   async getCurrent(organizationId: string): Promise<OrganizationalChart | null> {
-    const response: AxiosResponse<PaginatedResponse<OrganizationalChart>> = await axios.get(
-      `${API_BASE_URL}/organizational-charts/?organization=${organizationId}&is_current=true`
-    );
-    return response.data.results.length > 0 ? response.data.results[0] : null;
+    try {
+      console.log('=== GET CURRENT CHART DEBUG ===');
+      console.log('Organization ID:', organizationId);
+      const url = `${API_BASE_URL}/organizational-charts/?organization=${organizationId}&is_current=true`;
+      console.log('API URL:', url);
+      
+      const response: AxiosResponse<PaginatedResponse<OrganizationalChart>> = await axios.get(url);
+      
+      console.log('API Response:', response.data);
+      console.log('Charts found:', response.data.results.length);
+      
+      // Verify response has the expected structure
+      if (!response.data || !response.data.results || !Array.isArray(response.data.results)) {
+        console.warn('Invalid response structure from organizational charts API:', response.data);
+        return null;
+      }
+      
+      const result = response.data.results.length > 0 ? response.data.results[0] : null;
+      if (result) {
+        console.log('Current chart found:', result.id, '- Version:', result.version);
+      } else {
+        console.log('No current chart found for organization');
+      }
+      console.log('================================');
+      return result;
+    } catch (error) {
+      console.error('Error fetching current organizational chart:', error);
+      return null;
+    }
   },
 
   /**
@@ -276,7 +301,7 @@ export const areaService = {
    */
   async getByChart(chartId: string): Promise<Area[]> {
     const response: AxiosResponse<PaginatedResponse<Area>> = await axios.get(
-      `${API_BASE_URL}/areas/?organizational_chart=${chartId}`
+      `${API_BASE_URL}/areas/?chart=${chartId}`
     );
     return response.data.results;
   },
@@ -371,7 +396,7 @@ export const positionService = {
    */
   async getByChart(chartId: string): Promise<Cargo[]> {
     const response: AxiosResponse<PaginatedResponse<Cargo>> = await axios.get(
-      `${API_BASE_URL}/positions/?organizational_chart=${chartId}`
+      `${API_BASE_URL}/positions/?chart=${chartId}`
     );
     return response.data.results;
   },
@@ -452,18 +477,22 @@ export const chartVisualizationService = {
       positionService.getByChart(chartId)
     ]);
 
+
     // Crear mapa de áreas para fácil acceso
     const areaMap = new Map<string, Area>();
     areas.forEach(area => areaMap.set(area.id, area));
+
 
     // Convertir cargos a nodos para d3-org-chart
     const nodes: ChartNode[] = positions.map(position => {
       const area = areaMap.get(position.area);
       const user = position.assigned_user;
+      // Ensure proper handling of null/undefined for parentId
+      const parentId = position.reports_to ? position.reports_to : undefined;
 
       return {
         id: position.id,
-        parentId: position.reports_to || undefined,
+        parentId: parentId,
         name: user?.full_name || 'Vacante',
         position: position.name,
         area: area?.name || 'Sin área',
@@ -502,10 +531,17 @@ export const chartVisualizationService = {
     });
 
     // Encontrar nodo raíz (sin parent)
-    const rootNode = nodes.find(node => !node.parentId);
-    if (!rootNode) {
+    const rootNodes = nodes.filter(node => !node.parentId);
+    
+    if (rootNodes.length === 0) {
       throw new Error('No se encontró nodo raíz en el organigrama');
     }
+
+    if (rootNodes.length > 1) {
+      throw new Error(`Se encontraron múltiples nodos raíz (${rootNodes.length}): ${rootNodes.map(r => r.name).join(', ')}`);
+    }
+
+    const rootNode = rootNodes[0];
 
     return {
       nodes,

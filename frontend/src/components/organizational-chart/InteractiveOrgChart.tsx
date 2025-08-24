@@ -161,7 +161,7 @@ const defaultOrgData: OrgNode[] = [
 ];
 
 const InteractiveOrgChart: React.FC<InteractiveOrgChartProps> = ({
-  data = defaultOrgData,
+  data = [],
   editable = true,
   showSOGCSValidation = true,
   onNodeUpdate,
@@ -474,6 +474,51 @@ const InteractiveOrgChart: React.FC<InteractiveOrgChartProps> = ({
     onStructureChange(updatedData);
     setSelectedNode(null);
   };
+
+  // Si no hay datos, mostrar un mensaje informativo
+  if (!data || data.length === 0) {
+    return (
+      <div className={`interactive-org-chart ${className}`}>
+        <div className="chart-controls mb-3" style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          padding: '12px 16px',
+          background: '#f8f9fa',
+          border: '1px solid #dee2e6',
+          borderRadius: '8px'
+        }}>
+          <div>
+            <h5 className="mb-0" style={{ color: '#495057', fontWeight: 600 }}>
+              Organigrama Interactivo
+            </h5>
+            <small className="text-muted">Sin datos disponibles</small>
+          </div>
+        </div>
+        
+        <div style={{
+          height: '400px',
+          background: '#fafbfc',
+          border: '2px dashed #dee2e6',
+          borderRadius: '8px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#6c757d'
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>
+            <i className="ri-organization-chart"></i>
+          </div>
+          <h6 className="mb-2">No hay estructura organizacional disponible</h6>
+          <p className="text-muted mb-0 text-center">
+            Los datos del organigrama se cargarán automáticamente<br />
+            una vez que se complete la configuración del template.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`interactive-org-chart ${className} ${isFullscreen ? 'org-chart-fullscreen' : ''}`}>

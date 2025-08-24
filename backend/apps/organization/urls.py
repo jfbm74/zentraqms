@@ -40,7 +40,11 @@ from apps.organization.views.organizational_chart_views import (
     AreaViewSet,
     CargoViewSet,
     ResponsabilidadViewSet,
-    AutoridadViewSet
+    AutoridadViewSet,
+    ComiteViewSet,
+    MiembroComiteViewSet,
+    SOGCSValidationViewSet,
+    RACIMatrixViewSet
 )
 
 # Import validation views
@@ -48,6 +52,19 @@ from apps.organization.views.validation_views import (
     RealTimeValidationViewSet,
     InstantComplianceCheckView,
     LiveFeedbackView
+)
+
+# Import organizational template views
+from apps.organization.views.organizational_template_views import (
+    ServicioHabilitadoViewSet,
+    TipoComiteViewSet,
+    TipoCargoViewSet,
+    AreaFuncionalViewSet,
+    AreaFuncionalCargoViewSet,
+    ValidacionSOGCSViewSet,
+    TemplateOrganizacionalViewSet,
+    AplicacionTemplateViewSet,
+    HistorialCambiosTemplateViewSet,
 )
 
 # Create a router and register viewsets
@@ -84,9 +101,24 @@ router.register(r"areas", AreaViewSet, basename="area")
 router.register(r"positions", CargoViewSet, basename="position")
 router.register(r"responsibilities", ResponsabilidadViewSet, basename="responsibility")
 router.register(r"authorities", AutoridadViewSet, basename="authority")
+router.register(r"committees", ComiteViewSet, basename="committee")
+router.register(r"committee-members", MiembroComiteViewSet, basename="committee-member")
+router.register(r"sogcs-validation", SOGCSValidationViewSet, basename="sogcs-validation")
+router.register(r"raci-matrix", RACIMatrixViewSet, basename="raci-matrix")
 
 # Validation endpoints
 router.register(r"realtime-validation", RealTimeValidationViewSet, basename="realtime-validation")
+
+# Organizational Template endpoints
+router.register(r"templates/servicios-habilitados", ServicioHabilitadoViewSet, basename="servicios-habilitados")
+router.register(r"templates/tipos-comite", TipoComiteViewSet, basename="tipos-comite")
+router.register(r"templates/tipos-cargo", TipoCargoViewSet, basename="tipos-cargo")
+router.register(r"templates/areas-funcionales", AreaFuncionalViewSet, basename="areas-funcionales")
+router.register(r"templates/area-funcional-cargos", AreaFuncionalCargoViewSet, basename="area-funcional-cargos")
+router.register(r"templates/validaciones-sogcs", ValidacionSOGCSViewSet, basename="validaciones-sogcs")
+router.register(r"templates/templates", TemplateOrganizacionalViewSet, basename="templates")
+router.register(r"templates/aplicaciones-template", AplicacionTemplateViewSet, basename="aplicaciones-template")
+router.register(r"templates/historial-cambios", HistorialCambiosTemplateViewSet, basename="historial-cambios")
 
 app_name = "organization"
 
@@ -94,8 +126,8 @@ urlpatterns = [
     # Include router URLs
     path("", include(router.urls)),
     
-    # Include Organizational Template URLs
-    path("templates/", include("apps.organization.urls.organizational_template_urls")),
+    # Organizational Template URLs - directly in router
+    # Templates are already registered in the router above
     
     # URLs específicas para sedes por organización
     path("organizations/<uuid:org_id>/sedes/", 
@@ -151,4 +183,7 @@ urlpatterns = [
     path("validation/live-feedback/",
          LiveFeedbackView.as_view(),
          name='live-feedback'),
+    
+    # Customization URLs - temporarily disabled for development
+    # path("customization/", include("apps.organization.urls.customization_urls")),
 ]
