@@ -1,0 +1,433 @@
+[
+  {
+    "model": "organization.sector",
+    "pk": "30b5f2d1-1234-5678-9abc-def123456789",
+    "fields": {
+      "code": "HEALTH",
+      "name": "Sector Salud",
+      "description": "Sector de salud colombiano regido por SOGCS y normativas del Ministerio de Salud",
+      "default_config": {
+        "hierarchy_levels_default": 5,
+        "requires_mandatory_committees": true,
+        "normative_validations": ["SOGCS", "PAMEC", "PATIENT_SAFETY"],
+        "mandatory_positions": ["MEDICAL_DIRECTOR", "PATIENT_SAFETY_OFFICER"],
+        "mandatory_committees": ["QUALITY_COMMITTEE", "PATIENT_SAFETY_COMMITTEE"],
+        "applicable_standards": ["ISO_9001", "SOGCS", "PAMEC"]
+      },
+      "normative_requirements": [
+        "Resolución 2003 de 2014 - Procedimientos de Seguridad del Paciente",
+        "Resolución 429 de 2016 - PAMEC",
+        "Decreto 1011 de 2006 - Sistema de Garantía de Calidad",
+        "Ley 1164 de 2007 - Talento Humano en Salud"
+      ],
+      "has_templates": true,
+      "is_active": true,
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
+    }
+  },
+  {
+    "model": "organization.sector",
+    "pk": "40c5f2d1-1234-5678-9abc-def123456790",
+    "fields": {
+      "code": "EDUCATION",
+      "name": "Sector Educación",
+      "description": "Sector educativo colombiano regido por el Ministerio de Educación",
+      "default_config": {
+        "hierarchy_levels_default": 4,
+        "requires_mandatory_committees": true,
+        "normative_validations": ["ACADEMIC_QUALITY"],
+        "mandatory_positions": ["ACADEMIC_DIRECTOR", "QUALITY_COORDINATOR"],
+        "mandatory_committees": ["ACADEMIC_COMMITTEE", "CURRICULUM_COMMITTEE"],
+        "applicable_standards": ["ISO_9001", "ACADEMIC_QUALITY"]
+      },
+      "normative_requirements": [
+        "Decreto 1295 de 2010 - Registro calificado",
+        "Resolución 18583 de 2017 - Acreditación de calidad"
+      ],
+      "has_templates": true,
+      "is_active": true,
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
+    }
+  },
+  {
+    "model": "organization.sectornormativa",
+    "pk": "50d5f2d1-1234-5678-9abc-def123456791",
+    "fields": {
+      "sector": "30b5f2d1-1234-5678-9abc-def123456789",
+      "code": "RES-2003-2014",
+      "name": "Resolución 2003 de 2014",
+      "description": "Procedimientos y condiciones de inscripción de los prestadores de servicios de salud y de habilitación de servicios de salud",
+      "normative_type": "RESOLUTION",
+      "is_mandatory": true,
+      "is_current": true,
+      "requirements": [
+        "Política de seguridad del paciente",
+        "Programa de seguridad del paciente",
+        "Comité de seguridad del paciente",
+        "Responsable de seguridad del paciente"
+      ],
+      "is_active": true,
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
+    }
+  },
+  {
+    "model": "organization.sectornormativa",
+    "pk": "60e5f2d1-1234-5678-9abc-def123456792",
+    "fields": {
+      "sector": "30b5f2d1-1234-5678-9abc-def123456789",
+      "code": "RES-429-2016",
+      "name": "Resolución 429 de 2016 - PAMEC",
+      "description": "Política de atención integral en salud y modelo de atención integral en salud",
+      "normative_type": "RESOLUTION",
+      "is_mandatory": true,
+      "is_current": true,
+      "requirements": [
+        "Programa de auditoría para el mejoramiento de la calidad",
+        "Comité de calidad",
+        "Plan de mejoramiento",
+        "Sistema de información para la calidad"
+      ],
+      "is_active": true,
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
+    }
+  },
+  {
+    "model": "organization.plantillaorganigrama",
+    "pk": "70f5f2d1-1234-5678-9abc-def123456793",
+    "fields": {
+      "sector": "30b5f2d1-1234-5678-9abc-def123456789",
+      "organization_type": "IPS",
+      "name": "IPS Básica - Consulta Externa",
+      "description": "Plantilla para IPS básicas que prestan servicios de consulta externa",
+      "complexity": "BASIC",
+      "structure": {
+        "areas": [
+          {
+            "code": "DIR-GEN",
+            "name": "Dirección General",
+            "type": "DIRECTION",
+            "level": 1
+          },
+          {
+            "code": "DIR-MED",
+            "name": "Dirección Médica",
+            "type": "DIRECTION",
+            "level": 2
+          },
+          {
+            "code": "AREA-CALIDAD",
+            "name": "Área de Calidad",
+            "type": "DEPARTMENT",
+            "level": 2
+          },
+          {
+            "code": "CONS-EXT",
+            "name": "Consulta Externa",
+            "type": "SERVICE",
+            "level": 3
+          }
+        ],
+        "positions": [
+          {
+            "code": "DIR-001",
+            "name": "Director General",
+            "area_code": "DIR-GEN",
+            "level": "EXECUTIVE",
+            "is_critical": true
+          },
+          {
+            "code": "DIR-MED-001",
+            "name": "Director Médico",
+            "area_code": "DIR-MED",
+            "level": "SENIOR_MANAGEMENT",
+            "is_critical": true
+          },
+          {
+            "code": "COORD-CAL-001",
+            "name": "Coordinador de Calidad",
+            "area_code": "AREA-CALIDAD",
+            "level": "PROFESSIONAL",
+            "is_critical": true
+          }
+        ],
+        "committees": [
+          {
+            "code": "COM-CAL",
+            "name": "Comité de Calidad",
+            "type": "MANDATORY"
+          },
+          {
+            "code": "COM-SEG-PAC",
+            "name": "Comité de Seguridad del Paciente",
+            "type": "MANDATORY"
+          }
+        ],
+        "hierarchy_levels": 3
+      },
+      "times_used": 0,
+      "last_used_date": null,
+      "is_active": true,
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
+    }
+  },
+  {
+    "model": "organization.plantillaorganigrama",
+    "pk": "80g5f2d1-1234-5678-9abc-def123456794",
+    "fields": {
+      "sector": "30b5f2d1-1234-5678-9abc-def123456789",
+      "organization_type": "HOSPITAL",
+      "name": "Hospital General - Nivel II",
+      "description": "Plantilla para hospitales generales de nivel II de complejidad",
+      "complexity": "HIGH",
+      "structure": {
+        "areas": [
+          {
+            "code": "JUNTA-DIR",
+            "name": "Junta Directiva",
+            "type": "BOARD",
+            "level": 1
+          },
+          {
+            "code": "GERENCIA",
+            "name": "Gerencia General",
+            "type": "DIRECTION",
+            "level": 2
+          },
+          {
+            "code": "DIR-MED",
+            "name": "Dirección Médica",
+            "type": "DIRECTION",
+            "level": 3
+          },
+          {
+            "code": "DIR-ENF",
+            "name": "Dirección de Enfermería",
+            "type": "DIRECTION",
+            "level": 3
+          },
+          {
+            "code": "DIR-ADM",
+            "name": "Dirección Administrativa",
+            "type": "DIRECTION",
+            "level": 3
+          },
+          {
+            "code": "URGENCIAS",
+            "name": "Servicio de Urgencias",
+            "type": "SERVICE",
+            "level": 4
+          },
+          {
+            "code": "HOSPITALIZACION",
+            "name": "Hospitalización",
+            "type": "SERVICE",
+            "level": 4
+          },
+          {
+            "code": "QUIROFANOS",
+            "name": "Quirófanos",
+            "type": "SERVICE",
+            "level": 4
+          },
+          {
+            "code": "LABORATORIO",
+            "name": "Laboratorio Clínico",
+            "type": "SERVICE",
+            "level": 4
+          }
+        ],
+        "positions": [
+          {
+            "code": "PRESIDENTE-JD",
+            "name": "Presidente Junta Directiva",
+            "area_code": "JUNTA-DIR",
+            "level": "BOARD",
+            "is_critical": true
+          },
+          {
+            "code": "GERENTE",
+            "name": "Gerente General",
+            "area_code": "GERENCIA",
+            "level": "EXECUTIVE",
+            "is_critical": true
+          },
+          {
+            "code": "DIR-MED-001",
+            "name": "Director Médico",
+            "area_code": "DIR-MED",
+            "level": "SENIOR_MANAGEMENT",
+            "is_critical": true
+          },
+          {
+            "code": "DIR-ENF-001",
+            "name": "Director de Enfermería",
+            "area_code": "DIR-ENF",
+            "level": "SENIOR_MANAGEMENT",
+            "is_critical": true
+          },
+          {
+            "code": "JEFE-URG",
+            "name": "Jefe de Urgencias",
+            "area_code": "URGENCIAS",
+            "level": "PROFESSIONAL",
+            "is_critical": true
+          }
+        ],
+        "committees": [
+          {
+            "code": "COM-CAL",
+            "name": "Comité de Calidad",
+            "type": "MANDATORY"
+          },
+          {
+            "code": "COM-SEG-PAC",
+            "name": "Comité de Seguridad del Paciente",
+            "type": "MANDATORY"
+          },
+          {
+            "code": "COM-INFEC",
+            "name": "Comité de Infecciones",
+            "type": "MANDATORY"
+          },
+          {
+            "code": "COM-HIST-CLIN",
+            "name": "Comité de Historias Clínicas",
+            "type": "MANDATORY"
+          },
+          {
+            "code": "COM-ETICA",
+            "name": "Comité de Ética",
+            "type": "SECTORAL"
+          }
+        ],
+        "hierarchy_levels": 4
+      },
+      "times_used": 0,
+      "last_used_date": null,
+      "is_active": true,
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
+    }
+  },
+  {
+    "model": "organization.service",
+    "pk": "90h5f2d1-1234-5678-9abc-def123456795",
+    "fields": {
+      "code": "CONS-EXT-GEN",
+      "name": "Consulta Externa General",
+      "sector": "30b5f2d1-1234-5678-9abc-def123456789",
+      "category": "CORE",
+      "description": "Servicio de consulta externa de medicina general",
+      "is_mandatory": true,
+      "required_positions": [
+        {
+          "position_type": "MEDICAL_DOCTOR",
+          "name": "Médico General",
+          "is_critical": true,
+          "min_quantity": 1,
+          "required_qualifications": ["Título de Medicina", "Tarjeta profesional médica"]
+        }
+      ],
+      "regulatory_requirements": {
+        "standards": ["SOGCS", "RES_3100_2019"],
+        "licenses": ["HABILITACION_CONSULTORIO"],
+        "certifications": ["RETHUS"],
+        "inspections": ["ANUAL_SECRETARIA_SALUD"],
+        "reporting": ["SIVIGILA", "RIPS"]
+      },
+      "parent_service": null,
+      "performance_indicators": [
+        {
+          "name": "Tiempo promedio de consulta",
+          "target": "20 minutos",
+          "measurement": "monthly_average"
+        },
+        {
+          "name": "Satisfacción del paciente",
+          "target": "> 85%",
+          "measurement": "quarterly_survey"
+        }
+      ],
+      "minimum_operating_hours": 8.0,
+      "requires_24_7_coverage": false,
+      "minimum_space_m2": 12.0,
+      "required_equipment": [
+        "Consultorio médico equipado",
+        "Tensiómetro",
+        "Fonendoscopio",
+        "Báscula",
+        "Tallímetro"
+      ],
+      "is_active": true,
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
+    }
+  },
+  {
+    "model": "organization.service",
+    "pk": "a0i5f2d1-1234-5678-9abc-def123456796",
+    "fields": {
+      "code": "URGENCIAS",
+      "name": "Servicio de Urgencias",
+      "sector": "30b5f2d1-1234-5678-9abc-def123456789",
+      "category": "CORE",
+      "description": "Servicio de atención de urgencias médicas",
+      "is_mandatory": false,
+      "required_positions": [
+        {
+          "position_type": "EMERGENCY_DOCTOR",
+          "name": "Médico de Urgencias",
+          "is_critical": true,
+          "min_quantity": 2,
+          "required_qualifications": ["Título de Medicina", "Experiencia en urgencias", "Tarjeta profesional"]
+        },
+        {
+          "position_type": "EMERGENCY_NURSE",
+          "name": "Enfermero de Urgencias",
+          "is_critical": true,
+          "min_quantity": 3,
+          "required_qualifications": ["Título de Enfermería", "Tarjeta profesional enfermería"]
+        }
+      ],
+      "regulatory_requirements": {
+        "standards": ["SOGCS", "RES_3100_2019"],
+        "licenses": ["HABILITACION_URGENCIAS"],
+        "certifications": ["RETHUS", "ACLS", "BLS"],
+        "inspections": ["SEMESTRAL_SECRETARIA_SALUD"],
+        "reporting": ["SIVIGILA", "RIPS", "EMERGENCIAS_NOTIFICABLES"]
+      },
+      "parent_service": null,
+      "performance_indicators": [
+        {
+          "name": "Tiempo de triage",
+          "target": "< 15 minutos",
+          "measurement": "monthly_average"
+        },
+        {
+          "name": "Mortalidad en urgencias",
+          "target": "< 2%",
+          "measurement": "monthly_rate"
+        }
+      ],
+      "minimum_operating_hours": 24.0,
+      "requires_24_7_coverage": true,
+      "minimum_space_m2": 80.0,
+      "required_equipment": [
+        "Camas de urgencias",
+        "Monitor de signos vitales",
+        "Desfibrilador",
+        "Equipo de intubación",
+        "Carro de paro",
+        "Rayos X portátil"
+      ],
+      "is_active": true,
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
+    }
+  }
+]

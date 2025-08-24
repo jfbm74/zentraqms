@@ -16,7 +16,8 @@ from decimal import Decimal
 
 from apps.common.models import FullBaseModel
 from .health import HealthOrganization
-from ..validators import validate_divipola_department, validate_divipola_municipality
+# from ..validators import validate_divipola_department, validate_divipola_municipality
+# TODO: Implement these validators or remove dependencies
 
 # ============================================================================
 # CHOICES DEFINITIONS
@@ -195,7 +196,7 @@ class HeadquarterLocation(FullBaseModel):
                 regex=r'^\d{2}$',
                 message=_('Código de departamento debe tener 2 dígitos.')
             ),
-            validate_divipola_department
+            # validate_divipola_department  # TODO: Implement validator
         ],
         help_text=_('Código DIVIPOLA del departamento.')
     )

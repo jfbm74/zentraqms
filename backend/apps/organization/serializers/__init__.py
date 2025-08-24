@@ -105,6 +105,45 @@ from .health_services_serializers import (
     ServiceStatisticsSerializer,
 )
 
+# Import Organizational Chart serializers
+from .organizational_chart_serializers import (
+    # Sector serializers
+    SectorNormativaSerializer,
+    SectorSerializer,
+    SectorListSerializer,
+    SectorCreateSerializer,
+    
+    # Template serializers
+    PlantillaOrganigramaSerializer,
+    PlantillaOrganigramaListSerializer,
+    PlantillaOrganigramaCreateSerializer,
+    
+    # Organizational chart serializers
+    OrganizationalChartSerializer,
+    OrganizationalChartListSerializer,
+    OrganizationalChartCreateSerializer,
+    
+    # Area serializers
+    AreaSerializer,
+    AreaListSerializer,
+    AreaCreateSerializer,
+    
+    # Position serializers
+    ResponsabilidadSerializer,
+    AutoridadSerializer,
+    CargoSerializer,
+    CargoListSerializer,
+    CargoCreateSerializer,
+    
+    # Bulk operation serializers
+    BulkAreaCreateSerializer,
+    BulkPositionCreateSerializer,
+    
+    # Validation serializers
+    ChartValidationSerializer,
+    TemplateApplicationSerializer,
+)
+
 __all__ = [
     # Base serializers (existing functionality)
     'LocationSerializer',
@@ -175,4 +214,28 @@ __all__ = [
     'ServiceBulkActionSerializer',
     'ServiceImportLogSerializer',
     'ServiceStatisticsSerializer',
+    
+    # Organizational Chart serializers
+    'SectorNormativaSerializer',
+    'SectorSerializer',
+    'SectorListSerializer',
+    'SectorCreateSerializer',
+    'PlantillaOrganigramaSerializer',
+    'PlantillaOrganigramaListSerializer',
+    'PlantillaOrganigramaCreateSerializer',
+    'OrganizationalChartSerializer',
+    'OrganizationalChartListSerializer',
+    'OrganizationalChartCreateSerializer',
+    'AreaSerializer',
+    'AreaListSerializer',
+    'AreaCreateSerializer',
+    'ResponsabilidadSerializer',
+    'AutoridadSerializer',
+    'CargoSerializer',
+    'CargoListSerializer',
+    'CargoCreateSerializer',
+    'BulkAreaCreateSerializer',
+    'BulkPositionCreateSerializer',
+    'ChartValidationSerializer',
+    'TemplateApplicationSerializer',
 ]

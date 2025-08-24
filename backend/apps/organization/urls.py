@@ -31,6 +31,25 @@ from apps.organization.views.capacity_views import (
     CapacidadImportLogViewSet
 )
 
+# Import organizational chart views
+from apps.organization.views.organizational_chart_views import (
+    SectorViewSet,
+    SectorNormativaViewSet,
+    PlantillaOrganigramaViewSet,
+    OrganizationalChartViewSet,
+    AreaViewSet,
+    CargoViewSet,
+    ResponsabilidadViewSet,
+    AutoridadViewSet
+)
+
+# Import validation views
+from apps.organization.views.validation_views import (
+    RealTimeValidationViewSet,
+    InstantComplianceCheckView,
+    LiveFeedbackView
+)
+
 # Create a router and register viewsets
 router = DefaultRouter()
 router.register(r"organizations", OrganizationViewSet, basename="organization")
@@ -55,6 +74,19 @@ router.register(r"sede-health-services", SedeHealthServiceViewSet, basename="sed
 router.register(r"capacidad", CapacidadInstaladaViewSet, basename="capacidad")
 router.register(r"capacidad-historial", CapacidadHistorialViewSet, basename="capacidad-historial")
 router.register(r"capacidad-import-logs", CapacidadImportLogViewSet, basename="capacidad-import-logs")
+
+# Organizational Chart endpoints
+router.register(r"sectors", SectorViewSet, basename="sector")
+router.register(r"sector-normativas", SectorNormativaViewSet, basename="sector-normativa")
+router.register(r"orgchart-templates", PlantillaOrganigramaViewSet, basename="orgchart-template")
+router.register(r"organizational-charts", OrganizationalChartViewSet, basename="organizational-chart")
+router.register(r"areas", AreaViewSet, basename="area")
+router.register(r"positions", CargoViewSet, basename="position")
+router.register(r"responsibilities", ResponsabilidadViewSet, basename="responsibility")
+router.register(r"authorities", AutoridadViewSet, basename="authority")
+
+# Validation endpoints
+router.register(r"realtime-validation", RealTimeValidationViewSet, basename="realtime-validation")
 
 app_name = "organization"
 
@@ -81,4 +113,39 @@ urlpatterns = [
     path("organizations/<uuid:org_id>/sedes/bulk-create/", 
          SedeViewSet.as_view({'post': 'bulk_create'}), 
          name='organization-sedes-bulk-create'),
+    
+    # Organizational Chart specific URLs
+    path("organizational-charts/<uuid:chart_id>/validate/",
+         OrganizationalChartViewSet.as_view({'post': 'validate_chart'}),
+         name='organizational-chart-validate'),
+    path("organizational-charts/<uuid:chart_id>/approve/",
+         OrganizationalChartViewSet.as_view({'post': 'approve_chart'}),
+         name='organizational-chart-approve'),
+    path("organizational-charts/<uuid:chart_id>/create-version/",
+         OrganizationalChartViewSet.as_view({'post': 'create_new_version'}),
+         name='organizational-chart-create-version'),
+    
+    # Template specific URLs
+    path("orgchart-templates/<uuid:template_id>/apply/",
+         PlantillaOrganigramaViewSet.as_view({'post': 'apply_template'}),
+         name='orgchart-template-apply'),
+    path("orgchart-templates/<uuid:template_id>/clone/",
+         PlantillaOrganigramaViewSet.as_view({'post': 'clone_template'}),
+         name='orgchart-template-clone'),
+    
+    # Bulk operations URLs
+    path("areas/bulk-create/",
+         AreaViewSet.as_view({'post': 'bulk_create'}),
+         name='areas-bulk-create'),
+    path("positions/bulk-create/",
+         CargoViewSet.as_view({'post': 'bulk_create'}),
+         name='positions-bulk-create'),
+    
+    # Real-time validation URLs
+    path("validation/instant-compliance/",
+         InstantComplianceCheckView.as_view(),
+         name='instant-compliance-check'),
+    path("validation/live-feedback/",
+         LiveFeedbackView.as_view(),
+         name='live-feedback'),
 ]

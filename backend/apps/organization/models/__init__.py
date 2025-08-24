@@ -52,6 +52,38 @@ from .capacity import (
     CapacidadImportLog,
 )
 
+# Organizational Chart models
+from .organizational_chart import (
+    Sector,
+    SectorNormativa,
+    PlantillaOrganigrama,
+    OrganizationalChart,
+)
+
+# Organizational Structure models
+from .organizational_structure import (
+    Area,
+    ServiceAreaAssignment,
+    Cargo,
+    Responsabilidad,
+    Autoridad,
+)
+
+# Committee models
+from .committees import (
+    Comite,
+    MiembroComite,
+    CommitteeMeeting,
+    MeetingAttendance,
+)
+
+# Assignment and Service models
+from .assignments import (
+    AsignacionCargo,
+    Service,
+    ServiceIntegration,
+)
+
 # Export all models and functions for backward compatibility
 __all__ = [
     # Base models
@@ -90,4 +122,28 @@ __all__ = [
     'CapacidadInstalada',
     'CapacidadHistorial',
     'CapacidadImportLog',
+    
+    # Organizational Chart models
+    'Sector',
+    'SectorNormativa',
+    'PlantillaOrganigrama',
+    'OrganizationalChart',
+    
+    # Organizational Structure models
+    'Area',
+    'ServiceAreaAssignment',
+    'Cargo',
+    'Responsabilidad',
+    'Autoridad',
+    
+    # Committee models
+    'Comite',
+    'MiembroComite',
+    'CommitteeMeeting',
+    'MeetingAttendance',
+    
+    # Assignment and Service models
+    'AsignacionCargo',
+    'Service',
+    'ServiceIntegration',
 ]

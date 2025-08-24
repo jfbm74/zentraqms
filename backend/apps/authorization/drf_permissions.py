@@ -321,3 +321,60 @@ class CanDeleteOrganization(HasPermission):
     """Permission to delete organization data."""
 
     required_permission = "organization.delete"
+
+
+# Organizational Chart specific permissions
+class CanViewOrganizationalChart(HasPermission):
+    """Permission to view organizational charts."""
+
+    required_permission = "organization.read_orgchart"
+
+
+class CanCreateOrganizationalChart(HasPermission):
+    """Permission to create organizational charts."""
+
+    required_permission = "organization.create_orgchart"
+
+
+class CanUpdateOrganizationalChart(HasPermission):
+    """Permission to update organizational charts."""
+
+    required_permission = "organization.update_orgchart"
+
+
+class CanDeleteOrganizationalChart(HasPermission):
+    """Permission to delete organizational charts."""
+
+    required_permission = "organization.delete_orgchart"
+
+
+class CanApproveOrganizationalChart(HasPermission):
+    """Permission to approve organizational charts."""
+
+    required_permission = "organization.approve_orgchart"
+
+
+class CanValidateOrganizationalChart(HasPermission):
+    """Permission to validate organizational charts."""
+
+    required_permission = "organization.validate_orgchart"
+
+
+# Template specific permissions
+class CanManageTemplates(HasPermission):
+    """Permission to manage organizational chart templates."""
+
+    required_permission = "organization.manage_templates"
+
+
+class CanApplyTemplates(HasPermission):
+    """Permission to apply organizational chart templates."""
+
+    required_permission = "organization.apply_templates"
+
+
+# Sector specific permissions
+class CanManageSectors(HasPermission):
+    """Permission to manage organizational sectors."""
+
+    required_permission = "organization.manage_sectors"
